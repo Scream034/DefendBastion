@@ -1,0 +1,169 @@
+[gd_scene load_steps=20 format=3 uid="uid://q2747brlyw05"]
+
+[ext_resource type="Script" uid="uid://q58hirmnykj5" path="res://scripts/GameManager.cs" id="1_sugp2"]
+[ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_4mrxx"]
+[ext_resource type="AudioStream" uid="uid://c2qqp6aadfxmn" path="res://sounds/victory.ogg" id="2_71j4m"]
+[ext_resource type="AudioStream" uid="uid://qpfbu8qea6qg" path="res://sounds/ambient2.wav" id="3_7r4gi"]
+[ext_resource type="AudioStream" uid="uid://cgvasqpy4mow3" path="res://sounds/defeat.wav" id="3_qfnet"]
+[ext_resource type="PackedScene" uid="uid://dr7p7k4s6c5a4" path="res://scenes/Objects/House.tscn" id="6_7r4gi"]
+[ext_resource type="PackedScene" uid="uid://c0aomjglyx2a7" path="res://scenes/Entities/Kaiju.tscn" id="8_4mrxx"]
+[ext_resource type="PackedScene" uid="uid://daxwujwpv62hb" path="res://scenes/Turrets/RailGunTurret.tscn" id="10_e3hyu"]
+[ext_resource type="Script" uid="uid://dkijj7ch7me7t" path="res://scripts/Player/Player.cs" id="10_w7kh3"]
+[ext_resource type="Script" uid="uid://ceko2b8r6v2y1" path="res://scripts/Player/PlayerHead.cs" id="11_e3hyu"]
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_w7kh3"]
+playback_mode = 2
+streams_count = 2
+stream_0/stream = ExtResource("2_4mrxx")
+stream_1/stream = ExtResource("3_7r4gi")
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sgp6g"]
+sky_top_color = Color(0.37069136, 0.39130092, 0.42265862, 1)
+sky_horizon_color = Color(0.65518403, 0.6629404, 0.67845345, 1)
+ground_bottom_color = Color(0.65882355, 0.6666667, 0.68235296, 1)
+ground_horizon_color = Color(0.6593446, 0.6670543, 0.6824737, 1)
+
+[sub_resource type="Sky" id="Sky_sgp6g"]
+sky_material = SubResource("ProceduralSkyMaterial_sgp6g")
+
+[sub_resource type="Environment" id="Environment_o5qli"]
+background_mode = 2
+sky = SubResource("Sky_sgp6g")
+ssao_enabled = true
+fog_light_color = Color(0.58764684, 0.5997362, 0.60490686, 1)
+fog_light_energy = 0.55
+fog_height = -0.6
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.078
+volumetric_fog_albedo = Color(0.58103293, 0.581033, 0.58103275, 1)
+volumetric_fog_emission = Color(0.24115604, 0.24115604, 0.24115604, 1)
+adjustment_enabled = true
+adjustment_brightness = 0.95
+adjustment_contrast = 1.3
+adjustment_saturation = 0.95
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_sgp6g"]
+albedo_color = Color(0.35906905, 0.35906908, 0.35906902, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_sgp6g"]
+material = SubResource("ORMMaterial3D_sgp6g")
+size = Vector2(300, 300)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_sgp6g"]
+size = Vector3(300, 0, 300)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0wfyh"]
+size = Vector3(74.9939, 18.059052, 36.882263)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_w7kh3"]
+
+[node name="World" type="Node3D" node_paths=PackedStringArray("_audioAmbient", "_audioVictory", "_audioDefeat")]
+script = ExtResource("1_sugp2")
+_audioAmbient = NodePath("AmbianceManager")
+_audioVictory = NodePath("AudioResultVictory")
+_audioDefeat = NodePath("AudioResultDefeat")
+
+[node name="AmbianceManager" type="AudioStreamPlayer" parent="."]
+stream = SubResource("AudioStreamRandomizer_w7kh3")
+volume_db = -2.52
+autoplay = true
+playback_type = 1
+
+[node name="AudioResultVictory" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_71j4m")
+
+[node name="AudioResultDefeat" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("3_qfnet")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.76205826, -0.2738333, 0.5867561, 0.30588108, 0.95093244, 0.04652317, -0.5707049, 0.1440242, 0.80842626, 0, 2.7841012, 0)
+light_color = Color(0.86036915, 0.8603692, 0.8603692, 1)
+light_energy = 0.36
+light_volumetric_fog_energy = 0.905
+shadow_enabled = true
+directional_shadow_blend_splits = true
+sky_mode = 1
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_o5qli")
+
+[node name="Objects" type="Node" parent="."]
+
+[node name="Ground" type="StaticBody3D" parent="Objects"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Objects/Ground"]
+mesh = SubResource("PlaneMesh_sgp6g")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Objects/Ground"]
+shape = SubResource("BoxShape3D_sgp6g")
+
+[node name="House" parent="Objects" instance=ExtResource("6_7r4gi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27.073204, 0.1807251, 38.04651)
+
+[node name="House2" parent="Objects" instance=ExtResource("6_7r4gi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.697332, 0.1807251, 38.04651)
+
+[node name="House3" parent="Objects" instance=ExtResource("6_7r4gi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.756948, 0.1807251, 38.04651)
+
+[node name="House8" parent="Objects" instance=ExtResource("6_7r4gi")]
+transform = Transform3D(-0.85828894, 0, -0.51316684, 0, 1, 0, 0.51316684, 0, -0.85828894, -0.2788949, 0.1807251, 28.34816)
+
+[node name="House4" parent="Objects" instance=ExtResource("6_7r4gi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.750286, 0.1807251, 38.04651)
+
+[node name="House5" parent="Objects" instance=ExtResource("6_7r4gi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.750286, 0.1807251, 21.265656)
+
+[node name="House6" parent="Objects" instance=ExtResource("6_7r4gi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.80763, 0.1807251, 21.265656)
+
+[node name="House7" parent="Objects" instance=ExtResource("6_7r4gi")]
+transform = Transform3D(0.8967106, 0, -0.44261736, 0, 1, 0, 0.44261736, 0, 0.8967106, 18.12173, 0.1807251, 18.762907)
+
+[node name="Entities" type="Node" parent="."]
+
+[node name="TargetZone" type="Area3D" parent="Entities"]
+transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 0.99999994, 0, 0, 14.275727)
+priority = 1
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="Entities/TargetZone"]
+transform = Transform3D(0.999993, 0, 0, 0, 1, 0, 0, 0, 0.999993, 0, 3.5041656, 13.665133)
+shape = SubResource("BoxShape3D_0wfyh")
+
+[node name="Kaiju" parent="Entities" instance=ExtResource("8_4mrxx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.0108128, -121.82284)
+
+[node name="Player" type="CharacterBody3D" parent="Entities" node_paths=PackedStringArray("_interactionRaycast", "_head")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3377945, 0)
+script = ExtResource("10_w7kh3")
+_interactionRaycast = NodePath("PlayerHead/InteractionRayCast3D")
+_head = NodePath("PlayerHead")
+
+[node name="InteractionTimer" type="Timer" parent="Entities/Player"]
+process_priority = -1
+process_physics_priority = -1
+wait_time = 0.1
+autostart = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Entities/Player"]
+shape = SubResource("CapsuleShape3D_w7kh3")
+
+[node name="PlayerHead" type="Node3D" parent="Entities/Player" node_paths=PackedStringArray("Camera", "_interactionRay")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5047755, 0)
+script = ExtResource("11_e3hyu")
+Camera = NodePath("Camera3D")
+_interactionRay = NodePath("InteractionRayCast3D")
+metadata/_custom_type_script = "uid://ceko2b8r6v2y1"
+
+[node name="InteractionRayCast3D" type="RayCast3D" parent="Entities/Player/PlayerHead"]
+target_position = Vector3(0, 0, -2.3)
+collision_mask = 2
+debug_shape_custom_color = Color(0.61588645, 0.665092, 0.89140016, 1)
+
+[node name="Camera3D" type="Camera3D" parent="Entities/Player/PlayerHead"]
+
+[node name="RailGunTurret" parent="Entities" instance=ExtResource("10_e3hyu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2467382, -2.0731447)
+
+[connection signal="body_entered" from="Entities/TargetZone" to="." method="OnTargetZoneEnter"]

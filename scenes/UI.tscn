@@ -1,0 +1,104 @@
+[gd_scene load_steps=4 format=3 uid="uid://cm0epusci4ngu"]
+
+[ext_resource type="Script" uid="uid://bk4w1hcno2id6" path="res://scripts/UI.cs" id="1_dj8aq"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ll0sn"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(0.10196078, 0.10196078, 0.10196078, 0.078431375)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+corner_detail = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dj8aq"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(1, 1, 1, 0.22745098)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+corner_detail = 6
+
+[node name="UI" type="CanvasLayer" node_paths=PackedStringArray("Crosshair", "BossProgressBar", "GameStateLabel", "InteractionLabel")]
+script = ExtResource("1_dj8aq")
+Crosshair = NodePath("Control/Crosshair")
+BossProgressBar = NodePath("Control/BossProgressBar")
+GameStateLabel = NodePath("Control/BossProgressBar/GameStateLabel")
+InteractionLabel = NodePath("Control/InteractionLabel")
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Crosshair" type="ColorRect" parent="Control"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -1.0
+offset_top = -1.0
+offset_right = 1.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+color = Color(1, 1, 1, 0.3647059)
+
+[node name="InteractionLabel" type="Label" parent="Control"]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.8173611
+anchor_right = 1.0
+anchor_bottom = 0.84930557
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.83137256, 0.8235295, 0.827451, 0.18039216)
+text = "Interact text"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="BossProgressBar" type="ProgressBar" parent="Control"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -27.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/background = SubResource("StyleBoxFlat_ll0sn")
+theme_override_styles/fill = SubResource("StyleBoxFlat_dj8aq")
+value = 20.1
+show_percentage = false
+
+[node name="GameStateLabel" type="Label" parent="Control/BossProgressBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/line_spacing = 432
+theme_override_constants/shadow_offset_x = 23
+theme_override_constants/outline_size = 2
+text = "b  o  s  s"
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true

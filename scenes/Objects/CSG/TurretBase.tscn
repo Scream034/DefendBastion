@@ -1,0 +1,51 @@
+[gd_scene load_steps=5 format=3 uid="uid://ddhjbo51prxe2"]
+
+[ext_resource type="PackedScene" uid="uid://c7iegl1hikk8l" path="res://scenes/Objects/CSG/RailGun.tscn" id="1_c5gfu"]
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_fdwwr"]
+albedo_color = Color(0.40616813, 0.43321368, 0.48086435, 1)
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_c5gfu"]
+albedo_color = Color(0.47788018, 0.47788018, 0.47788, 1)
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_11r70"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.4220082, 0.4387848, 0.48340505, 1)
+ao_on_uv2 = true
+refraction_enabled = true
+
+[node name="TurretBase" type="CSGCombiner3D"]
+
+[node name="Platform" type="CSGBox3D" parent="."]
+size = Vector3(5, 0.25, 5)
+material = SubResource("ORMMaterial3D_fdwwr")
+
+[node name="Base" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.56188965, 0)
+size = Vector3(1.5, 0.8762207, 1.5)
+material = SubResource("ORMMaterial3D_fdwwr")
+
+[node name="BaseX" type="CSGBox3D" parent="."]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 1.0208007, 0)
+size = Vector3(0.2, 0.04160157, 1.1376953)
+material = SubResource("ORMMaterial3D_c5gfu")
+
+[node name="BaseX2" type="CSGBox3D" parent="."]
+transform = Transform3D(0.7071067, 0, -0.7071067, 0, 1, 0, 0.7071067, 0, 0.7071067, 0, 1.0208007, 0)
+size = Vector3(0.2, 0.04160157, 1.1376953)
+material = SubResource("ORMMaterial3D_c5gfu")
+
+[node name="BaseXM" type="CSGBox3D" parent="."]
+transform = Transform3D(0.7071067, 0, -0.7071067, 0, 1, 0, 0.7071067, 0, 0.7071067, 0, 1.0278169, 0)
+size = Vector3(0.2, 0.056032225, 0.2)
+material = SubResource("ORMMaterial3D_c5gfu")
+
+[node name="BaseXMC" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1048459, 0)
+radius = 0.08984375
+height = 0.10180664
+sides = 5
+material = SubResource("ORMMaterial3D_11r70")
+
+[node name="RailGun" parent="." instance=ExtResource("1_c5gfu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.009342968, 1.3409988, 0.010132473)

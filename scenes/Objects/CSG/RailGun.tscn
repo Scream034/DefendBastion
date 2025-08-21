@@ -1,0 +1,58 @@
+[gd_scene load_steps=4 format=3 uid="uid://c7iegl1hikk8l"]
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_7r4gi"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.4220082, 0.4387848, 0.48340505, 1)
+ao_on_uv2 = true
+refraction_enabled = true
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_w7kh3"]
+albedo_color = Color(0.3764706, 0.3764706, 0.45490196, 1)
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_01ix5"]
+albedo_color = Color(0.7261735, 0.6862152, 0.8706505, 1)
+
+[node name="RailGun" type="CSGCombiner3D"]
+
+[node name="BaseM" type="CSGBox3D" parent="."]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, -2.4437904e-05, -0.15724105, -0.010653481)
+size = Vector3(0.18, 0.056, 0.18)
+material = SubResource("ORMMaterial3D_7r4gi")
+
+[node name="BarrelCL" type="CSGBox3D" parent="."]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, -2.4437904e-05, 0.056138694, -0.3819983)
+size = Vector3(0.048828125, 0.01567221, 1.6225586)
+material = SubResource("ORMMaterial3D_w7kh3")
+
+[node name="BarrelCL2" type="CSGBox3D" parent="."]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, -2.4437904e-05, 0.063304484, -0.3819983)
+size = Vector3(0.0041503906, 0.0073970566, 1.6225586)
+material = SubResource("ORMMaterial3D_01ix5")
+
+[node name="BarrelL" type="CSGBox3D" parent="."]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, -2.4437904e-05, -0.023572147, -1.5113316)
+size = Vector3(0.21875, 0.046142578, 0.63500977)
+material = SubResource("ORMMaterial3D_w7kh3")
+
+[node name="CSGCylinder3D" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -2.4437904e-05, -0.023572147, -2.0035517)
+radius = 0.017578125
+height = 0.37860107
+material = SubResource("ORMMaterial3D_w7kh3")
+
+[node name="Barrel" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4437904e-05, -0.03675276, -0.3819983)
+size = Vector3(0.5878906, 0.18592456, 1.6225586)
+material = SubResource("ORMMaterial3D_w7kh3")
+
+[node name="BarrelSTriangle" type="CSGBox3D" parent="."]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, -0.2844091, -0.03675264, -1.1744728)
+operation = 2
+size = Vector3(0.18136597, 0.1953125, 0.13256836)
+material = SubResource("ORMMaterial3D_w7kh3")
+
+[node name="BarrelSTriangle2" type="CSGBox3D" parent="."]
+transform = Transform3D(0.70710677, 0, -0.70710677, 0, 1, 0, 0.70710677, 0, 0.70710677, 0.28397557, -0.037097514, -1.1746538)
+operation = 2
+size = Vector3(0.18136597, 0.1953125, 0.13256836)
+material = SubResource("ORMMaterial3D_w7kh3")

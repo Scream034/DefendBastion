@@ -1,0 +1,12 @@
+{
+    "godotTools.editorPath.godot4": "d:\\Programs\\Godot_v4.5-dev5_mono_win64\\Godot_v4.5-dev5_mono_win64.exe",
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/*.uid": true,
+        "**/*.import": true
+    }
+}
