@@ -1,5 +1,6 @@
 using Game.Interfaces;
 using Godot;
+using System.Collections.Generic;
 
 namespace Game.Projectiles;
 
@@ -12,10 +13,17 @@ public partial class BaseProjectile : Area3D
     [Export]
     public float Lifetime = 5f;
 
+    public readonly List<Node> IgnoredEntities = [];
+
     protected SceneTreeTimer lifetimeTimer;
 
-    public override void _Ready()
+    public virtual void Initialize(Node initiator = null)
     {
+        if (initiator != null)
+        {
+            IgnoredEntities.Add(initiator);
+        }
+
         BodyEntered += OnBodyEntered;
 
         lifetimeTimer = Constants.Tree.CreateTimer(Lifetime);
@@ -29,7 +37,11 @@ public partial class BaseProjectile : Area3D
 
     public virtual void OnBodyEntered(Node body)
     {
-        if (body is IDamageable damageable)
+        if (IgnoredEntities.Contains(body))
+        {
+            return;
+        }
+        else if (body is IDamageable damageable)
         {
             damageable.Damage(Damage);
         }

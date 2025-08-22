@@ -1,5 +1,6 @@
 using Game.Entity;
 using Game.Interfaces;
+using Game.Projectiles;
 using Godot;
 
 namespace Game.Turrets;
@@ -11,12 +12,6 @@ namespace Game.Turrets;
 /// </summary>
 public partial class PlayerControllableTurret : ControllableTurret
 {
-    [ExportGroup("Player Control Setup")]
-    /// <summary>
-    /// Точка, где будет находиться игрок во время управления.
-    /// </summary>
-    [Export] private Marker3D _playerSeat;
-
     public Player.Player PlayerController => CurrentController as Player.Player;
 
     public override void _PhysicsProcess(double delta)
@@ -26,11 +21,9 @@ public partial class PlayerControllableTurret : ControllableTurret
             return;
         }
 
-        var playerHead = PlayerController.GetPlayerHead();
-
         // --- Логика наведения ---
         // 1. Получаем глобальную ориентацию камеры игрока.
-        Basis targetGlobalBasis = playerHead.Camera.GlobalTransform.Basis;
+        Basis targetGlobalBasis = PlayerController.GetPlayerHead().Camera.GlobalTransform.Basis;
 
         // 2. Преобразуем ее в локальную систему координат турели (относительно поворота корпуса турели).
         Basis localBasis = GlobalTransform.Basis.Inverse() * targetGlobalBasis;
@@ -39,7 +32,7 @@ public partial class PlayerControllableTurret : ControllableTurret
         Vector3 targetEuler = localBasis.GetEuler();
 
         // 4. Ограничиваем углы в соответствии с лимитами турели.
-        float targetYaw = Mathf.Clamp(targetEuler.Y, -_maxYawRad, _maxYawRad);
+        float targetYaw = _maxYawRad < 0 ? targetEuler.Y : Mathf.Clamp(targetEuler.Y, -_maxYawRad, _maxYawRad);
         float targetPitch = Mathf.Clamp(targetEuler.X, _minPitchRad, _maxPitchRad);
 
         // 5. Плавно интерполируем текущие углы поворота частей турели к целевым.
@@ -48,7 +41,7 @@ public partial class PlayerControllableTurret : ControllableTurret
         _turretPitch.Rotation = _turretPitch.Rotation with { X = Mathf.LerpAngle(_turretPitch.Rotation.X, targetPitch, _aimSpeed * fDelta) };
 
         // 6. Принудительно удерживаем позицию игрока в "кресле", чтобы избежать смещений из-за физики.
-        PlayerController.GlobalPosition = _playerSeat.GlobalPosition;
+        PlayerController.GlobalPosition = _controlPoint.GlobalPosition;
     }
 
     public override void _Input(InputEvent @event)
@@ -71,4 +64,12 @@ public partial class PlayerControllableTurret : ControllableTurret
             GetViewport().SetInputAsHandled();
         }
     }
+
+    public override BaseProjectile CreateProjectile(Transform3D spawnPoint)
+    {
+        var projectile = base.CreateProjectile(spawnPoint);
+        projectile.IgnoredEntities.Add(PlayerController);
+        return projectile;
+    }
+
 }

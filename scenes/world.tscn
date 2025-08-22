@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://q2747brlyw05"]
+[gd_scene load_steps=16 format=3 uid="uid://q2747brlyw05"]
 
 [ext_resource type="Script" uid="uid://q58hirmnykj5" path="res://scripts/GameManager.cs" id="1_sugp2"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_4mrxx"]
@@ -6,6 +6,7 @@
 [ext_resource type="AudioStream" uid="uid://qpfbu8qea6qg" path="res://sounds/ambient2.wav" id="3_7r4gi"]
 [ext_resource type="AudioStream" uid="uid://cgvasqpy4mow3" path="res://sounds/defeat.wav" id="3_qfnet"]
 [ext_resource type="PackedScene" uid="uid://dr7p7k4s6c5a4" path="res://scenes/Objects/House.tscn" id="6_7r4gi"]
+[ext_resource type="CameraAttributesPractical" uid="uid://b610p2clhq430" path="res://env/camera/camera_world.tres" id="7_e3hyu"]
 [ext_resource type="PackedScene" uid="uid://c0aomjglyx2a7" path="res://scenes/Entities/Kaiju.tscn" id="8_4mrxx"]
 [ext_resource type="PackedScene" uid="uid://c48vh6kflnrnw" path="res://scenes/Entities/Player.tscn" id="9_7r4gi"]
 [ext_resource type="PackedScene" uid="uid://daxwujwpv62hb" path="res://scenes/Turrets/RailGunTurret.tscn" id="10_e3hyu"]
@@ -15,58 +16,6 @@ playback_mode = 2
 streams_count = 2
 stream_0/stream = ExtResource("2_4mrxx")
 stream_1/stream = ExtResource("3_7r4gi")
-
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sgp6g"]
-sky_top_color = Color(0.74108666, 0.77095044, 0.8444879, 1)
-sky_horizon_color = Color(0.42684475, 0.4593433, 0.49420604, 1)
-sky_curve = 0.3567618
-sky_energy_multiplier = 1.1
-ground_bottom_color = Color(0.65882355, 0.6666667, 0.68235296, 1)
-ground_horizon_color = Color(0.6593446, 0.6670543, 0.6824737, 1)
-
-[sub_resource type="Sky" id="Sky_sgp6g"]
-sky_material = SubResource("ProceduralSkyMaterial_sgp6g")
-
-[sub_resource type="Environment" id="Environment_o5qli"]
-background_mode = 2
-sky = SubResource("Sky_sgp6g")
-sky_rotation = Vector3(-0.3926991, 0, 0)
-ambient_light_color = Color(0.06879826, 0.068798274, 0.068798274, 1)
-reflected_light_source = 2
-tonemap_mode = 1
-tonemap_exposure = 0.95
-tonemap_white = 1.1
-ssao_enabled = true
-glow_enabled = true
-glow_normalized = true
-glow_bloom = 0.05
-glow_blend_mode = 1
-glow_hdr_threshold = 0.8
-glow_hdr_scale = 1.5
-glow_map_strength = 0.5
-fog_light_color = Color(0.58764684, 0.5997362, 0.60490686, 1)
-fog_light_energy = 0.55
-fog_height = -0.6
-volumetric_fog_enabled = true
-volumetric_fog_density = 0.2
-volumetric_fog_albedo = Color(0.3559094, 0.51655877, 0.73585254, 1)
-volumetric_fog_emission = Color(0.4509804, 0.60784316, 0.8156863, 1)
-volumetric_fog_anisotropy = 0.4
-volumetric_fog_length = 128.0
-volumetric_fog_detail_spread = 1.552898
-volumetric_fog_sky_affect = 0.975
-adjustment_enabled = true
-adjustment_brightness = 0.82
-adjustment_contrast = 1.4
-adjustment_saturation = 0.96
-
-[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_7r4gi"]
-auto_exposure_enabled = true
-auto_exposure_speed = 0.8
-dof_blur_far_enabled = true
-dof_blur_far_distance = 200.0
-dof_blur_near_enabled = true
-dof_blur_near_distance = 0.75
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_sgp6g"]
 albedo_color = Color(0.35906905, 0.35906908, 0.35906902, 1)
@@ -112,8 +61,7 @@ directional_shadow_blend_splits = true
 sky_mode = 1
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_o5qli")
-camera_attributes = SubResource("CameraAttributesPractical_7r4gi")
+camera_attributes = ExtResource("7_e3hyu")
 
 [node name="Objects" type="Node" parent="."]
 
@@ -161,11 +109,20 @@ shape = SubResource("BoxShape3D_0wfyh")
 
 [node name="Kaiju" parent="Entities" instance=ExtResource("8_4mrxx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.0108128, -121.82284)
+MaxHealth = null
 
 [node name="RailGunTurret" parent="Entities" instance=ExtResource("10_e3hyu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2467382, -2.0731447)
+MaxHealth = null
 
 [node name="Player" parent="Entities" instance=ExtResource("9_7r4gi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1447512, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8333198, 1.3185551, 0.08156568)
+Speed = null
+JumpVelocity = null
+AirControl = null
+Acceleration = null
+Deceleration = null
+BodyRotationSpeed = null
+MaxHealth = null
 
 [connection signal="body_entered" from="Entities/TargetZone" to="." method="OnTargetZoneEnter"]

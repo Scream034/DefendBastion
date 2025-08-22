@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cgntm3mej3m3f" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_ky60h"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="2_fyiut"]
-[ext_resource type="AudioStream" uid="uid://bo6u35fuu8brg" path="res://sounds/gun.mp3" id="3_ouvn5"]
+[ext_resource type="AudioStream" uid="uid://biph0x4s4cufb" path="res://sounds/railgun_fire.wav" id="3_rvycd"]
 [ext_resource type="AudioStream" uid="uid://15kjtu6y7ewe" path="res://sounds/railgun_reload.wav" id="4_rvycd"]
 [ext_resource type="PackedScene" uid="uid://c7iegl1hikk8l" path="res://scenes/Objects/CSG/RailGun.tscn" id="5_rvycd"]
 
@@ -11,26 +11,33 @@ playback_mode = 2
 random_pitch = 1.01
 random_volume_offset_db = 1.0
 streams_count = 1
-stream_0/stream = ExtResource("3_ouvn5")
+stream_0/stream = ExtResource("3_rvycd")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_qrqde"]
 size = Vector3(0.6154785, 0.19580078, 2.3341675)
 
-[node name="RailGunTurret" type="StaticBody3D" node_paths=PackedStringArray("_turretYaw", "_turretPitch", "_playerSeat", "BarrelEnd", "_reloadTimer", "ShootAudioPlayer", "UtilityAudioPlayer")]
+[node name="RailGunTurret" type="StaticBody3D" node_paths=PackedStringArray("_turretYaw", "_turretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "_reloadTimer", "ShootAudioPlayer", "UtilityAudioPlayer")]
 physics_interpolation_mode = 1
 collision_layer = 3
 collision_mask = 3
 script = ExtResource("1_ky60h")
 _turretYaw = NodePath("CollisionShape3D")
 _turretPitch = NodePath("CollisionShape3D")
-_playerSeat = NodePath("CollisionShape3D/PlayerSeat")
 MinPitch = 0.0
 MaxPitch = 1.0
-MaxYaw = 60.0
+MaxYaw = -1.0
+_aimSpeed = null
+_controlPoint = NodePath("CollisionShape3D/PlayerSeat")
+_exitPoint = NodePath("CollisionShape3D/ExitPoint")
+Mode = null
 ProjectileScene = ExtResource("2_fyiut")
 MaxAmmo = 1
+CurrentAmmo = null
+FireRate = null
 BarrelEnd = NodePath("CollisionShape3D/BarrelEnd")
+ChargeTime = null
 _reloadTimer = NodePath("ReloadTimer")
+AutoReload = null
 ShootSfx = SubResource("AudioStreamRandomizer_ouvn5")
 ReloadSfx = ExtResource("4_rvycd")
 ShootAudioPlayer = NodePath("AudioStreamPlayer3D")
@@ -51,10 +58,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.032470703, -0.72457886)
 shape = SubResource("BoxShape3D_qrqde")
 
 [node name="PlayerSeat" type="Marker3D" parent="CollisionShape3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.20900698, 1.3573709)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.20900698, 1.428432)
 
 [node name="ExitPoint" type="Marker3D" parent="CollisionShape3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.20900698, 1.7414942)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.20900698, 1.8007675)
 
 [node name="BarrelEnd" type="Marker3D" parent="CollisionShape3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.009972826, -1.5728047)

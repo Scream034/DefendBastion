@@ -23,7 +23,10 @@ public abstract partial class ControllableTurret : ShootingTurret
     [ExportGroup("Rotation Limits (Degrees)")]
     [Export(PropertyHint.Range, "-90, 0, 1")] public float MinPitch { get; private set; } = -5f;
     [Export(PropertyHint.Range, "0, 90, 1")] public float MaxPitch { get; private set; } = 5f;
-    [Export(PropertyHint.Range, "0, 180, 1")] public float MaxYaw { get; private set; } = 90f;
+    /// <summary>
+    /// Если установлен < 0, то без ограничения
+    /// </summary>
+    [Export(PropertyHint.Range, "-1, 180, 1")] public float MaxYaw { get; private set; } = 90f;
 
     [ExportGroup("Aiming Properties")]
     /// <summary>
@@ -31,6 +34,16 @@ public abstract partial class ControllableTurret : ShootingTurret
     /// </summary>
     [Export(PropertyHint.Range, "1, 20, 0.1")]
     protected float _aimSpeed = 5f;
+
+    [ExportGroup("Points")]
+    /// <summary>
+    /// Точка управления турелью.
+    /// </summary>
+    [Export] protected Marker3D _controlPoint;
+    /// <summary>
+    /// Точка выхода из турели.
+    /// </summary>
+    [Export] protected Marker3D _exitPoint;
 
     /// <summary>
     /// Текущий контроллер турели. Null, если турель свободна.
@@ -93,7 +106,7 @@ public abstract partial class ControllableTurret : ShootingTurret
     {
         if (CurrentController == null) return;
 
-        CurrentController.ExitTurret();
+        CurrentController.ExitTurret(_exitPoint.GlobalPosition);
         CurrentController = null;
 
         // Деактивируем обработку для экономии ресурсов.

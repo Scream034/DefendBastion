@@ -1,7 +1,6 @@
 using Godot;
 using Game.Interfaces;
 using System;
-using Game.Entity;
 
 namespace Game.Turrets;
 
@@ -12,7 +11,6 @@ namespace Game.Turrets;
 /// </summary>
 public abstract partial class BaseTurret : Node3D, IDamageable, IInteractable
 {
-    [ExportGroup("Core Stats")]
     [Export(PropertyHint.Range, "1,10000,1")]
     public float MaxHealth { get; private set; } = 100f;
 

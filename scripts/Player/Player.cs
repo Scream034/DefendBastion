@@ -21,8 +21,8 @@ public sealed partial class Player : LivingEntity, ITurretControllable
     [Export] private CollisionShape3D _collisionShape; // Ссылка на CollisionShape3D
 
     [ExportGroup("Movement")]
-    [Export] public float Speed = 5.0f;
-    [Export] public float JumpVelocity = 4.5f;
+    [Export] public float Speed = 4.25f;
+    [Export] public float JumpVelocity = 3f;
     [Export(PropertyHint.Range, "0.0, 1.0, 0.05")] public float AirControl = 0.1f;
     [Export(PropertyHint.Range, "0, 20, 1")] public float Acceleration = 10f;
     [Export(PropertyHint.Range, "0, 20, 1")] public float Deceleration = 10f;
@@ -71,6 +71,8 @@ public sealed partial class Player : LivingEntity, ITurretControllable
 
     public override void _PhysicsProcess(double delta)
     {
+        SetBodyYaw(_head.Rotation.Y);
+
         // В турели физика игрока полностью отключается
         if (CurrentState == PlayerState.InTurret)
         {
@@ -79,6 +81,11 @@ public sealed partial class Player : LivingEntity, ITurretControllable
         }
 
         ProcessNormal((float)delta);
+    }
+
+    public void SetBodyYaw(in float yaw)
+    {
+        _collisionShape.Rotation = _collisionShape.Rotation with { Y = yaw };
     }
 
     private void ProcessNormal(float delta)
@@ -153,11 +160,11 @@ public sealed partial class Player : LivingEntity, ITurretControllable
         UI.Instance.HideInteractionText();
     }
 
-    public void ExitTurret()
+    public void ExitTurret(Vector3 exitPosition)
     {
         if (CurrentState != PlayerState.InTurret) return;
 
-        GlobalTransform = _currentTurret.GlobalTransform.Translated(Vector3.Right * 2);
+        GlobalPosition = exitPosition;
 
         _collisionShape.Disabled = false;
 

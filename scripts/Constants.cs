@@ -2,7 +2,7 @@ using Godot;
 
 namespace Game;
 
-public partial class Constants : Node
+public sealed partial class Constants : Node
 {
     public static SceneTree Tree { get; private set; }
     public static Window Root { get; private set; }
@@ -11,6 +11,7 @@ public partial class Constants : Node
 
     public override void _EnterTree()
     {
+        base._EnterTree();
         Tree = GetTree();
         Root = Tree.Root;
         DefaultGravity = ProjectSettings.GetSetting("physics/3d/default_gravity").AsSingle();

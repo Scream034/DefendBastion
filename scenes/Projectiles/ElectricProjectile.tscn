@@ -14,6 +14,7 @@ stream_0/stream = ExtResource("2_lmgi6")
 stream_1/stream = ExtResource("3_40e65")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_40e65"]
+margin = 0.0
 size = Vector3(0.01, 0.01, 2)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_40e65"]
@@ -33,10 +34,11 @@ material = SubResource("StandardMaterial3D_40e65")
 size = Vector3(0.01, 0.01, 2)
 
 [node name="ElectricProjectile" type="Area3D" node_paths=PackedStringArray("_audioPlayer")]
-collision_layer = 4
-collision_mask = 4
+process_priority = 2
+process_physics_priority = 2
 collision_priority = 2.0
-priority = 1
+monitorable = false
+priority = 2
 script = ExtResource("1_xn4kp")
 _impactVfx = ExtResource("2_40e65")
 _impactSfx = SubResource("AudioStreamRandomizer_40e65")

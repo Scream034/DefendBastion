@@ -1,8 +1,8 @@
-namespace Game.Entity;
-
 using System;
 using Game.Interfaces;
 using Godot;
+
+namespace Game.Entity;
 
 public abstract partial class LivingEntity : CharacterBody3D, IDamageable
 {
@@ -23,9 +23,20 @@ public abstract partial class LivingEntity : CharacterBody3D, IDamageable
 
     public event Action<float> OnHealthChanged;
 
+    /// <summary>
+    /// Исполузуется для Godot-компилятора
+    /// </summary>
+    public LivingEntity() { }
+
     protected LivingEntity(IDs id)
     {
         ID = id;
+    }
+
+    public override void _EnterTree()
+    {
+        base._EnterTree();
+        // Это самое надежное место для регистрации, так как узел точно попадает в сцену.
         LivingEntityManager.Add(this);
     }
 

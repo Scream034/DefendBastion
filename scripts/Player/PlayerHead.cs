@@ -4,7 +4,6 @@ using Godot;
 
 namespace Game.Player;
 
-[GlobalClass]
 public sealed partial class PlayerHead : Node3D
 {
     [ExportGroup("Mouse look")]
