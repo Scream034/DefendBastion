@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://q2747brlyw05"]
+[gd_scene load_steps=17 format=3 uid="uid://q2747brlyw05"]
 
 [ext_resource type="Script" uid="uid://q58hirmnykj5" path="res://scripts/GameManager.cs" id="1_sugp2"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_4mrxx"]
@@ -17,8 +17,10 @@ streams_count = 2
 stream_0/stream = ExtResource("2_4mrxx")
 stream_1/stream = ExtResource("3_7r4gi")
 
+[sub_resource type="Environment" id="Environment_w7kh3"]
+
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_sgp6g"]
-albedo_color = Color(0.35906905, 0.35906908, 0.35906902, 1)
+albedo_color = Color(0.359069, 0.359069, 0.359069, 1)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_sgp6g"]
 material = SubResource("ORMMaterial3D_sgp6g")
@@ -28,7 +30,7 @@ size = Vector2(300, 300)
 size = Vector3(300, 0, 300)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0wfyh"]
-size = Vector3(74.9939, 18.059052, 36.882263)
+size = Vector3(74.9939, 18.0591, 36.8823)
 
 [node name="World" type="Node3D" node_paths=PackedStringArray("_audioAmbient", "_audioVictory", "_audioDefeat")]
 script = ExtResource("1_sugp2")
@@ -51,8 +53,8 @@ stream = ExtResource("3_qfnet")
 volume_db = -1.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.6716335, -0.2233706, 0.70640934, -0.626543, 0.337631, 0.7024597, -0.39541444, -0.9143911, 0.08681304, 0, 2.7841012, 0)
-light_color = Color(0.86036915, 0.8603692, 0.8603692, 1)
+transform = Transform3D(0.671633, -0.223371, 0.706409, -0.626543, 0.337631, 0.70246, -0.395414, -0.914391, 0.086813, 0, 2.7841, 0)
+light_color = Color(0.860369, 0.860369, 0.860369, 1)
 light_energy = 0.36
 light_volumetric_fog_energy = 0.905
 light_specular = 1.5
@@ -61,6 +63,7 @@ directional_shadow_blend_splits = true
 sky_mode = 1
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_w7kh3")
 camera_attributes = ExtResource("7_e3hyu")
 
 [node name="Objects" type="Node" parent="."]
@@ -74,55 +77,47 @@ mesh = SubResource("PlaneMesh_sgp6g")
 shape = SubResource("BoxShape3D_sgp6g")
 
 [node name="House" parent="Objects" instance=ExtResource("6_7r4gi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27.073204, 0.1807251, 38.04651)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27.0732, 0.180725, 38.0465)
 
 [node name="House2" parent="Objects" instance=ExtResource("6_7r4gi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.697332, 0.1807251, 38.04651)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.6973, 0.180725, 38.0465)
 
 [node name="House3" parent="Objects" instance=ExtResource("6_7r4gi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.756948, 0.1807251, 38.04651)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.7569, 0.180725, 38.0465)
 
 [node name="House8" parent="Objects" instance=ExtResource("6_7r4gi")]
-transform = Transform3D(-0.85828894, 0, -0.51316684, 0, 1, 0, 0.51316684, 0, -0.85828894, -0.2788949, 0.1807251, 28.34816)
+transform = Transform3D(-0.858289, 0, -0.513167, 0, 1, 0, 0.513167, 0, -0.858289, -0.278895, 0.180725, 28.3482)
 
 [node name="House4" parent="Objects" instance=ExtResource("6_7r4gi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.750286, 0.1807251, 38.04651)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.7503, 0.180725, 38.0465)
 
 [node name="House5" parent="Objects" instance=ExtResource("6_7r4gi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.750286, 0.1807251, 21.265656)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.7503, 0.180725, 21.2657)
 
 [node name="House6" parent="Objects" instance=ExtResource("6_7r4gi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.80763, 0.1807251, 21.265656)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.8076, 0.180725, 21.2657)
 
 [node name="House7" parent="Objects" instance=ExtResource("6_7r4gi")]
-transform = Transform3D(0.8967106, 0, -0.44261736, 0, 1, 0, 0.44261736, 0, 0.8967106, 18.12173, 0.1807251, 18.762907)
+transform = Transform3D(0.896711, 0, -0.442617, 0, 1, 0, 0.442617, 0, 0.896711, 18.1217, 0.180725, 18.7629)
 
 [node name="Entities" type="Node" parent="."]
 
 [node name="TargetZone" type="Area3D" parent="Entities"]
-transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 0.99999994, 0, 0, 14.275727)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.2757)
 priority = 1
 
 [node name="CollisionShape3D2" type="CollisionShape3D" parent="Entities/TargetZone"]
-transform = Transform3D(0.999993, 0, 0, 0, 1, 0, 0, 0, 0.999993, 0, 3.5041656, 13.665133)
+transform = Transform3D(0.999993, 0, 0, 0, 1, 0, 0, 0, 0.999993, 0, 3.50417, 13.6651)
 shape = SubResource("BoxShape3D_0wfyh")
 
 [node name="Kaiju" parent="Entities" instance=ExtResource("8_4mrxx")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.0108128, -121.82284)
-MaxHealth = null
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.01081, -121.823)
 
 [node name="RailGunTurret" parent="Entities" instance=ExtResource("10_e3hyu")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2467382, -2.0731447)
-MaxHealth = null
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.24674, -2.07314)
+Mode = 0
 
 [node name="Player" parent="Entities" instance=ExtResource("9_7r4gi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8333198, 1.3185551, 0.08156568)
-Speed = null
-JumpVelocity = null
-AirControl = null
-Acceleration = null
-Deceleration = null
-BodyRotationSpeed = null
-MaxHealth = null
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.775369, 1.48467, 0.474688)
 
 [connection signal="body_entered" from="Entities/TargetZone" to="." method="OnTargetZoneEnter"]

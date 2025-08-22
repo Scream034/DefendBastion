@@ -1,5 +1,4 @@
 using Godot;
-using Game.Interfaces;
 using Game.VFX;
 
 namespace Game.Projectiles;
@@ -19,10 +18,18 @@ public partial class SimpleImpactProjectile : BaseProjectile
     [Export]
     private AudioStreamPlayer3D _audioPlayer;
 
-#if DEBUG
+    private bool HasSFX => _impactSfx != null && _audioPlayer != null;
+
     public override void _Ready()
     {
         base._Ready();
+        if (HasSFX)
+        {
+            _audioPlayer.Stream = _impactSfx;
+            _audioPlayer.Finished += () => ProjectilePool.Return(this);
+        }
+
+#if DEBUG
         if (_impactVfx == null)
         {
             GD.PushError($"Для снаряда '{Name}' не установлен VFX попадания!");
@@ -44,57 +51,18 @@ public partial class SimpleImpactProjectile : BaseProjectile
     /// Логика, выполняемая при попадании снаряда в объект.
     /// </summary>
     /// <param name="body">Объект, в который попал снаряд.</param>
-    public override void OnBodyEntered(Node body)
+    protected override void OnHit(Godot.Collections.Dictionary hitInfo)
     {
-        if (IgnoredEntities.Contains(body))
-        {
-            return;
-        }
+        base.OnHit(hitInfo);
 
-        if (body is IDamageable damageable)
-        {
-            damageable.Damage(Damage);
-        }
-
-        // --- НОВАЯ УЛУЧШЕННАЯ ЛОГИКА ОПРЕДЕЛЕНИЯ НОРМАЛИ ---
-
-        // Значения по умолчанию на случай, если RayCast не сработает
-        Vector3 hitPosition = GlobalPosition;
-        Vector3 hitNormal = -GlobalTransform.Basis.Z; // Направление, обратное полету пули
-
-        // 1. Получаем прямое состояние физического пространства для выполнения запросов.
-        var spaceState = GetWorld3D().DirectSpaceState;
-        if (spaceState != null)
-        {
-            // 2. Создаем параметры для луча. Мы стреляем очень коротким лучом из текущей позиции
-            //    немного назад, чтобы гарантированно пересечь поверхность, с которой столкнулись.
-            var query = PhysicsRayQueryParameters3D.Create(
-                GlobalPosition, // Начало луча (центр снаряда)
-                GlobalPosition - GlobalTransform.Basis.Z * 0.5f, // Конец луча (чуть вперед по направлению полета)
-                CollisionMask, // Используем ту же маску столкновений, что и у Area3D
-                [GetRid()] // Исключаем из запроса сам снаряд
-            );
-
-            // 3. Выполняем запрос
-            var result = spaceState.IntersectRay(query);
-
-            // 4. Если луч что-то нашел, используем точные данные из результата.
-            if (result.Count > 0)
-            {
-                hitPosition = (Vector3)result["position"];
-                hitNormal = (Vector3)result["normal"];
-            }
-        }
-        // Если RayCast ничего не нашел (крайне редкий случай), будут использованы значения по умолчанию.
-        // Это делает код более надежным.
-
-        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+        var hitPosition = hitInfo["position"].AsVector3();
+        var hitNormal = hitInfo["normal"].AsVector3();
 
         // Создаем VFX с использованием точной позиции и нормали
         if (_impactVfx != null)
         {
             var vfxInstance = _impactVfx.Instantiate<Node3D>(); // Безопаснее инстанциировать как Node3D
-            GetTree().Root.AddChild(vfxInstance);
+            Constants.Root.AddChild(vfxInstance);
             vfxInstance.GlobalPosition = hitPosition;
 
             // LookAt правильно сориентирует VFX перпендикулярно поверхности
@@ -105,7 +73,7 @@ public partial class SimpleImpactProjectile : BaseProjectile
             {
                 particles.Emitting = true;
                 // Можно добавить таймер на удаление, если у частиц нет самоуничтожения
-                GetTree().CreateTimer(particles.Lifetime).Timeout += vfxInstance.QueueFree;
+                Constants.Tree.CreateTimer(particles.Lifetime).Timeout += vfxInstance.QueueFree;
             }
             // Если у вас кастомный класс VFX с методами Play/OnFinished
             else if (vfxInstance is BaseVfx3D baseVfx)
@@ -118,26 +86,16 @@ public partial class SimpleImpactProjectile : BaseProjectile
         // Прячем снаряд, чтобы он не летел дальше, пока проигрывается звук
         HideAndDisable();
 
-        // Проигрываем SFX и удаляем снаряд после окончания звука
-        if (_impactSfx != null && _audioPlayer != null)
+        // Мы больше не отсоединяем плеер и не заставляем его самоуничтожаться.
+        // Он просто проигрывает звук и будет переиспользован вместе со снарядом.
+        if (HasSFX)
         {
-            // Перемещаем плеер из снаряда в сцену, чтобы он не удалился вместе со снарядом
-            RemoveChild(_audioPlayer);
-            GetTree().Root.AddChild(_audioPlayer);
-            
-            _audioPlayer.Stream = _impactSfx;
-            _audioPlayer.GlobalPosition = hitPosition;
             _audioPlayer.Play();
-            _audioPlayer.Finished += () =>
-            {
-                _audioPlayer.QueueFree(); // Удаляем плеер после проигрывания
-                QueueFree(); // Окончательно удаляем узел снаряда
-            };
         }
         else
         {
             // Если звука нет, удаляем снаряд сразу
-            QueueFree();
+            ProjectilePool.Return(this);
         }
     }
 
@@ -150,12 +108,9 @@ public partial class SimpleImpactProjectile : BaseProjectile
         Visible = false;
         SetProcess(false);
         SetPhysicsProcess(false);
-        
+
         // Отключаем дальнейшее обнаружение столкновений
-        if (GetChild(0) is CollisionShape3D collisionShape)
-        {
-            collisionShape.Disabled = true;
-        }
+        collisionShape.Disabled = true;
 
         // Останавливаем таймер жизни, так как снаряд уже "умер"
         lifetimeTimer?.EmitSignal(SceneTreeTimer.SignalName.Timeout);

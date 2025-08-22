@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Game.Entity;
 using Godot;
 
@@ -22,9 +23,12 @@ public partial class GameManager : Node3D
         LivingEntityManager.OnRemoved += OnEntityRemoved;
     }
 
-    public override void _Ready()
+    public override async void _Ready()
     {
         base._Ready();
+        await ToSignal(Constants.Tree, SceneTree.SignalName.PhysicsFrame);
+
+        Constants.UpdateWorldConstants(GetWorld3D());
         KaijuHealthChanged(_kaiju.Health);
 #if DEBUG
         AudioServer.SetBusVolumeDb(0, -16f);

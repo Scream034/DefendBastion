@@ -26,22 +26,18 @@ _turretPitch = NodePath("CollisionShape3D")
 MinPitch = 0.0
 MaxPitch = 1.0
 MaxYaw = -1.0
-_aimSpeed = null
 _controlPoint = NodePath("CollisionShape3D/PlayerSeat")
 _exitPoint = NodePath("CollisionShape3D/ExitPoint")
 Mode = null
 ProjectileScene = ExtResource("2_fyiut")
 MaxAmmo = 1
-CurrentAmmo = null
-FireRate = null
 BarrelEnd = NodePath("CollisionShape3D/BarrelEnd")
-ChargeTime = null
 _reloadTimer = NodePath("ReloadTimer")
-AutoReload = null
 ShootSfx = SubResource("AudioStreamRandomizer_ouvn5")
 ReloadSfx = ExtResource("4_rvycd")
 ShootAudioPlayer = NodePath("AudioStreamPlayer3D")
 UtilityAudioPlayer = NodePath("AudioStreamPlayer3D2")
+MaxHealth = 101.0
 
 [node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.7885832)

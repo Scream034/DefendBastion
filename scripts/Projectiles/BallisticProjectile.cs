@@ -2,6 +2,10 @@ using Godot;
 
 namespace Game.Projectiles;
 
+/// <summary>
+/// TODO: Доделать класс BallisticProjectile
+/// </summary>
+[System.Obsolete("Необходиомо доделать класс")]
 public partial class BallisticProjectile : BaseProjectile
 {
     private Vector3 _velocity;

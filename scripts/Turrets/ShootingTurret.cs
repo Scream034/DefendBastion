@@ -258,22 +258,26 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
         var spawnPoint = BarrelEnd != null ? BarrelEnd.GlobalTransform : GlobalTransform;
         var projectile = CreateProjectile(spawnPoint);
 
-        // NOTE: Добавляем снаряд в корень сцены, чтобы он не зависел от турели.
-        Constants.Root.AddChild(projectile);
-
         PlaySound(ShootSfx, ShootAudioPlayer);
 
         GD.Print($"[{Name}] Выстрел с {projectile.Name} в {spawnPoint.Origin}!");
     }
 
     /// <summary>
-    /// Создает экземпляр снаряда в указанной точке.
+    /// Создает (или получает из пула) экземпляр снаряда в указанной точке.
     /// </summary>
     public virtual BaseProjectile CreateProjectile(Transform3D spawnPoint)
     {
-        var projectile = ProjectileScene.Instantiate<BaseProjectile>();
-        projectile.Initialize(this);
+        // Вместо Instantiate используем наш пул!
+        var projectile = ProjectilePool.Get(ProjectileScene);
+
         projectile.GlobalTransform = spawnPoint;
+
+        // Добавляем снаряд в корень сцены, чтобы он не зависел от турели.
+        Constants.Root.AddChild(projectile);
+
+        // Инициализируем снаряд после того, как он добавлен в сцену и его позиция установлена
+        projectile.Initialize(this);
         return projectile;
     }
 
