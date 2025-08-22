@@ -17,7 +17,7 @@ stream_0/stream = ExtResource("2_4mrxx")
 stream_1/stream = ExtResource("3_7r4gi")
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sgp6g"]
-sky_top_color = Color(0.7530976, 0.7912829, 0.85152394, 1)
+sky_top_color = Color(0.74108666, 0.77095044, 0.8444879, 1)
 sky_horizon_color = Color(0.42684475, 0.4593433, 0.49420604, 1)
 sky_curve = 0.3567618
 sky_energy_multiplier = 1.1
@@ -49,7 +49,7 @@ fog_light_energy = 0.55
 fog_height = -0.6
 volumetric_fog_enabled = true
 volumetric_fog_density = 0.2
-volumetric_fog_albedo = Color(0.37070343, 0.53330046, 0.7511074, 1)
+volumetric_fog_albedo = Color(0.3559094, 0.51655877, 0.73585254, 1)
 volumetric_fog_emission = Color(0.4509804, 0.60784316, 0.8156863, 1)
 volumetric_fog_anisotropy = 0.4
 volumetric_fog_length = 128.0
@@ -89,15 +89,17 @@ _audioDefeat = NodePath("AudioResultDefeat")
 
 [node name="AmbianceManager" type="AudioStreamPlayer" parent="."]
 stream = SubResource("AudioStreamRandomizer_w7kh3")
-volume_db = -2.52
+volume_db = -8.0
 autoplay = true
 playback_type = 1
 
 [node name="AudioResultVictory" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("2_71j4m")
+volume_db = -1.0
 
 [node name="AudioResultDefeat" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("3_qfnet")
+volume_db = -1.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.6716335, -0.2233706, 0.70640934, -0.626543, 0.337631, 0.7024597, -0.39541444, -0.9143911, 0.08681304, 0, 2.7841012, 0)
