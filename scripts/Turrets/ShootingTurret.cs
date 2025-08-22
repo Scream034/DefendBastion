@@ -131,7 +131,7 @@ public abstract partial class ShootingTurret : BaseTurret
         CurrentAmmo--;
         _cooldownTimer.Start();
         CurrentState = TurretState.FiringCooldown;
-        OnStateChanged(CurrentState);
+        OnStateChanged?.Invoke(CurrentState);
 
         var projectile = ProjectileScene.Instantiate<BaseProjectile>();
 
@@ -160,7 +160,7 @@ public abstract partial class ShootingTurret : BaseTurret
         }
 
         CurrentState = TurretState.Reloading;
-        OnStateChanged(CurrentState);
+        OnStateChanged?.Invoke(CurrentState);
 
         _reloadTimer.Start();
 
@@ -194,7 +194,7 @@ public abstract partial class ShootingTurret : BaseTurret
         if (CurrentState == TurretState.FiringCooldown)
         {
             CurrentState = TurretState.Idle;
-            OnStateChanged(CurrentState);
+            OnStateChanged?.Invoke(CurrentState);
         }
     }
 
@@ -207,7 +207,7 @@ public abstract partial class ShootingTurret : BaseTurret
         {
             CurrentAmmo = MaxAmmo; // Пополняем патроны В КОНЦЕ
             CurrentState = TurretState.Idle;
-            OnStateChanged(CurrentState);
+            OnStateChanged?.Invoke(CurrentState);
             GD.Print("Reloading finished!");
         }
     }

@@ -148,8 +148,7 @@ public sealed partial class Player : LivingEntity, ITurretControllable
         });
 
         Vector3 turretForwardDirection = -turret.GlobalTransform.Basis.Z;
-        var pointInFrontOfTurret = new Node3D { GlobalPosition = turret.GlobalPosition + turretForwardDirection * 10f };
-        _head.TryRotateHeadTowards(pointInFrontOfTurret);
+        _head.TryRotateHeadTowards(turret.GlobalPosition + turretForwardDirection * 10f);
 
         UI.Instance.HideInteractionText();
     }
