@@ -26,6 +26,9 @@ public partial class GameManager : Node3D
     {
         base._Ready();
         KaijuHealthChanged(_kaiju.Health);
+#if DEBUG
+        AudioServer.SetBusVolumeDb(0, -24f);
+#endif
     }
 
     private void OnEntityAdded(LivingEntity sender)

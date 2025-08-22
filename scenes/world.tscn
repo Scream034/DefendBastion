@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://q2747brlyw05"]
+[gd_scene load_steps=18 format=3 uid="uid://q2747brlyw05"]
 
 [ext_resource type="Script" uid="uid://q58hirmnykj5" path="res://scripts/GameManager.cs" id="1_sugp2"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_4mrxx"]
@@ -7,9 +7,8 @@
 [ext_resource type="AudioStream" uid="uid://cgvasqpy4mow3" path="res://sounds/defeat.wav" id="3_qfnet"]
 [ext_resource type="PackedScene" uid="uid://dr7p7k4s6c5a4" path="res://scenes/Objects/House.tscn" id="6_7r4gi"]
 [ext_resource type="PackedScene" uid="uid://c0aomjglyx2a7" path="res://scenes/Entities/Kaiju.tscn" id="8_4mrxx"]
+[ext_resource type="PackedScene" uid="uid://c48vh6kflnrnw" path="res://scenes/Entities/Player.tscn" id="9_7r4gi"]
 [ext_resource type="PackedScene" uid="uid://daxwujwpv62hb" path="res://scenes/Turrets/RailGunTurret.tscn" id="10_e3hyu"]
-[ext_resource type="Script" uid="uid://dkijj7ch7me7t" path="res://scripts/Player/Player.cs" id="10_w7kh3"]
-[ext_resource type="Script" uid="uid://ceko2b8r6v2y1" path="res://scripts/Player/PlayerHead.cs" id="11_e3hyu"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_w7kh3"]
 playback_mode = 2
@@ -54,8 +53,6 @@ size = Vector3(300, 0, 300)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0wfyh"]
 size = Vector3(74.9939, 18.059052, 36.882263)
-
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_w7kh3"]
 
 [node name="World" type="Node3D" node_paths=PackedStringArray("_audioAmbient", "_audioVictory", "_audioDefeat")]
 script = ExtResource("1_sugp2")
@@ -134,36 +131,10 @@ shape = SubResource("BoxShape3D_0wfyh")
 [node name="Kaiju" parent="Entities" instance=ExtResource("8_4mrxx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.0108128, -121.82284)
 
-[node name="Player" type="CharacterBody3D" parent="Entities" node_paths=PackedStringArray("_interactionRaycast", "_head")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3377945, 0)
-script = ExtResource("10_w7kh3")
-_interactionRaycast = NodePath("PlayerHead/InteractionRayCast3D")
-_head = NodePath("PlayerHead")
-
-[node name="InteractionTimer" type="Timer" parent="Entities/Player"]
-process_priority = -1
-process_physics_priority = -1
-wait_time = 0.1
-autostart = true
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Entities/Player"]
-shape = SubResource("CapsuleShape3D_w7kh3")
-
-[node name="PlayerHead" type="Node3D" parent="Entities/Player" node_paths=PackedStringArray("Camera", "_interactionRay")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5047755, 0)
-script = ExtResource("11_e3hyu")
-Camera = NodePath("Camera3D")
-_interactionRay = NodePath("InteractionRayCast3D")
-metadata/_custom_type_script = "uid://ceko2b8r6v2y1"
-
-[node name="InteractionRayCast3D" type="RayCast3D" parent="Entities/Player/PlayerHead"]
-target_position = Vector3(0, 0, -2.3)
-collision_mask = 2
-debug_shape_custom_color = Color(0.61588645, 0.665092, 0.89140016, 1)
-
-[node name="Camera3D" type="Camera3D" parent="Entities/Player/PlayerHead"]
-
 [node name="RailGunTurret" parent="Entities" instance=ExtResource("10_e3hyu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2467382, -2.0731447)
+
+[node name="Player" parent="Entities" instance=ExtResource("9_7r4gi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1447512, 0)
 
 [connection signal="body_entered" from="Entities/TargetZone" to="." method="OnTargetZoneEnter"]

@@ -1,0 +1,35 @@
+[gd_scene load_steps=4 format=3 uid="uid://c48vh6kflnrnw"]
+
+[ext_resource type="Script" uid="uid://dkijj7ch7me7t" path="res://scripts/Player/Player.cs" id="1_k5qh4"]
+[ext_resource type="Script" uid="uid://ceko2b8r6v2y1" path="res://scripts/Player/PlayerHead.cs" id="2_vm2lv"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_w7kh3"]
+
+[node name="Player" type="CharacterBody3D" node_paths=PackedStringArray("_head", "_collisionShape")]
+script = ExtResource("1_k5qh4")
+_head = NodePath("Head")
+_collisionShape = NodePath("CollisionShape3D")
+
+[node name="InteractionTimer" type="Timer" parent="."]
+process_priority = -1
+process_physics_priority = -1
+wait_time = 0.1
+autostart = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_w7kh3")
+
+[node name="Head" type="Node3D" parent="." node_paths=PackedStringArray("Camera", "_interactionRay")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5047755, 0)
+script = ExtResource("2_vm2lv")
+Camera = NodePath("Camera3D")
+_interactionRay = NodePath("InteractionRayCast3D")
+metadata/_custom_type_script = "uid://ceko2b8r6v2y1"
+
+[node name="InteractionRayCast3D" type="RayCast3D" parent="Head"]
+target_position = Vector3(0, 0, -2.3)
+collision_mask = 2
+debug_shape_custom_color = Color(0.61588645, 0.665092, 0.89140016, 1)
+
+[node name="Camera3D" type="Camera3D" parent="Head"]
+current = true

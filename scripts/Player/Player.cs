@@ -1,14 +1,24 @@
 using Godot;
 using Game.Entity;
 using Game.Interfaces;
-using System;
+using Game.Turrets;
 
 namespace Game.Player;
 
-public sealed partial class Player : LivingEntity
+public sealed partial class Player : LivingEntity, ITurretControllable
 {
     [Signal]
     public delegate void OnInteractableDetectedEventHandler(Node3D interactable);
+
+    public enum PlayerState
+    {
+        Normal,
+        InTurret
+    }
+
+    [ExportGroup("Components")]
+    [Export] private PlayerHead _head;
+    [Export] private CollisionShape3D _collisionShape; // Ссылка на CollisionShape3D
 
     [ExportGroup("Movement")]
     [Export] public float Speed = 5.0f;
@@ -16,38 +26,39 @@ public sealed partial class Player : LivingEntity
     [Export(PropertyHint.Range, "0.0, 1.0, 0.05")] public float AirControl = 0.1f;
     [Export(PropertyHint.Range, "0, 20, 1")] public float Acceleration = 10f;
     [Export(PropertyHint.Range, "0, 20, 1")] public float Deceleration = 10f;
+    [Export(PropertyHint.Range, "0, 20, 1")] public float BodyRotationSpeed = 5f;
 
-    [Export] private PlayerHead _head;
-
-    /// <summary>
-    /// Заморозить игрока полностью (движение, прыжок, взаимодействие).
-    /// </summary>
-    public bool Freezed { get; private set; }
-
-    private Vector2 _inputDir = Vector2.Zero;
-    private bool _jumpPressed = false;
+    public PlayerState CurrentState { get; private set; } = PlayerState.Normal;
     private IInteractable _lastInteractable;
+    private Vector3 _inputDir;
+    private bool _jumpPressed;
+
+    private Node _originalHeadParent;
+    private BaseTurret _currentTurret;
 
     public Player() : base(IDs.Player) { }
 
-#if DEBUG
     public override void _Ready()
     {
         base._Ready();
-        if (_head == null)
-        {
-            GD.PushError("Для игрока не был назначен PlayerHead.");
-        }
-        if (Constants.DefaultGravity <= 0)
-        {
-            GD.PushWarning($"Неверное использование гравитации: {Constants.DefaultGravity}");
-        }
-    }
+        _originalHeadParent = _head.GetParent(); // Сохраняем "родного" родителя головы
+
+#if DEBUG
+        if (_head == null) GD.PushError("Для игрока не был назначен PlayerHead.");
+        if (_collisionShape == null) GD.PushError("Для игрока не был назначен CollisionShape3D.");
+        if (Constants.DefaultGravity <= 0) GD.PushWarning($"Неверное использование гравитации: {Constants.DefaultGravity}");
 #endif
+    }
 
     public override void _Input(InputEvent @event)
     {
-        // Проверяем нажатие прыжка.
+        // В турели игрок не может двигаться
+        if (CurrentState == PlayerState.InTurret) return;
+
+        // Обработка ввода для обычного состояния
+        var direction = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
+        _inputDir = new Vector3(direction.X, 0, direction.Y).Normalized();
+
         if (@event.IsActionPressed("jump"))
         {
             _jumpPressed = true;
@@ -56,21 +67,23 @@ public sealed partial class Player : LivingEntity
         {
             _head.CurrentInteractable.Interact(this);
         }
-        else
-        {
-            // Обновляем направление движения, если нет ни одной нажатой клавиши
-            _inputDir = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
-            return;
-        }
-
-        _inputDir = Vector2.Zero;
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        var fDelta = (float)delta;
-        HandleMovement(fDelta);
+        // В турели физика игрока полностью отключается
+        if (CurrentState == PlayerState.InTurret)
+        {
+            Velocity = Vector3.Zero;
+            return;
+        }
 
+        ProcessNormal((float)delta);
+    }
+
+    private void ProcessNormal(float delta)
+    {
+        HandleMovement(delta);
         HandleInteractionUI();
     }
 
@@ -79,29 +92,21 @@ public sealed partial class Player : LivingEntity
         var isOnFloor = IsOnFloor();
         Vector3 velocity = Velocity;
 
-        // Гравитация
         if (!isOnFloor)
             velocity.Y -= Constants.DefaultGravity * delta;
 
-        // Прыжок
         if (_jumpPressed && isOnFloor)
         {
             velocity.Y = JumpVelocity;
-            _jumpPressed = false; // Сбрасываем флаг прыжка
         }
-        _jumpPressed = false; // Убедимся, что флаг сбрасывается, даже если не на земле
+        _jumpPressed = false;
 
-        // Горизонтальное движение
-        Vector3 direction = (Transform.Basis * new Vector3(_inputDir.X, 0, _inputDir.Y)).Normalized();
+        Vector3 direction = (_head.Transform.Basis * _inputDir).Normalized();
         Vector3 targetVelocity = direction * Speed;
 
-        // Определяем текущий контроль (на земле или в воздухе)
         float currentAirControl = isOnFloor ? 1.0f : AirControl;
-
-        // Выбираем ускорение или замедление
         float lerpSpeed = direction.IsZeroApprox() ? Deceleration : Acceleration;
 
-        // Применяем интерполяцию для плавности
         velocity.X = Mathf.Lerp(velocity.X, targetVelocity.X, lerpSpeed * currentAirControl * delta);
         velocity.Z = Mathf.Lerp(velocity.Z, targetVelocity.Z, lerpSpeed * currentAirControl * delta);
 
@@ -112,50 +117,61 @@ public sealed partial class Player : LivingEntity
     private void HandleInteractionUI()
     {
         var currentInteractable = _head.CurrentInteractable;
-
-        // Если текущий объект для взаимодействия изменился
         if (currentInteractable != _lastInteractable)
         {
             if (currentInteractable != null)
             {
-                // Показываем новый текст
                 UI.Instance.SetInteractionText(currentInteractable.GetInteractionText());
             }
             else
             {
-                // Прячем текст
                 UI.Instance.HideInteractionText();
             }
         }
-
         _lastInteractable = currentInteractable;
     }
+
+    public void EnterTurret(BaseTurret turret)
+    {
+        if (CurrentState != PlayerState.Normal || turret is not PlayerControllableTurret controllableTurret) return;
+
+        CurrentState = PlayerState.InTurret;
+        _currentTurret = turret;
+
+        _collisionShape.Disabled = true;
+
+        _head.SetTempRotationLimits(new()
+        {
+            MinPitch = controllableTurret.MinPitch,
+            MaxPitch = controllableTurret.MaxPitch,
+            MaxYaw = controllableTurret.MaxYaw
+        });
+
+        Vector3 turretForwardDirection = -turret.GlobalTransform.Basis.Z;
+        var pointInFrontOfTurret = new Node3D { GlobalPosition = turret.GlobalPosition + turretForwardDirection * 10f };
+        _head.TryRotateHeadTowards(pointInFrontOfTurret);
+
+        UI.Instance.HideInteractionText();
+    }
+
+    public void ExitTurret()
+    {
+        if (CurrentState != PlayerState.InTurret) return;
+
+        GlobalTransform = _currentTurret.GlobalTransform.Translated(Vector3.Right * 2);
+
+        _collisionShape.Disabled = false;
+
+        _head.RestoreRotationLimits();
+
+        _currentTurret = null;
+        CurrentState = PlayerState.Normal;
+    }
+
+    public bool IsInTurret() => CurrentState == PlayerState.InTurret;
 
     public PlayerHead GetPlayerHead()
     {
         return _head;
-    }
-
-    public void SetFreezed(bool freezed)
-    {
-        Freezed = freezed;
-        if (freezed)
-        {
-            Velocity = Vector3.Zero;
-            _inputDir = Vector2.Zero;
-            _jumpPressed = false;
-
-            _lastInteractable = null;
-            UI.Instance.HideInteractionText();
-
-            SetProcessInput(false);
-            SetPhysicsProcess(false);
-        }
-        else
-        {
-            _lastInteractable = null;
-            SetProcessInput(true);
-            SetPhysicsProcess(true);
-        }
     }
 }

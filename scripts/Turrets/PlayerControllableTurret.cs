@@ -1,142 +1,74 @@
+using Game.Entity;
+using Game.Interfaces;
 using Godot;
 
 namespace Game.Turrets;
 
 /// <summary>
-/// Класс турели, управляемой игроком.
+/// Реализация турели, управляемой игроком.
+/// Отвечает за считывание ввода игрока, плавное наведение орудия
+/// и вызов методов стрельбы/перезарядки базового класса.
 /// </summary>
-public partial class PlayerControllableTurret : ShootingTurret
+public partial class PlayerControllableTurret : ControllableTurret
 {
-    [ExportGroup("Player Control")]
-    [Export]
-    private Node3D _turretYaw; // Узел, отвечающий за поворот по горизонтали
-    [Export]
-    private Node3D _turretPitch; // Узел, отвечающий за наклон по вертикали
-    [Export]
-    private Camera3D _turretCamera;
-    [Export(PropertyHint.Range, "0.01,1.0,0.01")]
-    private float _mouseSensitivity = 0.1f;
-    [Export]
-    private float _minPitch = -60.0f;
-    [Export]
-    private float _maxPitch = 30.0f;
+    [ExportGroup("Player Control Setup")]
+    /// <summary>
+    /// Точка, где будет находиться игрок во время управления.
+    /// </summary>
+    [Export] private Marker3D _playerSeat;
 
-    private Player.Player _currentPlayer;
-    public bool IsPlayerControlling { get; private set; } = false;
+    public Player.Player PlayerController => CurrentController as Player.Player;
 
-    public override void _Ready()
+    public override void _PhysicsProcess(double delta)
     {
-        base._Ready();
-        if (_turretCamera != null)
+        if (PlayerController == null || _turretYaw == null || _turretPitch == null)
         {
-            _turretCamera.Current = false;
-        }
-        // Отключаем обработку ввода по умолчанию
-        SetProcessInput(false);
-    }
-
-    public override void Interact(Player.Player character)
-    {
-        if (IsPlayerControlling)
-        {
-            ExitTurret();
-        }
-        else
-        {
-            EnterTurret(character);
-        }
-    }
-
-    public override string GetInteractionText()
-    {
-        return IsPlayerControlling ? "Нажмите E, чтобы покинуть турель" : "Нажмите E, чтобы использовать турель";
-    }
-
-    public void EnterTurret(Player.Player player)
-    {
-        if (IsPlayerControlling || player == null) return;
-
-        _currentPlayer = player;
-        IsPlayerControlling = true;
-
-        // Отключаем управление и видимость самого игрока
-        _currentPlayer.SetFreezed(true);
-        _currentPlayer.Visible = false;
-
-        if (_turretCamera != null)
-        {
-            _turretCamera.Current = true;
+            return;
         }
 
-        Input.MouseMode = Input.MouseModeEnum.Captured;
-        SetProcessInput(true);
-    }
+        var playerHead = PlayerController.GetPlayerHead();
 
-    public void ExitTurret()
-    {
-        if (!IsPlayerControlling) return;
+        // --- Логика наведения ---
+        // 1. Получаем глобальную ориентацию камеры игрока.
+        Basis targetGlobalBasis = playerHead.Camera.GlobalTransform.Basis;
 
-        if (_turretCamera != null)
-        {
-            _turretCamera.Current = false;
-        }
+        // 2. Преобразуем ее в локальную систему координат турели (относительно поворота корпуса турели).
+        Basis localBasis = GlobalTransform.Basis.Inverse() * targetGlobalBasis;
 
-        // Возвращаем управление и видимость игроку
-        _currentPlayer.SetFreezed(false);
-        _currentPlayer.Visible = true;
-        _currentPlayer = null;
-        IsPlayerControlling = false;
+        // 3. Извлекаем из локальной ориентации углы Эйлера (рыскание и тангаж).
+        Vector3 targetEuler = localBasis.GetEuler();
 
-        Input.MouseMode = Input.MouseModeEnum.Captured;
-        SetProcessInput(false);
+        // 4. Ограничиваем углы в соответствии с лимитами турели.
+        float targetYaw = Mathf.Clamp(targetEuler.Y, -_maxYawRad, _maxYawRad);
+        float targetPitch = Mathf.Clamp(targetEuler.X, _minPitchRad, _maxPitchRad);
+
+        // 5. Плавно интерполируем текущие углы поворота частей турели к целевым.
+        float fDelta = (float)delta;
+        _turretYaw.Rotation = _turretYaw.Rotation with { Y = Mathf.LerpAngle(_turretYaw.Rotation.Y, targetYaw, _aimSpeed * fDelta) };
+        _turretPitch.Rotation = _turretPitch.Rotation with { X = Mathf.LerpAngle(_turretPitch.Rotation.X, targetPitch, _aimSpeed * fDelta) };
+
+        // 6. Принудительно удерживаем позицию игрока в "кресле", чтобы избежать смещений из-за физики.
+        PlayerController.GlobalPosition = _playerSeat.GlobalPosition;
     }
 
     public override void _Input(InputEvent @event)
     {
-        if (!IsPlayerControlling) return;
+        if (PlayerController == null) return;
 
-        // Прицеливание мышью
-        if (@event is InputEventMouseMotion mouseMotion)
-        {
-            Aim(mouseMotion.Relative);
-        }
-        // Стрельба
-        else if (@event.IsActionPressed("fire")) // Предполагается, что у вас есть InputMap "fire"
+        if (@event.IsActionPressed("fire"))
         {
             Shoot();
         }
-        // Перезарядка
-        else if (@event.IsActionPressed("reload")) // InputMap "reload"
+        else if (@event.IsActionPressed("reload"))
         {
-            ForceReload();
+            StartReload();
         }
-        // Выход из турели
-        else if (@event.IsActionPressed("interact")) // InputMap "interact"
+        else if (@event.IsActionPressed("interact"))
         {
             ExitTurret();
-            // "Съедаем" событие, чтобы не было двойного срабатывания
+            // NOTE: Помечаем событие как обработанное, чтобы игрок не начал тут же
+            // взаимодействовать с этой же турелью снова.
             GetViewport().SetInputAsHandled();
-        }
-    }
-
-    private void Aim(Vector2 mouseRelative)
-    {
-        _turretYaw?.RotateY(Mathf.DegToRad(-mouseRelative.X * _mouseSensitivity));
-
-        if (_turretPitch != null)
-        {
-            float pitchChange = -mouseRelative.Y * _mouseSensitivity;
-            float newPitch = Mathf.Clamp(_turretPitch.RotationDegrees.X + pitchChange, _minPitch, _maxPitch);
-            _turretPitch.RotationDegrees = new Vector3(newPitch, _turretPitch.RotationDegrees.Y, _turretPitch.RotationDegrees.Z);
-        }
-    }
-
-    public void ForceReload()
-    {
-        if (CurrentAmmo < MaxAmmo)
-        {
-            GD.Print("Reloading...");
-            Reload(MaxAmmo - CurrentAmmo); // Полная перезарядка
         }
     }
 }
