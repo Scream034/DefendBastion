@@ -27,7 +27,7 @@ public sealed class CameraController
             _rotation.Y -= mouseDelta.X * MouseSensitivityMultiplier * sensitivity * rotationSpeed;
 
             // Вертикальное вращение (вокруг оси X)
-            _rotation.X -= mouseDelta.Y * MouseSensitivityMultiplier  * sensitivity * rotationSpeed;
+            _rotation.X -= mouseDelta.Y * MouseSensitivityMultiplier * sensitivity * rotationSpeed;
 
             // Ограничение вертикального вращения
             Limits.Handle(ref _rotation);
@@ -38,6 +38,13 @@ public sealed class CameraController
     public void SetRotation(Vector3 newRotation)
     {
         _rotation = newRotation;
+        Limits.Handle(ref _rotation);
+        _node.Rotation = _rotation;
+    }
+
+    public void AddRotation(Vector3 rotation)
+    {
+        _rotation += rotation;
         Limits.Handle(ref _rotation);
         _node.Rotation = _rotation;
     }

@@ -30,9 +30,7 @@ public partial class GameManager : Node3D
 
         Constants.UpdateWorldConstants(GetWorld3D());
         KaijuHealthChanged(_kaiju.Health);
-#if DEBUG
         AudioServer.SetBusVolumeDb(0, -16f);
-#endif
     }
 
     private void OnEntityAdded(LivingEntity sender)

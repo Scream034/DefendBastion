@@ -65,6 +65,11 @@ public partial class PlayerControllableTurret : ControllableTurret
         }
     }
 
+    public void ShakeCamera()
+    {
+        PlayerController.GetPlayerHead().ShakeAsync((float)GD.RandRange(0.07f, 0.12f), (float)GD.RandRange(0.03f, 0.05f));
+    }
+
     public override BaseProjectile CreateProjectile(Transform3D spawnPoint)
     {
         var projectile = base.CreateProjectile(spawnPoint);

@@ -5,7 +5,7 @@ namespace Game.Projectiles;
 
 public static class ProjectilePool
 {
-    private static readonly Dictionary<PackedScene, Queue<BaseProjectile>> _pools = new();
+    private static readonly Dictionary<PackedScene, Queue<BaseProjectile>> _pools = [];
     private static Node _poolContainer;
 
     public static BaseProjectile Get(PackedScene projectileScene)

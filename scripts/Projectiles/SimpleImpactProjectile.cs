@@ -51,8 +51,8 @@ public partial class SimpleImpactProjectile : BaseProjectile
             // Эта проверка может быть полезной, если у вас есть базовый класс для VFX
             GD.PushError($"Установленный VFX для снаряда '{Name}' не является наследником BaseVfx3D!");
         }
-    }
 #endif
+    }
 
     /// <summary>
     /// Логика, выполняемая при попадании снаряда в объект.
