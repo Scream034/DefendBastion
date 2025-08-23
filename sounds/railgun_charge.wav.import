@@ -3,12 +3,12 @@
 importer="wav"
 type="AudioStreamWAV"
 uid="uid://15kjtu6y7ewe"
-path="res://.godot/imported/railgun_reload.wav-1d6b8d04276bedab1760833f38878525.sample"
+path="res://.godot/imported/railgun_charge.wav-feccd896685198443ae9f876adc94e37.sample"
 
 [deps]
 
-source_file="res://sounds/railgun_reload.wav"
-dest_files=["res://.godot/imported/railgun_reload.wav-1d6b8d04276bedab1760833f38878525.sample"]
+source_file="res://sounds/railgun_charge.wav"
+dest_files=["res://.godot/imported/railgun_charge.wav-feccd896685198443ae9f876adc94e37.sample"]
 
 [params]
 

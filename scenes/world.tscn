@@ -115,7 +115,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.01081, -121.823)
 
 [node name="RailGunTurret" parent="Entities" instance=ExtResource("10_e3hyu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.24674, -2.07314)
-Mode = 0
 
 [node name="Player" parent="Entities" instance=ExtResource("9_7r4gi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.775369, 1.48467, 0.474688)

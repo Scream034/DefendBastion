@@ -1,6 +1,7 @@
 using Godot;
 using Game.Interfaces;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Game.Projectiles;
 
@@ -28,7 +29,7 @@ public partial class BaseProjectile : Area3D
     /// </summary>
     public PackedScene SourceScene { get; set; }
 
-    protected SceneTreeTimer lifetimeTimer;
+    protected Timer lifetimeTimer;
     protected PhysicsRayQueryParameters3D rayQueryParams;
 
     protected CollisionShape3D collisionShape;
@@ -62,14 +63,23 @@ public partial class BaseProjectile : Area3D
             IgnoredEntities.Add(initiator);
         }
 
-        // --- ИСПРАВЛЕНИЕ ОШИБКИ №3 ---
-        // Создаем параметры запроса здесь, так как GlobalPosition теперь корректен.
-        rayQueryParams = PhysicsRayQueryParameters3D.Create(
-            GlobalPosition,
-            GlobalPosition,
-            CollisionMask,
-            [GetRid()]
-        );
+        if (rayQueryParams == null)
+        {
+            // Создаем новый PhysicsRayQueryParameters3D
+            rayQueryParams = PhysicsRayQueryParameters3D.Create(
+                GlobalPosition,
+                GlobalPosition,
+                CollisionMask,
+                [GetRid()]
+            );
+        }
+        else
+        {
+            // Переиспользуем PhysicsRayQueryParameters3D для экономии ресурсов
+            rayQueryParams.From = GlobalPosition;
+            rayQueryParams.To = GlobalPosition;
+        }
+        lifetimeTimer.Start(Lifetime);
     }
 
     public override void _PhysicsProcess(double delta)
@@ -89,12 +99,15 @@ public partial class BaseProjectile : Area3D
         // Обрабатываем результат
         if (result.Count > 0)
         {
+#if DEBUG
+            GD.Print($"[{Name}] Столкновения: {result.Count}. {GetRid()}!");
+#endif
             // СТОЛКНОВЕНИЕ ОБНАРУЖЕНО!
             var collider = result["collider"].As<Node>();
             if (!IgnoredEntities.Contains(collider))
             {
                 // Вызываем нашу логику обработки попадания, передавая всю информацию
-                OnHit(result);
+                OnHit(result).Wait();
                 return;
             }
         }
@@ -105,18 +118,29 @@ public partial class BaseProjectile : Area3D
 
     /// <summary>
     /// Основная логика, выполняемая при успешном попадании.
-    /// Этот метод вызывается из _PhysicsProcess, когда предсказывающий RayCast обнаруживает столкновение.
+    /// Этот метод отвечает за базовые действия: перемещение в точку хита и нанесение урона.
+    /// Наследники ДОЛЖНЫ вызвать этот метод и ПОСЛЕ него решить, когда возвращаться в пул.
     /// </summary>
-    /// <param name="body">Тело, с которым произошло столкновение.</param>
-    protected virtual void OnHit(Godot.Collections.Dictionary hitInfo)
+    protected virtual async Task HandleHitAndDamage(Godot.Collections.Dictionary hitInfo)
     {
         var collider = hitInfo["collider"].As<Node>();
         // Перемещаем снаряд точно в точку попадания
         GlobalPosition = hitInfo["position"].AsVector3();
         if (collider is IDamageable damageable)
         {
-            damageable.Damage(Damage);
+            await damageable.DamageAsync(Damage);
         }
+        // НЕ ВОЗВРАЩАЕМ В ПУЛ ЗДЕСЬ!
+    }
+
+    /// <summary>
+    /// Этот метод просто обертка.
+    /// Классы-наследники должны его переопределять (override).
+    /// </summary>
+    protected virtual async Task OnHit(Godot.Collections.Dictionary hitInfo)
+    {
+        await HandleHitAndDamage(hitInfo);
+        // Простой снаряд без звуков и эффектов вернется в пул сразу.
         ProjectilePool.Return(this);
     }
 
@@ -133,8 +157,15 @@ public partial class BaseProjectile : Area3D
 
         IgnoredEntities.Clear();
 
-        lifetimeTimer = Constants.Tree.CreateTimer(Lifetime);
-        lifetimeTimer.Timeout += OnLifetimeTimeout;
+        if (lifetimeTimer == null)
+        {
+            lifetimeTimer = new()
+            {
+                OneShot = true
+            };
+            lifetimeTimer.Timeout += OnLifetimeTimeout;
+            AddChild(lifetimeTimer);
+        }
     }
 
     /// <summary>
@@ -147,9 +178,7 @@ public partial class BaseProjectile : Area3D
         SetPhysicsProcess(false);
         if (collisionShape != null) collisionShape.Disabled = true;
 
-        // Принудительно останавливаем таймер, чтобы он не сработал, пока объект в пуле
-        lifetimeTimer?.EmitSignal(SceneTreeTimer.SignalName.Timeout);
-        lifetimeTimer = null;
+        lifetimeTimer.Stop();
     }
 
     /// <summary>
@@ -157,7 +186,9 @@ public partial class BaseProjectile : Area3D
     /// </summary>
     private void OnLifetimeTimeout()
     {
-        lifetimeTimer = null;
+#if DEBUG
+        GD.Print($"[{Name}] Время жизни истекло! {GetRid()}!");
+#endif
         ProjectilePool.Return(this);
     }
 }

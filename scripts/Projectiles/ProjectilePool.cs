@@ -53,8 +53,6 @@ public static class ProjectilePool
             _pools[projectile.SourceScene] = queue;
         }
 
-        // --- ИСПРАВЛЕНИЕ ОШИБКИ №2 ---
-        // Сначала отсоединяем от текущего родителя (например, от 'root')
         projectile.Reparent(_poolContainer);
 
         projectile.Disable();

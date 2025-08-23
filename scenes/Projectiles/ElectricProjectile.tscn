@@ -22,11 +22,10 @@ render_priority = 1
 shading_mode = 2
 disable_ambient_light = true
 disable_fog = true
-disable_specular_occlusion = true
 vertex_color_use_as_albedo = true
-albedo_color = Color(0, 0.49411762, 1, 1)
+albedo_color = Color(0, 0.494118, 1, 1)
 emission_enabled = true
-emission = Color(0, 0.4117647, 1, 1)
+emission = Color(0, 0.411765, 1, 1)
 emission_energy_multiplier = 1000.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_40e65"]
@@ -36,6 +35,7 @@ size = Vector3(0.01, 0.01, 2)
 [node name="ElectricProjectile" type="Area3D" node_paths=PackedStringArray("_audioPlayer")]
 process_priority = 2
 process_physics_priority = 2
+physics_interpolation_mode = 1
 collision_priority = 2.0
 monitorable = false
 priority = 2
@@ -43,7 +43,6 @@ script = ExtResource("1_xn4kp")
 _impactVfx = ExtResource("2_40e65")
 _impactSfx = SubResource("AudioStreamRandomizer_40e65")
 _audioPlayer = NodePath("AudioStreamPlayer3D")
-Speed = 300.0
 
 [node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
 max_polyphony = 8
@@ -52,4 +51,7 @@ max_polyphony = 8
 shape = SubResource("BoxShape3D_40e65")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+process_priority = 1
+process_physics_priority = 1
+physics_interpolation_mode = 1
 mesh = SubResource("BoxMesh_40e65")

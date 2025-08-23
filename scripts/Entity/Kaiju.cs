@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Godot;
 
 namespace Game.Entity;
@@ -28,9 +29,9 @@ public sealed partial class Kaiju : LinearMoveableEntity
         GD.Print("Kaiju created! Health: " + Health);
     }
 
-    public override bool Damage(float amount)
+    public override async Task<bool> DamageAsync(float amount)
     {
-        if (!base.Damage(amount)) return false;
+        if (!await base.DamageAsync(amount)) return false;
 
         _audio.Play();
 

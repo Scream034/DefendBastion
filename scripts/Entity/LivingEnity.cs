@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Game.Interfaces;
 using Godot;
 
@@ -58,34 +59,37 @@ public abstract partial class LivingEntity : CharacterBody3D, IDamageable
         }
     }
 
-    public virtual bool Damage(float amount)
+    public virtual async Task<bool> DamageAsync(float amount)
     {
         if (Health <= 0) return false;
 
-        SetHealth(Health - amount);
+        await SetHealthAsync(Health - amount);
         GD.Print($"Entity {ID} damaged {amount} -> {Health}!");
 
         return true;
     }
 
-    public virtual bool Heal(float amount)
+    public virtual async Task<bool> HealAsync(float amount)
     {
         if (Health >= MaxHealth) return false;
-        SetHealth(Health + amount);
+        await SetHealthAsync(Health + amount);
         GD.Print($"Entity {ID} healed {amount} -> {Health}!");
 
         return true;
     }
 
-    public virtual bool Destroy()
+    public virtual Task<bool> DestroyAsync()
     {
-        if (IsQueuedForDeletion()) return true;
+        if (IsQueuedForDeletion()) return Task.FromResult(false);
+
+        SetProcess(false);
+        SetPhysicsProcess(false);
 
         GD.Print($"Entity {ID} died!");
         QueueFree();
         OnDestroyed?.Invoke();
 
-        return true;
+        return Task.FromResult(true);
     }
 
     protected void SetMaxHealth(float health)
@@ -95,12 +99,13 @@ public abstract partial class LivingEntity : CharacterBody3D, IDamageable
         OnHealthChanged?.Invoke(Health);
     }
 
-    protected void SetHealth(float health)
+    protected async Task SetHealthAsync(float health)
     {
         Health = health;
         if (Health <= 0)
         {
-            Destroy();
+            Health = 0;
+            await DestroyAsync();
         }
         else
         {

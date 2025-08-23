@@ -1,5 +1,6 @@
 using Godot;
 using Game.VFX;
+using System.Threading.Tasks;
 
 namespace Game.Projectiles;
 
@@ -26,7 +27,13 @@ public partial class SimpleImpactProjectile : BaseProjectile
         if (HasSFX)
         {
             _audioPlayer.Stream = _impactSfx;
-            _audioPlayer.Finished += () => ProjectilePool.Return(this);
+            _audioPlayer.Finished += () =>
+            {
+#if DEBUG
+                GD.Print($"[{this}] Будет возвращен в пул из-за окончания звука!");
+#endif
+                ProjectilePool.Return(this);
+            };
         }
 
 #if DEBUG
@@ -50,32 +57,28 @@ public partial class SimpleImpactProjectile : BaseProjectile
     /// <summary>
     /// Логика, выполняемая при попадании снаряда в объект.
     /// </summary>
-    /// <param name="body">Объект, в который попал снаряд.</param>
-    protected override void OnHit(Godot.Collections.Dictionary hitInfo)
+    protected override async Task OnHit(Godot.Collections.Dictionary hitInfo)
     {
-        base.OnHit(hitInfo);
+        // Вызываем базовую логику, которая наносит урон и перемещает снаряд.
+        //    Этот метод больше НЕ возвращает снаряд в пул.
+        await HandleHitAndDamage(hitInfo);
 
         var hitPosition = hitInfo["position"].AsVector3();
         var hitNormal = hitInfo["normal"].AsVector3();
 
-        // Создаем VFX с использованием точной позиции и нормали
+        // Создаем VFX, как и раньше.
         if (_impactVfx != null)
         {
-            var vfxInstance = _impactVfx.Instantiate<Node3D>(); // Безопаснее инстанциировать как Node3D
+            var vfxInstance = _impactVfx.Instantiate<Node3D>();
             Constants.Root.AddChild(vfxInstance);
             vfxInstance.GlobalPosition = hitPosition;
-
-            // LookAt правильно сориентирует VFX перпендикулярно поверхности
             vfxInstance.LookAt(hitPosition + hitNormal, Vector3.Up);
 
-            // Если ваш VFX - это частицы, которые нужно запустить
             if (vfxInstance is GpuParticles3D particles)
             {
                 particles.Emitting = true;
-                // Можно добавить таймер на удаление, если у частиц нет самоуничтожения
                 Constants.Tree.CreateTimer(particles.Lifetime).Timeout += vfxInstance.QueueFree;
             }
-            // Если у вас кастомный класс VFX с методами Play/OnFinished
             else if (vfxInstance is BaseVfx3D baseVfx)
             {
                 baseVfx.OnFinished += baseVfx.QueueFree;
@@ -83,21 +86,24 @@ public partial class SimpleImpactProjectile : BaseProjectile
             }
         }
 
-        // Прячем снаряд, чтобы он не летел дальше, пока проигрывается звук
+        // Прячем снаряд и отключаем его физику, чтобы он не летел дальше,
+        //    пока проигрывается звук.
         HideAndDisable();
 
-        // Мы больше не отсоединяем плеер и не заставляем его самоуничтожаться.
-        // Он просто проигрывает звук и будет переиспользован вместе со снарядом.
+        // Реализуем логику возврата в пул.
         if (HasSFX)
         {
+            // Если есть звук, проигрываем его. Снаряд вернется в пул
+            // по сигналу Finished, который мы подцепили в _Ready().
             _audioPlayer.Play();
         }
         else
         {
-            // Если звука нет, удаляем снаряд сразу
+            // Если звука нет, возвращаем снаряд в пул немедленно.
             ProjectilePool.Return(this);
         }
     }
+
 
     /// <summary>
     /// Вспомогательный метод, чтобы спрятать и отключить физику снаряда,
@@ -113,7 +119,6 @@ public partial class SimpleImpactProjectile : BaseProjectile
         collisionShape.Disabled = true;
 
         // Останавливаем таймер жизни, так как снаряд уже "умер"
-        lifetimeTimer?.EmitSignal(SceneTreeTimer.SignalName.Timeout);
-        lifetimeTimer = null;
+        lifetimeTimer.Stop();
     }
 }

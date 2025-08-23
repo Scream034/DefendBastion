@@ -1,22 +1,236 @@
-[gd_scene load_steps=8 format=3 uid="uid://daxwujwpv62hb"]
+[gd_scene load_steps=22 format=3 uid="uid://daxwujwpv62hb"]
 
 [ext_resource type="Script" uid="uid://cgntm3mej3m3f" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_ky60h"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="2_fyiut"]
 [ext_resource type="AudioStream" uid="uid://biph0x4s4cufb" path="res://sounds/railgun_fire.wav" id="3_rvycd"]
-[ext_resource type="AudioStream" uid="uid://15kjtu6y7ewe" path="res://sounds/railgun_reload.wav" id="4_rvycd"]
-[ext_resource type="PackedScene" uid="uid://c7iegl1hikk8l" path="res://scenes/Objects/CSG/RailGun.tscn" id="5_rvycd"]
+[ext_resource type="AudioStream" uid="uid://15kjtu6y7ewe" path="res://sounds/railgun_charge.wav" id="4_ouvn5"]
+[ext_resource type="Material" uid="uid://dm323eaj5fjl6" path="res://materials/turret/BarrelLine.tres" id="6_il5lp"]
 
-[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_ouvn5"]
-playback_mode = 2
-random_pitch = 1.01
-random_volume_offset_db = 1.0
-streams_count = 1
-stream_0/stream = ExtResource("3_rvycd")
+[sub_resource type="Animation" id="Animation_fyiut"]
+resource_name = "Fire"
+length = 4.7
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("BAudioStreamPlayer3D:stream")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("4_ouvn5")]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("BAudioStreamPlayer3D:playing")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("CollisionShape3D/Model/CSGCylinder3D/ChargeParticles:emitting")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 2.46667),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("CollisionShape3D/Model/CSGCylinder3D/ChargeParticles:amount_ratio")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 1.23333, 1.9, 2.43333),
+"transitions": PackedFloat32Array(1, 1, 0.174944, 1),
+"update": 0,
+"values": [0.01, 0.4, 1.0, 0.0]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("AAudioStreamPlayer3D:stream")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(1.86667),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [ExtResource("3_rvycd")]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("AAudioStreamPlayer3D:playing")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(1.86667),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("CollisionShape3D/Model/CSGCylinder3D/ChargeParticles:lifetime")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 1.8),
+"transitions": PackedFloat32Array(3, 1),
+"update": 0,
+"values": [0.7, 1.0]
+}
+tracks/7/type = "method"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath(".")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(1.86667, 4.7),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"PerformShotLogic"
+}, {
+"args": [],
+"method": &"IdleState"
+}]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("CollisionShape3D/Model/BarrelCLT:material:emission_energy_multiplier")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 1.86656, 4.675),
+"transitions": PackedFloat32Array(1.4, 0.08, 1),
+"update": 0,
+"values": [0.8, 64.0, 0.8]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("CollisionShape3D/Model/BarrelCLT:material:emission")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 1.86656, 4.675),
+"transitions": PackedFloat32Array(0.5, 0.08, 0.5),
+"update": 0,
+"values": [Color(0.423529, 0.439216, 0.482353, 1), Color(0, 0.835294, 0.956863, 1), Color(0.423529, 0.439216, 0.482353, 1)]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("CollisionShape3D/Model/CSGCylinder3D:position")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(1.63333, 1.86803, 2.3),
+"transitions": PackedFloat32Array(12, 1, 1),
+"update": 0,
+"values": [Vector3(0, -0.024, -2.018), Vector3(0, -0.024, -1.74684), Vector3(0, -0.024, -2.018)]
+}
+
+[sub_resource type="Animation" id="Animation_rvycd"]
+resource_name = "Reload"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("CollisionShape3D/Model/Barrel:material:albedo_color")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.491645, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Color(0.422632, 0.42273, 0.505834, 1), Color(0.175283, 0.175169, 0.220799, 1), Color(0.422632, 0.42273, 0.505834, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_rvycd"]
+_data = {
+&"Fire": SubResource("Animation_fyiut"),
+&"Reload": SubResource("Animation_rvycd")
+}
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_qrqde"]
-size = Vector3(0.6154785, 0.19580078, 2.3341675)
+size = Vector3(0.615479, 0.195801, 2.33417)
 
-[node name="RailGunTurret" type="StaticBody3D" node_paths=PackedStringArray("_turretYaw", "_turretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "_reloadTimer", "ShootAudioPlayer", "UtilityAudioPlayer")]
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_il5lp"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.422008, 0.438785, 0.483405, 1)
+ao_on_uv2 = true
+refraction_enabled = true
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_hkthc"]
+albedo_color = Color(0.629148, 0.629916, 0.710665, 1)
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_owejd"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.378638, 0.375043, 0.431819, 1)
+
+[sub_resource type="Curve" id="Curve_rvycd"]
+_data = [Vector2(0.0111732, 0.955056), 0.0, -4.42472, 0, 0, Vector2(0.407821, 1), 0.0, 0.0, 0, 0, Vector2(0.597765, 0.393258), -6.34312, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="CurveTexture" id="CurveTexture_il5lp"]
+curve = SubResource("Curve_rvycd")
+
+[sub_resource type="Gradient" id="Gradient_ouvn5"]
+colors = PackedColorArray(0, 1, 1, 1, 0, 0.666667, 1, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_rvycd"]
+gradient = SubResource("Gradient_ouvn5")
+
+[sub_resource type="Curve" id="Curve_ouvn5"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_rvycd"]
+curve = SubResource("Curve_ouvn5")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_ouvn5"]
+lifetime_randomness = 0.354781
+emission_shape = 3
+emission_box_extents = Vector3(-0.035, 0.025, 0.05)
+spread = 180.0
+initial_velocity_min = 2.0
+initial_velocity_max = 4.0
+gravity = Vector3(0, 0, 0)
+linear_accel_min = -40.0
+linear_accel_max = -40.0
+scale_curve = SubResource("CurveTexture_rvycd")
+color_ramp = SubResource("GradientTexture1D_rvycd")
+alpha_curve = SubResource("CurveTexture_il5lp")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ouvn5"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+texture_filter = 0
+disable_receive_shadows = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_rvycd"]
+material = SubResource("StandardMaterial3D_ouvn5")
+size = Vector3(0.01, 0.01, 0.01)
+
+[node name="RailGunTurret" type="StaticBody3D" node_paths=PackedStringArray("_turretYaw", "_turretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
 physics_interpolation_mode = 1
 collision_layer = 3
 collision_mask = 3
@@ -28,39 +242,139 @@ MaxPitch = 1.0
 MaxYaw = -1.0
 _controlPoint = NodePath("CollisionShape3D/PlayerSeat")
 _exitPoint = NodePath("CollisionShape3D/ExitPoint")
-Mode = null
 ProjectileScene = ExtResource("2_fyiut")
-MaxAmmo = 1
+MaxAmmo = -1
+FireRate = 20.0
 BarrelEnd = NodePath("CollisionShape3D/BarrelEnd")
-_reloadTimer = NodePath("ReloadTimer")
-ShootSfx = SubResource("AudioStreamRandomizer_ouvn5")
-ReloadSfx = ExtResource("4_rvycd")
-ShootAudioPlayer = NodePath("AudioStreamPlayer3D")
-UtilityAudioPlayer = NodePath("AudioStreamPlayer3D2")
-MaxHealth = 101.0
+AnimationPlayer = NodePath("AnimationPlayer")
 
-[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.7885832)
+[node name="AAudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.23206)
+stream = ExtResource("3_rvycd")
+max_polyphony = 2
 
-[node name="AudioStreamPlayer3D2" type="AudioStreamPlayer3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.7885832)
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_rvycd")
+}
+
+[node name="BAudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.788583)
+stream = ExtResource("4_ouvn5")
+max_polyphony = 2
 
 [node name="ReloadTimer" type="Timer" parent="."]
 wait_time = 2.0
 one_shot = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.032470703, -0.72457886)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0324707, -0.724579)
 shape = SubResource("BoxShape3D_qrqde")
 
 [node name="PlayerSeat" type="Marker3D" parent="CollisionShape3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.20900698, 1.428432)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.209007, 1.42843)
 
 [node name="ExitPoint" type="Marker3D" parent="CollisionShape3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.20900698, 1.8007675)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.209007, 1.80077)
 
 [node name="BarrelEnd" type="Marker3D" parent="CollisionShape3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.009972826, -1.5728047)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.00997283, -1.5728)
 
-[node name="RailGun" parent="CollisionShape3D" instance=ExtResource("5_rvycd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.032470703, 0.72457886)
+[node name="Model" type="CSGCombiner3D" parent="CollisionShape3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0314644, 0.709933)
+
+[node name="BaseM" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.44379e-05, -0.157241, -0.0106535)
+size = Vector3(0.18, 0.056, 0.18)
+material = SubResource("ORMMaterial3D_il5lp")
+
+[node name="BarrelCL" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.44379e-05, 0.0561387, -0.381998)
+size = Vector3(0.0488281, 0.0156722, 1.62256)
+material = SubResource("ORMMaterial3D_hkthc")
+
+[node name="BarrelCL2" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.44379e-05, 0.0598185, 0.422979)
+size = Vector3(0.587891, 0.00831258, 0.0126038)
+material = SubResource("ORMMaterial3D_owejd")
+
+[node name="BarrelCL3" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.28103, 0.0656139, 0.422979)
+size = Vector3(0.0258789, 0.0199034, 0.0126038)
+material = SubResource("ORMMaterial3D_owejd")
+
+[node name="BarrelCL4" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.280901, 0.0656139, 0.422979)
+size = Vector3(0.0258789, 0.0199034, 0.0126038)
+material = SubResource("ORMMaterial3D_owejd")
+
+[node name="BarrelCL5" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28792, 0.0606622, -0.327016)
+size = Vector3(0.0118408, 0.01, 1.48759)
+material = SubResource("ORMMaterial3D_owejd")
+
+[node name="BarrelCL6" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.288, 0.061, -0.327)
+size = Vector3(0.0118408, 0.01, 1.48759)
+material = SubResource("ORMMaterial3D_owejd")
+
+[node name="BarrelCLT" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.44379e-05, 0.0633045, -0.381998)
+size = Vector3(0.00415039, 0.00739706, 1.62256)
+material = ExtResource("6_il5lp")
+
+[node name="BarrelL" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.44379e-05, -0.0235721, -1.51133)
+size = Vector3(0.21875, 0.0461426, 0.63501)
+material = SubResource("ORMMaterial3D_hkthc")
+
+[node name="CSGCylinder3D" type="CSGCylinder3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, -0.024, -2.018)
+radius = 0.0175781
+height = 0.378601
+material = SubResource("ORMMaterial3D_hkthc")
+
+[node name="ChargeParticles" type="GPUParticles3D" parent="CollisionShape3D/Model/CSGCylinder3D"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37135e-08, 0.000869051, -0.204626, -0.00211056)
+cast_shadow = 0
+amount = 512
+amount_ratio = 0.01
+lifetime = 0.7
+preprocess = 0.1
+speed_scale = 1.1
+process_material = SubResource("ParticleProcessMaterial_ouvn5")
+draw_pass_1 = SubResource("BoxMesh_rvycd")
+
+[node name="Barrel" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.44379e-05, -0.0367528, -0.381998)
+size = Vector3(0.587891, 0.185925, 1.62256)
+material = SubResource("ORMMaterial3D_hkthc")
+
+[node name="BarreHandle" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0332001, 0.444216)
+size = Vector3(0.588, 0.0498047, 0.0481255)
+material = SubResource("ORMMaterial3D_hkthc")
+
+[node name="BarreHandleS" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0344818, 0.440543)
+operation = 2
+size = Vector3(0.560547, 0.0628662, 0.0415039)
+material = SubResource("ORMMaterial3D_hkthc")
+
+[node name="BarreHandleS2" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0344818, 0.450431)
+operation = 2
+size = Vector3(0.560547, 0.025, 0.0373535)
+material = SubResource("ORMMaterial3D_hkthc")
+
+[node name="BarrelSTriangle" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, -0.284409, -0.0367526, -1.17447)
+operation = 2
+size = Vector3(0.181366, 0.195313, 0.132568)
+material = SubResource("ORMMaterial3D_hkthc")
+
+[node name="BarrelSTriangle2" type="CSGBox3D" parent="CollisionShape3D/Model"]
+transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, 0.283976, -0.0370975, -1.17465)
+operation = 2
+size = Vector3(0.181366, 0.195313, 0.132568)
+material = SubResource("ORMMaterial3D_hkthc")

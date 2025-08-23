@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace Game.Interfaces;
 
@@ -21,18 +22,18 @@ public interface IDamageable
     /// Наносит урон объекту.
     /// </summary>
     /// <param name="amount">Количество урона.</param>
-    bool Damage(float amount);
+    Task<bool> DamageAsync(float amount);
 
     /// <summary>
     /// Ремонтирует объект.
     /// </summary>
     /// <param name="amount">Количество восстанавливаемой прочности.</param>
-    bool Heal(float amount);
+    Task<bool> HealAsync(float amount);
 
     /// <summary>
     /// Уничтожает объект.
     /// </summary>
-    bool Destroy();
+    Task<bool> DestroyAsync();
 
     /// <summary>
     /// Событие, вызываемое при уничтожении объекта.

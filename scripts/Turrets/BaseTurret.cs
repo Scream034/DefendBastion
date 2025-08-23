@@ -1,6 +1,7 @@
 using Godot;
 using Game.Interfaces;
 using System;
+using System.Threading.Tasks;
 
 namespace Game.Turrets;
 
@@ -45,19 +46,11 @@ public abstract partial class BaseTurret : Node3D, IDamageable, IInteractable
     /// </summary>
     /// <param name="amount">Количество урона.</param>
     /// <returns>true, если урон был нанесен; false, если турель уже уничтожена.</returns>
-    public virtual bool Damage(float amount)
+    public virtual async Task<bool> DamageAsync(float amount)
     {
         if (Health <= 0) return false;
 
-        Health -= amount;
-        OnHealthChanged?.Invoke(Health);
-
-        if (Health <= 0)
-        {
-            Health = 0;
-            Destroy();
-        }
-
+        await SetHealthAsync(Health - amount);
         return true;
     }
 
@@ -66,13 +59,12 @@ public abstract partial class BaseTurret : Node3D, IDamageable, IInteractable
     /// </summary>
     /// <param name="amount">Количество восстанавливаемой прочности.</param>
     /// <returns>true, если прочность была восстановлена; false, если турель уничтожена.</returns>
-    public virtual bool Heal(float amount)
+    public virtual async Task<bool> HealAsync(float amount)
     {
         // Нельзя починить уничтоженную турель
         if (Health <= 0) return false;
 
-        Health = Mathf.Min(Health + amount, MaxHealth);
-        OnHealthChanged?.Invoke(Health);
+        await SetHealthAsync(Health + amount);
         return true;
     }
 
@@ -80,17 +72,13 @@ public abstract partial class BaseTurret : Node3D, IDamageable, IInteractable
     /// Уничтожает турель.
     /// </summary>
     /// <returns>true, если команда на уничтожение была отправлена.</returns>
-    public virtual bool Destroy()
+    public virtual Task<bool> DestroyAsync()
     {
-        // Предотвращаем двойное уничтожение
-        if (IsQueuedForDeletion()) return true;
-
         OnDestroyed?.Invoke();
         GD.Print($"{Name} была уничтожена!");
-        // Здесь можно добавить логику взрыва, смены модели и т.д.
         QueueFree();
 
-        return true;
+        return Task.FromResult(true);
     }
 
     /// <inheritdoc/>
@@ -98,4 +86,18 @@ public abstract partial class BaseTurret : Node3D, IDamageable, IInteractable
 
     /// <inheritdoc/>
     public abstract string GetInteractionText();
+
+    protected async Task SetHealthAsync(float health)
+    {
+        Health = health;
+        if (Health <= 0)
+        {
+            Health = 0;
+            await DestroyAsync();
+        }
+        else
+        {
+            OnHealthChanged?.Invoke(Health);
+        }
+    }
 }
