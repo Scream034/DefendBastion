@@ -178,11 +178,11 @@ ao_on_uv2 = true
 refraction_enabled = true
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_hkthc"]
-albedo_color = Color(0.629148, 0.629916, 0.710665, 1)
+albedo_color = Color(0.271003, 0.270897, 0.333771, 1)
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_owejd"]
 vertex_color_use_as_albedo = true
-albedo_color = Color(0.378638, 0.375043, 0.431819, 1)
+albedo_color = Color(0.2642, 0.261337, 0.305696, 1)
 
 [sub_resource type="Curve" id="Curve_rvycd"]
 _data = [Vector2(0.0111732, 0.955056), 0.0, -4.42472, 0, 0, Vector2(0.407821, 1), 0.0, 0.0, 0, 0, Vector2(0.597765, 0.393258), -6.34312, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
@@ -337,6 +337,7 @@ material = SubResource("ORMMaterial3D_hkthc")
 [node name="ChargeParticles" type="GPUParticles3D" parent="CollisionShape3D/Model/CSGCylinder3D"]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37135e-08, 0.000869051, -0.204626, -0.00211056)
 cast_shadow = 0
+emitting = false
 amount = 512
 amount_ratio = 0.01
 lifetime = 0.7
