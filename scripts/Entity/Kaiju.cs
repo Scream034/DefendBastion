@@ -6,12 +6,6 @@ namespace Game.Entity;
 public sealed partial class Kaiju : LinearMoveableEntity
 {
     [Export]
-    private AudioStream _impactSound1;
-
-    [Export]
-    private AudioStream _impactSound2;
-
-    [Export]
     private AudioStreamPlayer3D _audio;
 
     public Kaiju() : base(IDs.Kaiju) { }

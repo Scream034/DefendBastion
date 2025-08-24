@@ -92,7 +92,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.7503, 0.180725, 21.2657)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.8076, 0.180725, 21.2657)
 
 [node name="House7" parent="." instance=ExtResource("6_7r4gi")]
-transform = Transform3D(0.896711, 0, -0.442617, 0, 1, 0, 0.442617, 0, 0.896711, 18.1217, 0.180725, 18.7629)
+transform = Transform3D(0.896711, 0, -0.442617, 0, 1, 0, 0.442617, 0, 0.896711, 18.1217, 0.180725, -40.7338)
 
 [node name="TargetZone" type="Area3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.2757)
@@ -103,7 +103,8 @@ transform = Transform3D(0.999993, 0, 0, 0, 1, 0, 0, 0, 0.999993, 0, 3.50417, 13.
 shape = SubResource("BoxShape3D_0wfyh")
 
 [node name="Kaiju" parent="." instance=ExtResource("8_4mrxx")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.01081, -121.823)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.01081, -148.164)
+Speed = 0.2
 
 [node name="Kaiju2" parent="." instance=ExtResource("8_4mrxx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80.2731, 5.01081, -94.4997)
@@ -117,7 +118,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.24674, -2.07314)
 visible = false
 
 [node name="Player" parent="." instance=ExtResource("9_7r4gi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.775369, 1.48467, 0.474688)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.783809, 1.49353, 0.485633)
 
 [node name="RailGun_Jaeforzs" parent="." instance=ExtResource("10_w7kh3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.908678, 1.37663, -3.07385)

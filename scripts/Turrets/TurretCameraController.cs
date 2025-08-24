@@ -38,45 +38,66 @@ public partial class TurretCameraController : Node, ICameraController
     [Export(PropertyHint.Range, "0.1, 5.0, 0.1")] public float SensitivityMultiplier { get; private set; } = 1.0f;
     [Export(PropertyHint.Range, "100, 5000, 100")] private float _aimTargetDistance = 2000f;
 
-    [ExportGroup("Rotation Limits (Degrees)")]
-    [Export(PropertyHint.Range, "-90, 0, 1")] public float MinPitch { get; private set; } = -20f;
-    [Export(PropertyHint.Range, "0, 90, 1")] public float MaxPitch { get; private set; } = 45f;
-    [Export(PropertyHint.Range, "-1, 180, 1")] public float MaxYaw { get; private set; } = 90f;
+    [ExportGroup("Turret Rotation Limits (Degrees)", "Turret")]
+    [Export(PropertyHint.Range, "-90, 0, 1")] public float TurretMinPitch { get; private set; } = -20f;
+    [Export(PropertyHint.Range, "0, 90, 1")] public float TurretMaxPitch { get; private set; } = 45f;
+    [Export(PropertyHint.Range, "-1, 180, 1")] public float TurretMaxYaw { get; private set; } = 90f;
 
-    // --- Кэшированные ссылки и параметры ---
+    [ExportGroup("Camera Rotation Limits (Degrees)", "Camera")]
+    [Export(PropertyHint.Range, "-90, 0, 1")] public float CameraMinPitch { get; private set; } = -89f;
+    [Export(PropertyHint.Range, "0, 90, 1")] public float CameraMaxPitch { get; private set; } = 89f;
+    [Export(PropertyHint.Range, "-1, 180, 1")] public float CameraMaxYaw { get; private set; } = -1f;
+
+    // --- Ссылки, получаемые при инициализации ---
     private PlayerControllableTurret _ownerTurret;
+    private Node3D _turretYawNode;
+    private Node3D _turretPitchNode;
+    private Node3D _barrelEndNode;
+
+    // --- Кэшированные параметры ---
     private PhysicsRayQueryParameters3D _rayQuery;
-    private float _minPitchRad, _maxPitchRad, _maxYawRad;
+    private float _turretMinPitchRad, _turretMaxPitchRad, _turretMaxYawRad;
+    private float _cameraMinPitchRad, _cameraMaxPitchRad, _cameraMaxYawRad;
     private Vector2 _cameraRotation;
 
     // --- Параметры для эффектов ---
     private FastNoiseLite _shakeNoise = new();
     private float _shakeStrength = 0f;
     private ulong _shakeSeed;
+    private bool _isInitialized = false;
 
-    public override void _Ready()
+    /// <summary>
+    /// Инициализирует контроллер, получая все необходимые ссылки от турели-владельца.
+    /// Вызывается перед активацией.
+    /// </summary>
+    public void Initialize(PlayerControllableTurret owner, Node3D yawNode, Node3D pitchNode, Node3D barrelEnd)
     {
-        // Кэшируем все необходимые ссылки и параметры один раз для оптимизации
-        _ownerTurret = GetOwner<PlayerControllableTurret>();
-#if DEBUG
-        if (_ownerTurret == null)
-        {
-            GD.PushError("TurretCameraController должен быть дочерним узлом ControllableTurret!");
-            SetProcess(false);
-            return;
-        }
-#endif
+        if (_isInitialized) return;
+
+        _ownerTurret = owner;
+        _turretYawNode = yawNode;
+        _turretPitchNode = pitchNode;
+        _barrelEndNode = barrelEnd;
 
         uint aimCollisionMask = GetCollisionMaskFromProjectileScene();
         _rayQuery = new() { CollisionMask = aimCollisionMask };
 
-        _minPitchRad = Mathf.DegToRad(MinPitch);
-        _maxPitchRad = Mathf.DegToRad(MaxPitch);
-        _maxYawRad = Mathf.DegToRad(MaxYaw);
+        _turretMinPitchRad = Mathf.DegToRad(TurretMinPitch);
+        _turretMaxPitchRad = Mathf.DegToRad(TurretMaxPitch);
+        _turretMaxYawRad = Mathf.DegToRad(TurretMaxYaw);
+
+        _cameraMinPitchRad = Mathf.DegToRad(CameraMinPitch);
+        _cameraMaxPitchRad = Mathf.DegToRad(CameraMaxPitch);
+        _cameraMaxYawRad = Mathf.DegToRad(CameraMaxYaw);
 
         _shakeNoise.Seed = (int)GD.Randi();
         _shakeNoise.Frequency = 0.5f;
 
+        _isInitialized = true;
+    }
+
+    public override void _Ready()
+    {
         SetProcess(false);
         SetPhysicsProcess(false);
     }
@@ -120,12 +141,15 @@ public partial class TurretCameraController : Node, ICameraController
         Basis localBasis = _ownerTurret.GlobalTransform.Basis.Inverse() * targetGlobalBasis;
         Vector3 targetEuler = localBasis.GetEuler();
 
-        float targetYaw = _maxYawRad < 0 ? targetEuler.Y : Mathf.Clamp(targetEuler.Y, -_maxYawRad, _maxYawRad);
-        float targetPitch = Mathf.Clamp(targetEuler.X, _minPitchRad, _maxPitchRad);
+        float targetYaw = _turretMaxYawRad < 0 ? targetEuler.Y : Mathf.Clamp(targetEuler.Y, -_turretMaxYawRad, _turretMaxYawRad);
+        float targetPitch = Mathf.Clamp(targetEuler.X, _turretMinPitchRad, _turretMaxPitchRad);
 
         return (targetYaw, targetPitch);
     }
 
+    /// <summary>
+    /// Финальный, стабильный метод вычисления углов с коррекцией параллакса и без дрожания.
+    /// </summary>
     private (float, float) CalculateConvergedAngles()
     {
         var camTransform = _camera.GlobalTransform;
@@ -142,11 +166,11 @@ public partial class TurretCameraController : Node, ICameraController
         var horizontalDist = new Vector2(localAimVector.X, localAimVector.Z).Length();
         float targetPitchRad = Mathf.Atan2(localAimVector.Y, horizontalDist);
 
-        if (_maxYawRad >= 0)
+        if (_turretMaxYawRad >= 0)
         {
-            targetYawRad = Mathf.Clamp(targetYawRad, -_maxYawRad, _maxYawRad);
+            targetYawRad = Mathf.Clamp(targetYawRad, -_turretMaxYawRad, _turretMaxYawRad);
         }
-        targetPitchRad = Mathf.Clamp(targetPitchRad, _minPitchRad, _maxPitchRad);
+        targetPitchRad = Mathf.Clamp(targetPitchRad, _turretMinPitchRad, _turretMaxPitchRad);
 
         return (targetYawRad, targetPitchRad);
     }
@@ -181,8 +205,13 @@ public partial class TurretCameraController : Node, ICameraController
 
     public void Activate()
     {
-        // Если нет исключений для турели и игрока, то добавляем их.
-        if (_rayQuery.Exclude.Count == 0)
+        if (!_isInitialized)
+        {
+            GD.PushError("TurretCameraController не был инициализирован перед активацией!");
+            return;
+        }
+
+        if (_rayQuery.Exclude.Count == 0 && _ownerTurret.PlayerController != null)
         {
             _rayQuery.Exclude = [_ownerTurret.GetRid(), _ownerTurret.PlayerController.GetRid()];
         }
@@ -191,9 +220,6 @@ public partial class TurretCameraController : Node, ICameraController
         SetPhysicsProcess(true);
         _ownerTurret.SetPhysicsProcess(true);
         _camera.Current = true;
-#if DEBUG
-        GD.Print($"[{this}-{Name}] Была активирована!");
-#endif
     }
 
     public void Deactivate()
@@ -202,20 +228,19 @@ public partial class TurretCameraController : Node, ICameraController
         SetPhysicsProcess(false);
         _ownerTurret.SetPhysicsProcess(false);
         _camera.Current = false;
-
-#if DEBUG
-        GD.Print($"[{this}:{Name}] Была деактивирована!");
-#endif
     }
 
     public void HandleMouseInput(Vector2 mouseDelta)
     {
-        // Вращаем наше внутреннее состояние камеры. _Process применит его к реальной камере.
         _cameraRotation.Y -= mouseDelta.X * CameraController.MouseSensitivityMultiplier * SensitivityMultiplier;
         _cameraRotation.X -= mouseDelta.Y * CameraController.MouseSensitivityMultiplier * SensitivityMultiplier;
 
-        // Ограничиваем вращение самой камеры, чтобы она не "вылетала" за пределы вида
-        _cameraRotation.X = Mathf.Clamp(_cameraRotation.X, Mathf.DegToRad(-89), Mathf.DegToRad(89));
+        // ОГРАНИЧЕНИЕ КАМЕРЫ 
+        _cameraRotation.X = Mathf.Clamp(_cameraRotation.X, _cameraMinPitchRad, _cameraMaxPitchRad);
+        if (_cameraMaxYawRad >= 0)
+        {
+            _cameraRotation.Y = Mathf.Clamp(_cameraRotation.Y, -_cameraMaxYawRad, _cameraMaxYawRad);
+        }
     }
 
     public Camera3D GetCamera() => _camera;

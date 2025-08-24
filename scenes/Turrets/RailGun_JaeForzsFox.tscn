@@ -474,7 +474,7 @@ tracks/36/path = NodePath("CollisionShape3D/Barrel:position")
 tracks/36/interp = 1
 tracks/36/loop_wrap = true
 tracks/36/keys = {
-"times": PackedFloat32Array(1.9009, 1.99587, 2.06667),
+"times": PackedFloat32Array(1.9009, 1.99587, 2.13333),
 "transitions": PackedFloat32Array(10, 0.5, 1),
 "update": 0,
 "values": [Vector3(0.000390053, 0, 0.00165756), Vector3(0, 0, 0.1), Vector3(0, 0, 0.002)]
@@ -1019,9 +1019,10 @@ color_ramp = SubResource("GradientTexture1D_0k5dx")
 alpha_curve = SubResource("CurveTexture_r84oa")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yqw4q"]
+render_priority = 1
 transparency = 1
 blend_mode = 1
-shading_mode = 0
+shading_mode = 2
 vertex_color_use_as_albedo = true
 texture_filter = 0
 disable_receive_shadows = true
@@ -1166,14 +1167,14 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_rlvs8")
 
-[node name="RailGun_Jaeforzs" type="StaticBody3D" node_paths=PackedStringArray("_cameraController", "_turretYaw", "_turretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
+[node name="RailGun_Jaeforzs" type="StaticBody3D" node_paths=PackedStringArray("_cameraController", "TurretYaw", "TurretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
 collision_layer = 3
 collision_mask = 3
 collision_priority = 1.5
 script = ExtResource("1_lbqb5")
 _cameraController = NodePath("TurretCameraController")
-_turretYaw = NodePath("CollisionShape3D")
-_turretPitch = NodePath("CollisionShape3D")
+TurretYaw = NodePath("CollisionShape3D")
+TurretPitch = NodePath("CollisionShape3D")
 _aimSpeed = 4.0
 _controlPoint = NodePath("CollisionShape3D/Base/ControlPoint")
 _exitPoint = NodePath("CollisionShape3D/Base/ExitPoint")
@@ -1189,7 +1190,12 @@ MaxHealth = 500.0
 script = ExtResource("3_ddxjo")
 _camera = NodePath("../Camera3D")
 SensitivityMultiplier = 0.7
-MaxYaw = 60.0
+TurretMinPitch = -0.25
+TurretMaxPitch = 1.0
+TurretMaxYaw = 60.0
+CameraMinPitch = -5.0
+CameraMaxPitch = 3.0
+CameraMaxYaw = 80.0
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
@@ -1219,7 +1225,7 @@ process_material = SubResource("ParticleProcessMaterial_rw2m1")
 draw_pass_1 = SubResource("BoxMesh_r84oa")
 
 [node name="SpotLightB" type="SpotLight3D" parent="CollisionShape3D/Barrel/ChargeParticlesB"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.69445e-10, -0.00886703, -1.44462e-09)
+transform = Transform3D(1, -8.47033e-22, 1.66082e-14, 8.47033e-22, 1, -1.3199e-21, -1.66082e-14, 1.3199e-21, 1, -1.04308e-07, 1.0975, 0.503387)
 light_color = Color(0.262745, 0.717647, 0.819608, 1)
 light_energy = 0.0
 light_volumetric_fog_energy = 2.0
@@ -1405,5 +1411,5 @@ update_rotation = false
 update_scale = false
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45519e-11, 0.371007, 1.22008)
-fov = 89.6879
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.30967e-10, 0.371008, 1.22008)
+fov = 71.5487

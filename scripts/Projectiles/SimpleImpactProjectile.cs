@@ -75,12 +75,7 @@ public partial class SimpleImpactProjectile : BaseProjectile
             vfxInstance.GlobalPosition = hitPosition;
             vfxInstance.LookAt(hitPosition + hitNormal, Vector3.Up);
 
-            if (vfxInstance is GpuParticles3D particles)
-            {
-                particles.Emitting = true;
-                Constants.Tree.CreateTimer(particles.Lifetime).Timeout += vfxInstance.QueueFree;
-            }
-            else if (vfxInstance is BaseVfx3D baseVfx)
+            if (vfxInstance is BaseVfx3D baseVfx)
             {
                 baseVfx.OnFinished += baseVfx.QueueFree;
                 baseVfx.Play();

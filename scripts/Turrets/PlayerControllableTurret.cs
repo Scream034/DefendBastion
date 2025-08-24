@@ -34,7 +34,7 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
         // Обратите внимание, что трясти нужно камеру игрока, а не турели.
         // Или можно добавить тряску и камере турели.
         // Для примера оставим тряску головы игрока.
-        _cameraController.ShakeAsync((float)GD.RandRange(0.07f, 0.12f), (float)GD.RandRange(0.03f, 0.05f));
+        _cameraController.ShakeAsync((float)GD.RandRange(0.09f, 0.15f), (float)GD.RandRange(0.05f, 0.07f));
     }
 
     public override BaseProjectile CreateProjectile(Transform3D spawnPoint)
@@ -50,6 +50,9 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
     public override void EnterTurret(ITurretControllable entity)
     {
         base.EnterTurret(entity);
+
+        // Передаем контроллеру все необходимые ему компоненты и параметры
+        _cameraController.Initialize(this, TurretYaw, TurretPitch, BarrelEnd);
 
         // Сообщаем менеджеру, что нужно переключиться на камеру турели
         PlayerInputManager.Instance.SwitchController(_cameraController);

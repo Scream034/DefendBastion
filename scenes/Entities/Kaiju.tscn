@@ -1,21 +1,29 @@
-[gd_scene load_steps=10 format=3 uid="uid://c0aomjglyx2a7"]
+[gd_scene load_steps=9 format=3 uid="uid://c0aomjglyx2a7"]
 
 [ext_resource type="Script" uid="uid://bowky2f0mvvey" path="res://scripts/Entity/Kaiju.cs" id="1_hjnk8"]
-[ext_resource type="AudioStream" uid="uid://b4s87oy5c1gkk" path="res://sounds/impact1.wav" id="2_ewnsu"]
-[ext_resource type="AudioStream" uid="uid://cme4ak573r487" path="res://sounds/impact2.ogg" id="3_et186"]
+[ext_resource type="AudioStream" uid="uid://d1i4b4dxh5s0g" path="res://sounds/electric_impact.wav" id="2_etufe"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ypjiq"]
 size = Vector3(5, 10, 5)
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_yjf3n"]
-albedo_color = Color(0.37878862, 0.0316041, 0.049558625, 1)
+transparency = 1
+blend_mode = 1
+diffuse_mode = 3
+specular_mode = 2
+disable_fog = true
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+albedo_color = Color(0.898205, 0.158977, 0.19025, 1)
+emission_enabled = true
+emission = Color(1, 0.124572, 0.0864938, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_yjf3n"]
 material = SubResource("ORMMaterial3D_yjf3n")
 size = Vector3(5, 2, 5)
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_ypjiq"]
-albedo_color = Color(0.07450981, 0, 0.023529412, 1)
+albedo_color = Color(0.0745098, 0, 0.0235294, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ypjiq"]
 material = SubResource("ORMMaterial3D_ypjiq")
@@ -23,18 +31,14 @@ size = Vector3(5, 8, 5)
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_ypjiq"]
 playback_mode = 1
-random_pitch = 1.3
 random_volume_offset_db = 3.0
-streams_count = 2
-stream_0/stream = ExtResource("2_ewnsu")
-stream_1/stream = ExtResource("3_et186")
+streams_count = 1
+stream_0/stream = ExtResource("2_etufe")
 
 [node name="Kaiju" type="CharacterBody3D" node_paths=PackedStringArray("_audio")]
 collision_layer = 5
 collision_mask = 4
 script = ExtResource("1_hjnk8")
-_impactSound1 = ExtResource("2_ewnsu")
-_impactSound2 = ExtResource("3_et186")
 _audio = NodePath("AudioStreamPlayer3D")
 Speed = 0.5
 
@@ -53,7 +57,9 @@ mesh = SubResource("BoxMesh_ypjiq")
 
 [node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
 stream = SubResource("AudioStreamRandomizer_ypjiq")
-volume_db = 7.0
+attenuation_model = 1
+volume_db = 6.5
 unit_size = 25.0
-max_db = 6.0
-max_polyphony = 8
+pitch_scale = 1.02
+max_polyphony = 2
+attenuation_filter_cutoff_hz = 9000.0

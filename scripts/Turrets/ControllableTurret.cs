@@ -6,8 +6,8 @@ namespace Game.Turrets;
 public abstract partial class ControllableTurret : ShootingTurret
 {
     [ExportGroup("Nodes")]
-    [Export] protected Node3D _turretYaw;
-    [Export] protected Node3D _turretPitch;
+    [Export] public Node3D TurretYaw { get; private set; }
+    [Export] public Node3D TurretPitch { get; private set; }
 
     [ExportGroup("Aiming Properties")]
     [Export(PropertyHint.Range, "1, 20, 0.1")] private float _aimSpeed = 8f;
@@ -35,8 +35,8 @@ public abstract partial class ControllableTurret : ShootingTurret
     {
         // Применяем плавное вращение к целевым углам
         float fDelta = (float)delta;
-        _turretYaw.Rotation = _turretYaw.Rotation with { Y = Mathf.LerpAngle(_turretYaw.Rotation.Y, targetYawRad, _aimSpeed * fDelta) };
-        _turretPitch.Rotation = _turretPitch.Rotation with { X = Mathf.LerpAngle(_turretPitch.Rotation.X, targetPitchRad, _aimSpeed * fDelta) };
+        TurretYaw.Rotation = TurretYaw.Rotation with { Y = Mathf.LerpAngle(TurretYaw.Rotation.Y, targetYawRad, _aimSpeed * fDelta) };
+        TurretPitch.Rotation = TurretPitch.Rotation with { X = Mathf.LerpAngle(TurretPitch.Rotation.X, targetPitchRad, _aimSpeed * fDelta) };
     }
 
     /// <summary>

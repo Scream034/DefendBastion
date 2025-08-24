@@ -1,17 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://8vtthvh5r3w0"]
+[gd_scene load_steps=7 format=3 uid="uid://8vtthvh5r3w0"]
 
 [ext_resource type="Script" uid="uid://cxyj736pvhppg" path="res://scripts/Projectiles/SimpleImpactProjectile.cs" id="1_xn4kp"]
-[ext_resource type="PackedScene" uid="uid://bp44dkrre05ne" path="res://scenes/VFX/ElectricImpactVFX21.tscn" id="2_40e65"]
-[ext_resource type="AudioStream" uid="uid://b4s87oy5c1gkk" path="res://sounds/impact1.wav" id="2_lmgi6"]
-[ext_resource type="AudioStream" uid="uid://cme4ak573r487" path="res://sounds/impact2.ogg" id="3_40e65"]
-
-[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_40e65"]
-playback_mode = 1
-random_pitch = 1.15
-random_volume_offset_db = 3.0
-streams_count = 2
-stream_0/stream = ExtResource("2_lmgi6")
-stream_1/stream = ExtResource("3_40e65")
+[ext_resource type="PackedScene" uid="uid://dgo3h3uf35i4r" path="res://scenes/VFX/ElectricImpactVFX.tscn" id="2_40e65"]
+[ext_resource type="AudioStream" uid="uid://b4s87oy5c1gkk" path="res://sounds/impact1.wav" id="3_lmgi6"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_40e65"]
 margin = 0.0
@@ -30,7 +21,7 @@ emission_energy_multiplier = 1000.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_40e65"]
 material = SubResource("StandardMaterial3D_40e65")
-size = Vector3(0.05, 0.03, 2)
+size = Vector3(0.05, 0.03, 2.5)
 
 [node name="ElectricProjectile" type="Area3D" node_paths=PackedStringArray("_audioPlayer")]
 process_priority = 2
@@ -41,11 +32,11 @@ monitorable = false
 priority = 2
 script = ExtResource("1_xn4kp")
 _impactVfx = ExtResource("2_40e65")
-_impactSfx = SubResource("AudioStreamRandomizer_40e65")
+_impactSfx = ExtResource("3_lmgi6")
 _audioPlayer = NodePath("AudioStreamPlayer3D")
+Speed = 600.0
 
 [node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
-max_polyphony = 8
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("BoxShape3D_40e65")
