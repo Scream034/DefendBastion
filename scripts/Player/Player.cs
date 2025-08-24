@@ -2,10 +2,11 @@ using Godot;
 using Game.Entity;
 using Game.Interfaces;
 using Game.Turrets;
+using Game.Singletons;
 
 namespace Game.Player;
 
-public sealed partial class Player : LivingEntity, ITurretControllable
+public sealed partial class Player : LivingEntity, IOwnerCameraController, ITurretControllable
 {
     [Signal]
     public delegate void OnInteractableDetectedEventHandler(Node3D interactable);
@@ -34,39 +35,23 @@ public sealed partial class Player : LivingEntity, ITurretControllable
     private bool _jumpPressed;
 
     private Node _originalHeadParent;
-    private BaseTurret _currentTurret;
+    private ControllableTurret _currentTurret;
 
     public Player() : base(IDs.Player) { }
 
     public override void _Ready()
     {
         base._Ready();
-        _originalHeadParent = _head.GetParent(); // Сохраняем "родного" родителя головы
+        _originalHeadParent = _head.GetParent(); // Настоящий родитель головы игрока
+
+        // Устанавливаем голову игрока как стартовый контроллер камеры
+        PlayerInputManager.Instance.SwitchController(_head);
 
 #if DEBUG
         if (_head == null) GD.PushError("Для игрока не был назначен PlayerHead.");
         if (_collisionShape == null) GD.PushError("Для игрока не был назначен CollisionShape3D.");
         if (Constants.DefaultGravity <= 0) GD.PushWarning($"Неверное использование гравитации: {Constants.DefaultGravity}");
 #endif
-    }
-
-    public override void _Input(InputEvent @event)
-    {
-        // В турели игрок не может двигаться
-        if (CurrentState == PlayerState.InTurret) return;
-
-        // Обработка ввода для обычного состояния
-        var direction = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
-        _inputDir = new Vector3(direction.X, 0, direction.Y).Normalized();
-
-        if (@event.IsActionPressed("jump"))
-        {
-            _jumpPressed = true;
-        }
-        else if (@event.IsActionPressed("interact") && _head.CurrentInteractable != null)
-        {
-            _head.CurrentInteractable.Interact(this);
-        }
     }
 
     public override void _PhysicsProcess(double delta)
@@ -140,24 +125,13 @@ public sealed partial class Player : LivingEntity, ITurretControllable
 
     public void EnterTurret(BaseTurret turret)
     {
-        if (CurrentState != PlayerState.Normal || turret is not PlayerControllableTurret controllableTurret) return;
+        if (CurrentState != PlayerState.Normal || turret is not ControllableTurret controllableTurret) return;
 
         CurrentState = PlayerState.InTurret;
-        _currentTurret = turret;
-
+        _currentTurret = controllableTurret;
         _collisionShape.Disabled = true;
-
-        _head.SetTempRotationLimits(new()
-        {
-            MinPitch = controllableTurret.MinPitch,
-            MaxPitch = controllableTurret.MaxPitch,
-            MaxYaw = controllableTurret.MaxYaw
-        });
-
-        Vector3 turretForwardDirection = -turret.GlobalTransform.Basis.Z;
-        _head.TryRotateHeadTowards(turret.GlobalPosition + turretForwardDirection * 10f);
-
         UI.Instance.HideInteractionText();
+
     }
 
     public void ExitTurret(Vector3 exitPosition)
@@ -165,13 +139,12 @@ public sealed partial class Player : LivingEntity, ITurretControllable
         if (CurrentState != PlayerState.InTurret) return;
 
         GlobalPosition = exitPosition;
-
         _collisionShape.Disabled = false;
-
-        _head.RestoreRotationLimits();
-
         _currentTurret = null;
         CurrentState = PlayerState.Normal;
+
+        // Сообщаем менеджеру, что нужно вернуть управление голове игрока
+        PlayerInputManager.Instance.SwitchController(_head);
     }
 
     public bool IsInTurret() => CurrentState == PlayerState.InTurret;
@@ -179,5 +152,25 @@ public sealed partial class Player : LivingEntity, ITurretControllable
     public PlayerHead GetPlayerHead()
     {
         return _head;
+    }
+
+    public void HandleInput(in InputEvent @event)
+    {
+        // Управление вводом теперь централизовано в PlayerInputManager.
+        // Оставляем только то, что касается движения.
+        if (CurrentState == PlayerState.InTurret) return;
+
+        var direction = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
+        _inputDir = new Vector3(direction.X, 0, direction.Y).Normalized();
+
+        if (@event.IsActionPressed("jump"))
+        {
+            _jumpPressed = true;
+        }
+        else if (@event.IsActionPressed("interact") && _head.CurrentInteractable != null)
+        {
+            // Действие взаимодействия все еще инициируется здесь
+            _head.CurrentInteractable.Interact(this);
+        }
     }
 }

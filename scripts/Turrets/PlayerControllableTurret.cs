@@ -1,54 +1,66 @@
-using Game.Entity;
-using Game.Interfaces;
-using Game.Projectiles;
 using Godot;
+using Game.Projectiles;
+using Game.Interfaces;
+using Game.Singletons;
 
 namespace Game.Turrets;
 
 /// <summary>
 /// Реализация турели, управляемой игроком.
-/// Отвечает за считывание ввода игрока, плавное наведение орудия
-/// и вызов методов стрельбы/перезарядки базового класса.
+/// Теперь в основном служит для связи между игроком и турелью,
+/// а также для специфичных для игрока эффектов, таких как тряска камеры.
 /// </summary>
-public partial class PlayerControllableTurret : ControllableTurret
+public partial class PlayerControllableTurret : ControllableTurret, IOwnerCameraController
 {
+    [ExportGroup("Components")]
+    [Export] private TurretCameraController _cameraController;
+
     public Player.Player PlayerController => CurrentController as Player.Player;
 
     public override void _PhysicsProcess(double delta)
     {
-        if (PlayerController == null || _turretYaw == null || _turretPitch == null)
+        // Логика наведения переехала в TurretCameraController.
+        // Оставляем только удержание игрока в кресле.
+        if (PlayerController != null && _controlPoint != null)
         {
-            return;
+            PlayerController.GlobalPosition = _controlPoint.GlobalPosition;
         }
-
-        // --- Логика наведения ---
-        // 1. Получаем глобальную ориентацию камеры игрока.
-        Basis targetGlobalBasis = PlayerController.GetPlayerHead().Camera.GlobalTransform.Basis;
-
-        // 2. Преобразуем ее в локальную систему координат турели (относительно поворота корпуса турели).
-        Basis localBasis = GlobalTransform.Basis.Inverse() * targetGlobalBasis;
-
-        // 3. Извлекаем из локальной ориентации углы Эйлера (рыскание и тангаж).
-        Vector3 targetEuler = localBasis.GetEuler();
-
-        // 4. Ограничиваем углы в соответствии с лимитами турели.
-        float targetYaw = _maxYawRad < 0 ? targetEuler.Y : Mathf.Clamp(targetEuler.Y, -_maxYawRad, _maxYawRad);
-        float targetPitch = Mathf.Clamp(targetEuler.X, _minPitchRad, _maxPitchRad);
-
-        // 5. Плавно интерполируем текущие углы поворота частей турели к целевым.
-        float fDelta = (float)delta;
-        _turretYaw.Rotation = _turretYaw.Rotation with { Y = Mathf.LerpAngle(_turretYaw.Rotation.Y, targetYaw, _aimSpeed * fDelta) };
-        _turretPitch.Rotation = _turretPitch.Rotation with { X = Mathf.LerpAngle(_turretPitch.Rotation.X, targetPitch, _aimSpeed * fDelta) };
-
-        // 6. Принудительно удерживаем позицию игрока в "кресле", чтобы избежать смещений из-за физики.
-        PlayerController.GlobalPosition = _controlPoint.GlobalPosition;
     }
 
-    public override void _Input(InputEvent @event)
+    public void ShakeCamera()
     {
-        if (PlayerController == null) return;
+        // Обратите внимание, что трясти нужно камеру игрока, а не турели.
+        // Или можно добавить тряску и камере турели.
+        // Для примера оставим тряску головы игрока.
+        _cameraController.ShakeAsync((float)GD.RandRange(0.07f, 0.12f), (float)GD.RandRange(0.03f, 0.05f));
+    }
 
-        if (@event.IsActionPressed("fire"))
+    public override BaseProjectile CreateProjectile(Transform3D spawnPoint)
+    {
+        var projectile = base.CreateProjectile(spawnPoint);
+        if (PlayerController != null)
+        {
+            projectile.IgnoredEntities.Add(PlayerController);
+        }
+        return projectile;
+    }
+
+    public override void EnterTurret(ITurretControllable entity)
+    {
+        base.EnterTurret(entity);
+
+        // Сообщаем менеджеру, что нужно переключиться на камеру турели
+        PlayerInputManager.Instance.SwitchController(_cameraController);
+    }
+
+    public void HandleInput(in InputEvent @event)
+    {
+        if (@event.IsActionPressed("interact"))
+        {
+            ExitTurret();
+            GetViewport().SetInputAsHandled();
+        }
+        else if (@event.IsActionPressed("fire"))
         {
             Shoot();
         }
@@ -56,25 +68,5 @@ public partial class PlayerControllableTurret : ControllableTurret
         {
             StartReload();
         }
-        else if (@event.IsActionPressed("interact"))
-        {
-            ExitTurret();
-            // NOTE: Помечаем событие как обработанное, чтобы игрок не начал тут же
-            // взаимодействовать с этой же турелью снова.
-            GetViewport().SetInputAsHandled();
-        }
     }
-
-    public void ShakeCamera()
-    {
-        PlayerController.GetPlayerHead().ShakeAsync((float)GD.RandRange(0.07f, 0.12f), (float)GD.RandRange(0.03f, 0.05f));
-    }
-
-    public override BaseProjectile CreateProjectile(Transform3D spawnPoint)
-    {
-        var projectile = base.CreateProjectile(spawnPoint);
-        projectile.IgnoredEntities.Add(PlayerController);
-        return projectile;
-    }
-
 }

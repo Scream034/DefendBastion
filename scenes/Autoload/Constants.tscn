@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://dxjcgntjf1gx1"]
-
-[ext_resource type="Script" uid="uid://d0g820ui44edp" path="res://scripts/Constants.cs" id="1_auf84"]
-
-[node name="Constants" type="Node"]
-script = ExtResource("1_auf84")

@@ -3,6 +3,7 @@ using Game.Projectiles;
 using System;
 using Game.Interfaces;
 using System.Threading.Tasks;
+using Game.Singletons;
 
 namespace Game.Turrets;
 
@@ -77,10 +78,10 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     }
 
     /// <summary>
-    /// Точка, откуда вылетают снаряды. Обычно это Marker3D.
+    /// Точка, откуда вылетают снаряды.
     /// </summary>
     [Export]
-    protected Node3D BarrelEnd { get; private set; }
+    protected Marker3D BarrelEnd { get; private set; }
 
     [ExportGroup("Reloading")]
     /// <summary>

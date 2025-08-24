@@ -5,7 +5,7 @@ using Godot;
 
 namespace Game.Player;
 
-public sealed partial class PlayerHead : Node3D
+public sealed partial class PlayerHead : Node3D, ICameraController
 {
     [ExportGroup("Mouse look")]
     [Export] public Camera3D Camera { get; private set; }
@@ -31,10 +31,6 @@ public sealed partial class PlayerHead : Node3D
 
     private RotationLimits _beforeRotationLimits;
 
-    private FastNoiseLite _shakeNoise = new();
-    private float _shakeStrength = 0f;
-    private ulong _shakeSeed;
-
     public override void _Ready()
     {
         Input.MouseMode = Input.MouseModeEnum.Captured;
@@ -44,9 +40,6 @@ public sealed partial class PlayerHead : Node3D
             MaxPitch = MaxPitch,
             MaxYaw = MaxYaw
         });
-        
-        _shakeNoise.Seed = (int)GD.Randi();
-        _shakeNoise.Frequency = 0.5f;
 
 #if DEBUG
         if (Camera == null) GD.PushError("Для PlayerHead не назначена Camera3D.");
@@ -59,19 +52,6 @@ public sealed partial class PlayerHead : Node3D
         if (@event is InputEventMouseMotion e)
         {
             _mouseDelta = e.Relative;
-        }
-    }
-
-    public override void _Process(double delta)
-    {
-        _cameraController.HandleMouseLook(_mouseDelta, Sensitivity, RotationSpeed);
-        _mouseDelta = Vector2.Zero;
-        
-        if (_shakeStrength > 0)
-        {
-            _shakeSeed++;
-            var amount = _shakeNoise.GetNoise2D(_shakeSeed, _shakeSeed) * _shakeStrength;
-            Camera.Rotation = new Vector3(amount, amount, amount);
         }
     }
 
@@ -88,32 +68,49 @@ public sealed partial class PlayerHead : Node3D
             CurrentInteractable = null;
         }
     }
-    
-    /// <summary>
-    /// Визуальная тряска камеры игрока
-    /// </summary>
-    /// <param name="duration">В секундах</param>
-    /// <param name="strength">Чем больше, тем сильнее</param>
-    public async void ShakeAsync(float duration, float strength)
+
+    #region ICameraController Implementation
+
+    public void Activate()
     {
-        _shakeStrength = strength;
-        await Task.Delay((int)(duration * 1000));
-        _shakeStrength = 0f;
-        Camera.Rotation = Vector3.Zero;
+        SetProcess(true);
+        SetPhysicsProcess(true);
+        Camera.Current = true;
     }
+
+    public void Deactivate()
+    {
+        // Когда голова неактивна, она не должна обрабатывать физику (луч взаимодействия)
+        SetProcess(false);
+        SetPhysicsProcess(false);
+        Camera.Current = false;
+        CurrentInteractable = null; // Сбрасываем интерактивный объект
+    }
+
+    public void HandleMouseInput(Vector2 mouseDelta)
+    {
+        // Переносим логику вращения сюда
+        _cameraController.HandleMouseLook(mouseDelta, Sensitivity, RotationSpeed);
+    }
+
+    public Camera3D GetCamera() => Camera;
+
+    public IOwnerCameraController GetCameraOwner() => GetParent<Player>(); // Владелец головы - это игрок
+
+    #endregion
 
     public async void AddRecoilAsync(Vector3 direction, float strength, float recoilTime = 0.1f)
     {
         var recoilSpeed = strength / recoilTime;
-        
+
         var tween = GetTree().CreateTween();
         tween.TweenMethod(Callable.From<float>(f =>
         {
             _cameraController.AddRotation(direction * f);
         }), 0f, strength, recoilTime).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
-        
+
         await ToSignal(tween, Tween.SignalName.Finished);
-        
+
         var returnTween = GetTree().CreateTween();
         returnTween.TweenMethod(Callable.From<float>(f =>
         {
@@ -173,10 +170,4 @@ public sealed partial class PlayerHead : Node3D
             CurrentInteractable = null;
         }
     }
-
-    internal void ShakeAsync(double v1, float v2)
-    {
-        throw new NotImplementedException();
-    }
-
 }

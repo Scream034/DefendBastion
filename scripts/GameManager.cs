@@ -1,4 +1,5 @@
 using Game.Entity;
+using Game.Singletons;
 using Godot;
 
 namespace Game;

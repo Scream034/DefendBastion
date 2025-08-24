@@ -9,7 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://c0aomjglyx2a7" path="res://scenes/Entities/Kaiju.tscn" id="8_4mrxx"]
 [ext_resource type="PackedScene" uid="uid://c48vh6kflnrnw" path="res://scenes/Entities/Player.tscn" id="9_7r4gi"]
 [ext_resource type="PackedScene" uid="uid://daxwujwpv62hb" path="res://scenes/Turrets/RailGunTurret.tscn" id="10_e3hyu"]
-[ext_resource type="PackedScene" uid="uid://h4e5iifitbua" path="res://scenes/Turrets/RailGun_jaeforzs.tscn" id="10_w7kh3"]
+[ext_resource type="PackedScene" uid="uid://h4e5iifitbua" path="res://scenes/Turrets/RailGun_JaeForzsFox.tscn" id="10_w7kh3"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_w7kh3"]
 playback_mode = 2
@@ -106,12 +106,14 @@ shape = SubResource("BoxShape3D_0wfyh")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.01081, -121.823)
 
 [node name="RailGunTurret" parent="." instance=ExtResource("10_e3hyu")]
+process_mode = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.24674, -2.07314)
+visible = false
 
 [node name="Player" parent="." instance=ExtResource("9_7r4gi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.775369, 1.48467, 0.474688)
 
 [node name="RailGun_Jaeforzs" parent="." instance=ExtResource("10_w7kh3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.40269, 1.00863, -2.67756)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.908678, 1.37663, -3.07385)
 
 [connection signal="body_entered" from="TargetZone" to="." method="OnTargetZoneEnter"]

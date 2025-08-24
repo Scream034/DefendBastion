@@ -2,6 +2,7 @@ using Godot;
 using Game.Interfaces;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Game.Singletons;
 
 namespace Game.Projectiles;
 

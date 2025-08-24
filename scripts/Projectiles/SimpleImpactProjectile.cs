@@ -1,6 +1,7 @@
 using Godot;
 using Game.VFX;
 using System.Threading.Tasks;
+using Game.Singletons;
 
 namespace Game.Projectiles;
 

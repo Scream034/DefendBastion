@@ -321,22 +321,18 @@ disable_receive_shadows = true
 material = SubResource("StandardMaterial3D_owejd")
 size = Vector3(0.01, 0.01, 0.01)
 
-[node name="RailGunTurret" type="StaticBody3D" node_paths=PackedStringArray("_turretYaw", "_turretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
+[node name="RailGunTurret" type="StaticBody3D" node_paths=PackedStringArray("_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
 physics_interpolation_mode = 1
 collision_layer = 3
 collision_mask = 3
 script = ExtResource("1_ky60h")
-_turretYaw = NodePath("CollisionShape3D")
-_turretPitch = NodePath("CollisionShape3D")
-MinPitch = 0.0
-MaxPitch = 1.0
-MaxYaw = -1.0
 _controlPoint = NodePath("CollisionShape3D/PlayerSeat")
 _exitPoint = NodePath("CollisionShape3D/ExitPoint")
 ProjectileScene = ExtResource("2_fyiut")
 MaxAmmo = -1
 FireRate = 20.0
 BarrelEnd = NodePath("CollisionShape3D/BarrelEnd")
+AutoReload = false
 AnimationPlayer = NodePath("AnimationPlayer")
 
 [node name="AAudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]

@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b0p3lkw3ss53o"
-path="res://.godot/imported/RailGun_Jaeforzs.fbx-80cbb401ef4ba0530dfe06bb44622d4c.scn"
+uid="uid://muayjhywu4ab"
+path="res://.godot/imported/RailGun_JaeForzsFox.fbx-68560e8e74777e1c72f2100b06e9484f.scn"
 
 [deps]
 
-source_file="res://models/RailGun_Jaeforzs.fbx"
-dest_files=["res://.godot/imported/RailGun_Jaeforzs.fbx-80cbb401ef4ba0530dfe06bb44622d4c.scn"]
+source_file="res://models/RailGun_JaeForzsFox.fbx"
+dest_files=["res://.godot/imported/RailGun_JaeForzsFox.fbx-68560e8e74777e1c72f2100b06e9484f.scn"]
 
 [params]
 

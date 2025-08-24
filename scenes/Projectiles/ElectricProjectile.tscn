@@ -30,7 +30,7 @@ emission_energy_multiplier = 1000.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_40e65"]
 material = SubResource("StandardMaterial3D_40e65")
-size = Vector3(0.01, 0.01, 2)
+size = Vector3(0.05, 0.03, 2)
 
 [node name="ElectricProjectile" type="Area3D" node_paths=PackedStringArray("_audioPlayer")]
 process_priority = 2

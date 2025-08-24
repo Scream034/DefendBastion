@@ -1,7 +1,11 @@
 using Godot;
 
-namespace Game;
+namespace Game.Singletons;
 
+/// <summary>
+/// Класс для хранения глобальных констант.
+/// Является синглтоном (Autoload).
+/// </summary>
 public sealed partial class Constants : Node
 {
     public static SceneTree Tree { get; private set; }

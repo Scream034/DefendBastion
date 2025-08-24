@@ -1,3 +1,4 @@
+using Game.Singletons;
 using Godot;
 using System.Collections.Generic;
 
