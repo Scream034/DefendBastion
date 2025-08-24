@@ -6,6 +6,7 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_w7kh3"]
 
 [node name="Player" type="CharacterBody3D" node_paths=PackedStringArray("_head", "_collisionShape")]
+physics_interpolation_mode = 1
 script = ExtResource("1_k5qh4")
 _head = NodePath("Head")
 _collisionShape = NodePath("CollisionShape3D")
@@ -29,7 +30,7 @@ metadata/_custom_type_script = "uid://ceko2b8r6v2y1"
 [node name="InteractionRayCast3D" type="RayCast3D" parent="Head"]
 target_position = Vector3(0, 0, -2.3)
 collision_mask = 2
-debug_shape_custom_color = Color(0.61588645, 0.665092, 0.89140016, 1)
+debug_shape_custom_color = Color(0.615886, 0.665092, 0.8914, 1)
 
 [node name="Camera3D" type="Camera3D" parent="Head"]
 current = true

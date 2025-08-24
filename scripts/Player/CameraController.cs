@@ -4,7 +4,7 @@ namespace Game.Player;
 
 public sealed class CameraController
 {
-    public const float MouseSensitivityMultiplier = 0.00022f;
+    public const float MouseSensitivityMultiplier = 0.0005f;
 
     private readonly Node3D _node;
 

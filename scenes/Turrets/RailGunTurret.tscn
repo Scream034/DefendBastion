@@ -279,20 +279,20 @@ albedo_color = Color(0.2642, 0.261337, 0.305696, 1)
 _data = [Vector2(0.0111732, 0.955056), 0.0, -4.42472, 0, 0, Vector2(0.407821, 1), 0.0, 0.0, 0, 0, Vector2(0.597765, 0.393258), -6.34312, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
 point_count = 4
 
-[sub_resource type="CurveTexture" id="CurveTexture_il5lp"]
+[sub_resource type="CurveTexture" id="CurveTexture_rvycd"]
 curve = SubResource("Curve_rvycd")
 
 [sub_resource type="Gradient" id="Gradient_ouvn5"]
 colors = PackedColorArray(0, 1, 1, 1, 0, 0.666667, 1, 1)
 
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_rvycd"]
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_il5lp"]
 gradient = SubResource("Gradient_ouvn5")
 
 [sub_resource type="Curve" id="Curve_ouvn5"]
 _data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
 point_count = 2
 
-[sub_resource type="CurveTexture" id="CurveTexture_rvycd"]
+[sub_resource type="CurveTexture" id="CurveTexture_hkthc"]
 curve = SubResource("Curve_ouvn5")
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_ouvn5"]
@@ -305,11 +305,11 @@ initial_velocity_max = 4.0
 gravity = Vector3(0, 0, 0)
 linear_accel_min = -40.0
 linear_accel_max = -40.0
-scale_curve = SubResource("CurveTexture_rvycd")
-color_ramp = SubResource("GradientTexture1D_rvycd")
-alpha_curve = SubResource("CurveTexture_il5lp")
+scale_curve = SubResource("CurveTexture_hkthc")
+color_ramp = SubResource("GradientTexture1D_il5lp")
+alpha_curve = SubResource("CurveTexture_rvycd")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ouvn5"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_owejd"]
 transparency = 1
 blend_mode = 1
 shading_mode = 0
@@ -318,7 +318,7 @@ texture_filter = 0
 disable_receive_shadows = true
 
 [sub_resource type="BoxMesh" id="BoxMesh_rvycd"]
-material = SubResource("StandardMaterial3D_ouvn5")
+material = SubResource("StandardMaterial3D_owejd")
 size = Vector3(0.01, 0.01, 0.01)
 
 [node name="RailGunTurret" type="StaticBody3D" node_paths=PackedStringArray("_turretYaw", "_turretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
@@ -376,7 +376,7 @@ size = Vector3(0.18, 0.056, 0.18)
 material = SubResource("ORMMaterial3D_il5lp")
 
 [node name="BarrelCL" type="CSGBox3D" parent="CollisionShape3D/Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.44379e-05, 0.0561387, -0.381998)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00233388, 0.0382813, -0.350061)
 size = Vector3(0.0488281, 0.0156722, 1.62256)
 material = SubResource("ORMMaterial3D_hkthc")
 

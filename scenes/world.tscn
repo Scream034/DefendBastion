@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://q2747brlyw05"]
+[gd_scene load_steps=16 format=3 uid="uid://q2747brlyw05"]
 
 [ext_resource type="Script" uid="uid://q58hirmnykj5" path="res://scripts/GameManager.cs" id="1_sugp2"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_4mrxx"]
@@ -6,18 +6,16 @@
 [ext_resource type="AudioStream" uid="uid://qpfbu8qea6qg" path="res://sounds/ambient2.wav" id="3_7r4gi"]
 [ext_resource type="AudioStream" uid="uid://cgvasqpy4mow3" path="res://sounds/defeat.wav" id="3_qfnet"]
 [ext_resource type="PackedScene" uid="uid://dr7p7k4s6c5a4" path="res://scenes/Objects/House.tscn" id="6_7r4gi"]
-[ext_resource type="CameraAttributesPractical" uid="uid://b610p2clhq430" path="res://env/camera/camera_world.tres" id="7_e3hyu"]
 [ext_resource type="PackedScene" uid="uid://c0aomjglyx2a7" path="res://scenes/Entities/Kaiju.tscn" id="8_4mrxx"]
 [ext_resource type="PackedScene" uid="uid://c48vh6kflnrnw" path="res://scenes/Entities/Player.tscn" id="9_7r4gi"]
 [ext_resource type="PackedScene" uid="uid://daxwujwpv62hb" path="res://scenes/Turrets/RailGunTurret.tscn" id="10_e3hyu"]
+[ext_resource type="PackedScene" uid="uid://h4e5iifitbua" path="res://scenes/Turrets/RailGun_jaeforzs.tscn" id="10_w7kh3"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_w7kh3"]
 playback_mode = 2
 streams_count = 2
 stream_0/stream = ExtResource("2_4mrxx")
 stream_1/stream = ExtResource("3_7r4gi")
-
-[sub_resource type="Environment" id="Environment_w7kh3"]
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_sgp6g"]
 albedo_color = Color(0.359069, 0.359069, 0.359069, 1)
@@ -63,60 +61,57 @@ directional_shadow_blend_splits = true
 sky_mode = 1
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_w7kh3")
-camera_attributes = ExtResource("7_e3hyu")
 
-[node name="Objects" type="Node" parent="."]
+[node name="Ground" type="StaticBody3D" parent="."]
 
-[node name="Ground" type="StaticBody3D" parent="Objects"]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Objects/Ground"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
 mesh = SubResource("PlaneMesh_sgp6g")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Objects/Ground"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
 shape = SubResource("BoxShape3D_sgp6g")
 
-[node name="House" parent="Objects" instance=ExtResource("6_7r4gi")]
+[node name="House" parent="." instance=ExtResource("6_7r4gi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27.0732, 0.180725, 38.0465)
 
-[node name="House2" parent="Objects" instance=ExtResource("6_7r4gi")]
+[node name="House2" parent="." instance=ExtResource("6_7r4gi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.6973, 0.180725, 38.0465)
 
-[node name="House3" parent="Objects" instance=ExtResource("6_7r4gi")]
+[node name="House3" parent="." instance=ExtResource("6_7r4gi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.7569, 0.180725, 38.0465)
 
-[node name="House8" parent="Objects" instance=ExtResource("6_7r4gi")]
+[node name="House8" parent="." instance=ExtResource("6_7r4gi")]
 transform = Transform3D(-0.858289, 0, -0.513167, 0, 1, 0, 0.513167, 0, -0.858289, -0.278895, 0.180725, 28.3482)
 
-[node name="House4" parent="Objects" instance=ExtResource("6_7r4gi")]
+[node name="House4" parent="." instance=ExtResource("6_7r4gi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.7503, 0.180725, 38.0465)
 
-[node name="House5" parent="Objects" instance=ExtResource("6_7r4gi")]
+[node name="House5" parent="." instance=ExtResource("6_7r4gi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.7503, 0.180725, 21.2657)
 
-[node name="House6" parent="Objects" instance=ExtResource("6_7r4gi")]
+[node name="House6" parent="." instance=ExtResource("6_7r4gi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.8076, 0.180725, 21.2657)
 
-[node name="House7" parent="Objects" instance=ExtResource("6_7r4gi")]
+[node name="House7" parent="." instance=ExtResource("6_7r4gi")]
 transform = Transform3D(0.896711, 0, -0.442617, 0, 1, 0, 0.442617, 0, 0.896711, 18.1217, 0.180725, 18.7629)
 
-[node name="Entities" type="Node" parent="."]
-
-[node name="TargetZone" type="Area3D" parent="Entities"]
+[node name="TargetZone" type="Area3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.2757)
 priority = 1
 
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="Entities/TargetZone"]
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="TargetZone"]
 transform = Transform3D(0.999993, 0, 0, 0, 1, 0, 0, 0, 0.999993, 0, 3.50417, 13.6651)
 shape = SubResource("BoxShape3D_0wfyh")
 
-[node name="Kaiju" parent="Entities" instance=ExtResource("8_4mrxx")]
+[node name="Kaiju" parent="." instance=ExtResource("8_4mrxx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.01081, -121.823)
 
-[node name="RailGunTurret" parent="Entities" instance=ExtResource("10_e3hyu")]
+[node name="RailGunTurret" parent="." instance=ExtResource("10_e3hyu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.24674, -2.07314)
 
-[node name="Player" parent="Entities" instance=ExtResource("9_7r4gi")]
+[node name="Player" parent="." instance=ExtResource("9_7r4gi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.775369, 1.48467, 0.474688)
 
-[connection signal="body_entered" from="Entities/TargetZone" to="." method="OnTargetZoneEnter"]
+[node name="RailGun_Jaeforzs" parent="." instance=ExtResource("10_w7kh3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.40269, 1.00863, -2.67756)
+
+[connection signal="body_entered" from="TargetZone" to="." method="OnTargetZoneEnter"]

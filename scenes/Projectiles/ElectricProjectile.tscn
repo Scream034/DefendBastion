@@ -1,7 +1,7 @@
 [gd_scene load_steps=9 format=3 uid="uid://8vtthvh5r3w0"]
 
 [ext_resource type="Script" uid="uid://cxyj736pvhppg" path="res://scripts/Projectiles/SimpleImpactProjectile.cs" id="1_xn4kp"]
-[ext_resource type="PackedScene" uid="uid://bp44dkrre05ne" path="res://scenes/VFX/ElectricImpactVFX.tscn" id="2_40e65"]
+[ext_resource type="PackedScene" uid="uid://bp44dkrre05ne" path="res://scenes/VFX/ElectricImpactVFX21.tscn" id="2_40e65"]
 [ext_resource type="AudioStream" uid="uid://b4s87oy5c1gkk" path="res://sounds/impact1.wav" id="2_lmgi6"]
 [ext_resource type="AudioStream" uid="uid://cme4ak573r487" path="res://sounds/impact2.ogg" id="3_40e65"]
 
