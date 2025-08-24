@@ -10,7 +10,7 @@ namespace Game.Turrets;
 /// Реализует базовую логику прочности через интерфейс IDamageable
 /// и возможность взаимодействия через IInteractable.
 /// </summary>
-public abstract partial class BaseTurret : Node3D, IDamageable, IInteractable
+public abstract partial class BaseTurret : StaticBody3D, IDamageable, IInteractable
 {
     [Export(PropertyHint.Range, "1,10000,1")]
     public float MaxHealth { get; private set; } = 100f;

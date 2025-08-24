@@ -19,8 +19,10 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
 
     public override void _PhysicsProcess(double delta)
     {
-        // Логика наведения переехала в TurretCameraController.
-        // Оставляем только удержание игрока в кресле.
+        // Вызываем базовый метод для вращения
+        base._PhysicsProcess(delta);
+
+        // Удерживаем игрока в кресле
         if (PlayerController != null && _controlPoint != null)
         {
             PlayerController.GlobalPosition = _controlPoint.GlobalPosition;

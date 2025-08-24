@@ -47,17 +47,17 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     /// <summary>
     /// Текущее состояние турели.
     /// </summary>
-    public TurretState CurrentState { get; private set; } = TurretState.Idle;
+    public TurretState CurrentState { get; protected set; } = TurretState.Idle;
 
     [ExportGroup("Shooting Mechanics")]
     [Export(PropertyHint.File, "*.tscn,*.scn")]
-    protected PackedScene ProjectileScene { get; private set; }
+    public PackedScene ProjectileScene { get; private set; }
 
     [Export(PropertyHint.Range, "-1,10000,1")]
-    public int MaxAmmo { get; private set; } = 100;
+    public int MaxAmmo { get; protected set; } = 100;
 
     [Export(PropertyHint.Range, "-1,10000,1")]
-    public int CurrentAmmo { get; private set; }
+    public int CurrentAmmo { get; protected set; }
 
     private float _fireRate = 1.0f;
     /// <summary>
@@ -81,7 +81,7 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     /// Точка, откуда вылетают снаряды.
     /// </summary>
     [Export]
-    protected Marker3D BarrelEnd { get; private set; }
+    public Marker3D BarrelEnd { get; private set; }
 
     [ExportGroup("Reloading")]
     /// <summary>
@@ -126,6 +126,10 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     public bool CanShoot => CurrentState == TurretState.Idle && HasAmmo && IsAlive;
 #endif
 
+    #endregion
+
+    #region Public Getters
+    public Node3D GetShootInitiator() => this;
     #endregion
 
     private Timer _cooldownTimer;
@@ -267,13 +271,6 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
         //    Ключевой момент - `await base.DestroyAsync()`.
         return await base.DestroyAsync();
     }
-
-    public Node3D GetShootInitiator() => this;
-
-    /// <summary>
-    /// Возвращает сцену снаряда, используемую этой турелью.
-    /// </summary>
-    public PackedScene GetProjectileScene() => ProjectileScene;
 
     /// <summary>
     /// Безопасно изменяет состояние турели и вызывает событие <see cref="OnStateChanged"/>.

@@ -1166,12 +1166,15 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_rlvs8")
 
-[node name="RailGun_Jaeforzs" type="StaticBody3D" node_paths=PackedStringArray("_cameraController", "_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
+[node name="RailGun_Jaeforzs" type="StaticBody3D" node_paths=PackedStringArray("_cameraController", "_turretYaw", "_turretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
 collision_layer = 3
 collision_mask = 3
 collision_priority = 1.5
 script = ExtResource("1_lbqb5")
 _cameraController = NodePath("TurretCameraController")
+_turretYaw = NodePath("CollisionShape3D")
+_turretPitch = NodePath("CollisionShape3D")
+_aimSpeed = 4.0
 _controlPoint = NodePath("CollisionShape3D/Base/ControlPoint")
 _exitPoint = NodePath("CollisionShape3D/Base/ExitPoint")
 ProjectileScene = ExtResource("2_6xwvg")
@@ -1182,14 +1185,10 @@ AutoReload = false
 AnimationPlayer = NodePath("AnimationPlayer")
 MaxHealth = 500.0
 
-[node name="TurretCameraController" type="Node" parent="." node_paths=PackedStringArray("_camera", "_turretYaw", "_turretPitch", "_barrelEnd")]
+[node name="TurretCameraController" type="Node" parent="." node_paths=PackedStringArray("_camera")]
 script = ExtResource("3_ddxjo")
 _camera = NodePath("../Camera3D")
-_turretYaw = NodePath("../CollisionShape3D")
-_turretPitch = NodePath("../CollisionShape3D")
-_barrelEnd = NodePath("../CollisionShape3D/Barrel/BarrelEnd")
 SensitivityMultiplier = 0.7
-_aimSpeed = 4.0
 MaxYaw = 60.0
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
