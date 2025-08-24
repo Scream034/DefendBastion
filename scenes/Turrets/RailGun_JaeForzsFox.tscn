@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=4 uid="uid://h4e5iifitbua"]
+[gd_scene load_steps=39 format=4 uid="uid://h4e5iifitbua"]
 
 [ext_resource type="Script" uid="uid://cgntm3mej3m3f" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_lbqb5"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="2_6xwvg"]
@@ -13,7 +13,7 @@
 
 [sub_resource type="Animation" id="Animation_5qgl3"]
 resource_name = "Fire"
-length = 5.0
+length = 5.4
 markers = [{
 "color": Color(0, 0.846722, 0.846722, 1),
 "name": &"Выстрел",
@@ -25,7 +25,7 @@ markers = [{
 }, {
 "color": Color(1, 1, 1, 1),
 "name": &"пар",
-"time": 2.59816
+"time": 1.83333
 }]
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -42,7 +42,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("CollisionShape3D/Barrel/FireAudio:playing")
+tracks/1/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/FireAudio:playing")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
@@ -126,7 +126,7 @@ tracks/7/keys = {
 tracks/8/type = "value"
 tracks/8/imported = false
 tracks/8/enabled = true
-tracks/8/path = NodePath("CollisionShape3D/Barrel/ChargeParticlesB:amount_ratio")
+tracks/8/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/ChargeParticlesB:amount_ratio")
 tracks/8/interp = 1
 tracks/8/loop_wrap = true
 tracks/8/keys = {
@@ -210,7 +210,7 @@ tracks/14/keys = {
 tracks/15/type = "value"
 tracks/15/imported = false
 tracks/15/enabled = true
-tracks/15/path = NodePath("CollisionShape3D/Barrel/ChargeParticlesB/SpotLightB:light_energy")
+tracks/15/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/ChargeParticlesB/SpotLightB:light_energy")
 tracks/15/interp = 1
 tracks/15/loop_wrap = true
 tracks/15/keys = {
@@ -294,7 +294,7 @@ tracks/21/keys = {
 tracks/22/type = "value"
 tracks/22/imported = false
 tracks/22/enabled = true
-tracks/22/path = NodePath("CollisionShape3D/Barrel/ChargeParticlesB:lifetime")
+tracks/22/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/ChargeParticlesB:lifetime")
 tracks/22/interp = 1
 tracks/22/loop_wrap = true
 tracks/22/keys = {
@@ -322,10 +322,10 @@ tracks/24/path = NodePath("CollisionShape3D/Base:mesh:surface_3/material:emissio
 tracks/24/interp = 1
 tracks/24/loop_wrap = true
 tracks/24/keys = {
-"times": PackedFloat32Array(0, 1.93333, 2.06667),
-"transitions": PackedFloat32Array(1.4, 1, 1.4),
+"times": PackedFloat32Array(0, 1.93333, 2.06667, 2.63888, 4.4),
+"transitions": PackedFloat32Array(1.4, 1, 0.8, 1.4, 0.8),
 "update": 0,
-"values": [0.0, 85.0, 0.0]
+"values": [0.0, 85.0, 0.0, 2.0, 0.0]
 }
 tracks/25/type = "value"
 tracks/25/imported = false
@@ -334,10 +334,10 @@ tracks/25/path = NodePath("CollisionShape3D/Base:mesh:surface_3/material:emissio
 tracks/25/interp = 1
 tracks/25/loop_wrap = true
 tracks/25/keys = {
-"times": PackedFloat32Array(0, 1.93333, 2.06667),
-"transitions": PackedFloat32Array(1.4, 1, 1.4),
+"times": PackedFloat32Array(0, 1.93333, 2.63979, 5),
+"transitions": PackedFloat32Array(1.4, 0.01, 1.4, 1),
 "update": 0,
-"values": [Color(0, 0, 0, 1), Color(0.262745, 0.717647, 0.819608, 1), Color(0, 0, 0, 1)]
+"values": [Color(0, 0, 0, 1), Color(0.262745, 0.717647, 0.819608, 1), Color(0.212305, 0.212305, 0.212305, 1), Color(0.258824, 0.258824, 0.321569, 1)]
 }
 tracks/26/type = "value"
 tracks/26/imported = false
@@ -346,10 +346,10 @@ tracks/26/path = NodePath("CollisionShape3D/Base:mesh:surface_3/material:albedo_
 tracks/26/interp = 1
 tracks/26/loop_wrap = true
 tracks/26/keys = {
-"times": PackedFloat32Array(0, 1.93333, 2.06667),
-"transitions": PackedFloat32Array(1.4, 1, 1.4),
+"times": PackedFloat32Array(0, 1.93333, 2.63979, 5),
+"transitions": PackedFloat32Array(1.4, 0.01, 2, 1),
 "update": 0,
-"values": [Color(0.258824, 0.258824, 0.321569, 1), Color(0.262745, 0.717647, 0.819608, 1), Color(0.258824, 0.258824, 0.321569, 1)]
+"values": [Color(0.258824, 0.258824, 0.321569, 1), Color(0.262745, 0.717647, 0.819608, 1), Color(0.2, 0.2, 0.2, 1), Color(0.258824, 0.258824, 0.321569, 1)]
 }
 tracks/27/type = "value"
 tracks/27/imported = false
@@ -358,7 +358,7 @@ tracks/27/path = NodePath("CollisionShape3D/Base:mesh:surface_3/material:metalli
 tracks/27/interp = 1
 tracks/27/loop_wrap = true
 tracks/27/keys = {
-"times": PackedFloat32Array(0, 1.93333, 2.06667),
+"times": PackedFloat32Array(0, 1.93333, 2.63979),
 "transitions": PackedFloat32Array(1.4, 1, 1.4),
 "update": 0,
 "values": [0.25, 0.0, 0.25]
@@ -438,7 +438,7 @@ tracks/33/keys = {
 tracks/34/type = "value"
 tracks/34/imported = false
 tracks/34/enabled = true
-tracks/34/path = NodePath("CollisionShape3D/Barrel/ChargeParticlesB:speed_scale")
+tracks/34/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/ChargeParticlesB:speed_scale")
 tracks/34/interp = 1
 tracks/34/loop_wrap = true
 tracks/34/keys = {
@@ -454,7 +454,7 @@ tracks/35/path = NodePath(".")
 tracks/35/interp = 1
 tracks/35/loop_wrap = true
 tracks/35/keys = {
-"times": PackedFloat32Array(1.96667, 2, 5),
+"times": PackedFloat32Array(1.96667, 2, 5.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "values": [{
 "args": [],
@@ -479,6 +479,138 @@ tracks/36/keys = {
 "update": 0,
 "values": [Vector3(0.000390053, 0, 0.00165756), Vector3(0, 0, 0.1), Vector3(0, 0, 0.002)]
 }
+tracks/37/type = "value"
+tracks/37/imported = false
+tracks/37/enabled = true
+tracks/37/path = NodePath("CollisionShape3D/Base/SmokeParticlesL:amount_ratio")
+tracks/37/interp = 1
+tracks/37/loop_wrap = true
+tracks/37/keys = {
+"times": PackedFloat32Array(2.13333, 3.35571, 5.4),
+"transitions": PackedFloat32Array(0.1, 2, 0.1),
+"update": 0,
+"values": [0.0, 1.0, 0.0]
+}
+tracks/38/type = "value"
+tracks/38/imported = false
+tracks/38/enabled = true
+tracks/38/path = NodePath("CollisionShape3D/Base/SmokeParticlesR:amount_ratio")
+tracks/38/interp = 1
+tracks/38/loop_wrap = true
+tracks/38/keys = {
+"times": PackedFloat32Array(2.13333, 3.35571, 5.4),
+"transitions": PackedFloat32Array(0.1, 2, 0.1),
+"update": 0,
+"values": [0.0, 1.0, 0.0]
+}
+tracks/39/type = "value"
+tracks/39/imported = false
+tracks/39/enabled = true
+tracks/39/path = NodePath("CollisionShape3D/Base/SmokeParticlesL:emitting")
+tracks/39/interp = 1
+tracks/39/loop_wrap = true
+tracks/39/keys = {
+"times": PackedFloat32Array(2.1),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/40/type = "value"
+tracks/40/imported = false
+tracks/40/enabled = true
+tracks/40/path = NodePath("CollisionShape3D/Base/SmokeParticlesR:emitting")
+tracks/40/interp = 1
+tracks/40/loop_wrap = true
+tracks/40/keys = {
+"times": PackedFloat32Array(2.1),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/41/type = "value"
+tracks/41/imported = false
+tracks/41/enabled = true
+tracks/41/path = NodePath("CollisionShape3D/Base/SmokeParticlesL:speed_scale")
+tracks/41/interp = 1
+tracks/41/loop_wrap = true
+tracks/41/keys = {
+"times": PackedFloat32Array(2.13333, 3.35737),
+"transitions": PackedFloat32Array(0.5, 1),
+"update": 0,
+"values": [2.0, 0.9]
+}
+tracks/42/type = "value"
+tracks/42/imported = false
+tracks/42/enabled = true
+tracks/42/path = NodePath("CollisionShape3D/Base/SmokeParticlesR:speed_scale")
+tracks/42/interp = 1
+tracks/42/loop_wrap = true
+tracks/42/keys = {
+"times": PackedFloat32Array(2.13333, 3.35737),
+"transitions": PackedFloat32Array(0.5, 1),
+"update": 0,
+"values": [2.0, 0.9]
+}
+tracks/43/type = "value"
+tracks/43/imported = false
+tracks/43/enabled = true
+tracks/43/path = NodePath("CollisionShape3D/Base/SmokeParticlesL:process_material:direction")
+tracks/43/interp = 1
+tracks/43/loop_wrap = true
+tracks/43/keys = {
+"times": PackedFloat32Array(2.1, 3.33333),
+"transitions": PackedFloat32Array(4, 1),
+"update": 0,
+"values": [Vector3(0, 0, -2), Vector3(0, -0.2, -1)]
+}
+tracks/44/type = "value"
+tracks/44/imported = false
+tracks/44/enabled = true
+tracks/44/path = NodePath("CollisionShape3D/Base/SmokeParticlesR:process_material:direction")
+tracks/44/interp = 1
+tracks/44/loop_wrap = true
+tracks/44/keys = {
+"times": PackedFloat32Array(2.1, 3.33333),
+"transitions": PackedFloat32Array(4, 1),
+"update": 0,
+"values": [Vector3(0, 0, -2), Vector3(0, -0.2, -1)]
+}
+tracks/45/type = "value"
+tracks/45/imported = false
+tracks/45/enabled = true
+tracks/45/path = NodePath("CollisionShape3D/Base/SmokeParticlesR:explosiveness")
+tracks/45/interp = 1
+tracks/45/loop_wrap = true
+tracks/45/keys = {
+"times": PackedFloat32Array(2.1, 3.33333),
+"transitions": PackedFloat32Array(0.5, 1),
+"update": 0,
+"values": [0.2, 0.0]
+}
+tracks/46/type = "value"
+tracks/46/imported = false
+tracks/46/enabled = true
+tracks/46/path = NodePath("CollisionShape3D/Base/SmokeParticlesL:explosiveness")
+tracks/46/interp = 1
+tracks/46/loop_wrap = true
+tracks/46/keys = {
+"times": PackedFloat32Array(2.1, 3.33333),
+"transitions": PackedFloat32Array(0.5, 1),
+"update": 0,
+"values": [0.2, 0.0]
+}
+tracks/47/type = "value"
+tracks/47/imported = false
+tracks/47/enabled = true
+tracks/47/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/SmokeParticles:emitting")
+tracks/47/interp = 1
+tracks/47/loop_wrap = true
+tracks/47/keys = {
+"times": PackedFloat32Array(1.9),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
 
 [sub_resource type="Animation" id="Animation_yqw4q"]
 length = 0.001
@@ -497,7 +629,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("CollisionShape3D/Barrel/FireAudio:playing")
+tracks/1/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/FireAudio:playing")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
@@ -581,7 +713,7 @@ tracks/7/keys = {
 tracks/8/type = "value"
 tracks/8/imported = false
 tracks/8/enabled = true
-tracks/8/path = NodePath("CollisionShape3D/Barrel/ChargeParticlesB:amount_ratio")
+tracks/8/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/ChargeParticlesB:amount_ratio")
 tracks/8/interp = 1
 tracks/8/loop_wrap = true
 tracks/8/keys = {
@@ -665,7 +797,7 @@ tracks/14/keys = {
 tracks/15/type = "value"
 tracks/15/imported = false
 tracks/15/enabled = true
-tracks/15/path = NodePath("CollisionShape3D/Barrel/ChargeParticlesB/SpotLightB:light_energy")
+tracks/15/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/ChargeParticlesB/SpotLightB:light_energy")
 tracks/15/interp = 1
 tracks/15/loop_wrap = true
 tracks/15/keys = {
@@ -749,7 +881,7 @@ tracks/21/keys = {
 tracks/22/type = "value"
 tracks/22/imported = false
 tracks/22/enabled = true
-tracks/22/path = NodePath("CollisionShape3D/Barrel/ChargeParticlesB:lifetime")
+tracks/22/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/ChargeParticlesB:lifetime")
 tracks/22/interp = 1
 tracks/22/loop_wrap = true
 tracks/22/keys = {
@@ -893,7 +1025,7 @@ tracks/33/keys = {
 tracks/34/type = "value"
 tracks/34/imported = false
 tracks/34/enabled = true
-tracks/34/path = NodePath("CollisionShape3D/Barrel/ChargeParticlesB:speed_scale")
+tracks/34/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/ChargeParticlesB:speed_scale")
 tracks/34/interp = 1
 tracks/34/loop_wrap = true
 tracks/34/keys = {
@@ -913,6 +1045,138 @@ tracks/35/keys = {
 "transitions": PackedFloat32Array(1),
 "update": 0,
 "values": [Vector3(0.000390053, 0, 0.00165756)]
+}
+tracks/36/type = "value"
+tracks/36/imported = false
+tracks/36/enabled = true
+tracks/36/path = NodePath("CollisionShape3D/Base/SmokeParticlesL:amount_ratio")
+tracks/36/interp = 1
+tracks/36/loop_wrap = true
+tracks/36/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/37/type = "value"
+tracks/37/imported = false
+tracks/37/enabled = true
+tracks/37/path = NodePath("CollisionShape3D/Base/SmokeParticlesR:amount_ratio")
+tracks/37/interp = 1
+tracks/37/loop_wrap = true
+tracks/37/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/38/type = "value"
+tracks/38/imported = false
+tracks/38/enabled = true
+tracks/38/path = NodePath("CollisionShape3D/Base/SmokeParticlesL:emitting")
+tracks/38/interp = 1
+tracks/38/loop_wrap = true
+tracks/38/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/39/type = "value"
+tracks/39/imported = false
+tracks/39/enabled = true
+tracks/39/path = NodePath("CollisionShape3D/Base/SmokeParticlesR:emitting")
+tracks/39/interp = 1
+tracks/39/loop_wrap = true
+tracks/39/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/40/type = "value"
+tracks/40/imported = false
+tracks/40/enabled = true
+tracks/40/path = NodePath("CollisionShape3D/Base/SmokeParticlesL:speed_scale")
+tracks/40/interp = 1
+tracks/40/loop_wrap = true
+tracks/40/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.9]
+}
+tracks/41/type = "value"
+tracks/41/imported = false
+tracks/41/enabled = true
+tracks/41/path = NodePath("CollisionShape3D/Base/SmokeParticlesR:speed_scale")
+tracks/41/interp = 1
+tracks/41/loop_wrap = true
+tracks/41/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.9]
+}
+tracks/42/type = "value"
+tracks/42/imported = false
+tracks/42/enabled = true
+tracks/42/path = NodePath("CollisionShape3D/Base/SmokeParticlesL:process_material:direction")
+tracks/42/interp = 1
+tracks/42/loop_wrap = true
+tracks/42/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, -0.2, -1)]
+}
+tracks/43/type = "value"
+tracks/43/imported = false
+tracks/43/enabled = true
+tracks/43/path = NodePath("CollisionShape3D/Base/SmokeParticlesR:process_material:direction")
+tracks/43/interp = 1
+tracks/43/loop_wrap = true
+tracks/43/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, -0.2, -1)]
+}
+tracks/44/type = "value"
+tracks/44/imported = false
+tracks/44/enabled = true
+tracks/44/path = NodePath("CollisionShape3D/Base/SmokeParticlesR:explosiveness")
+tracks/44/interp = 1
+tracks/44/loop_wrap = true
+tracks/44/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.2]
+}
+tracks/45/type = "value"
+tracks/45/imported = false
+tracks/45/enabled = true
+tracks/45/path = NodePath("CollisionShape3D/Base/SmokeParticlesL:explosiveness")
+tracks/45/interp = 1
+tracks/45/loop_wrap = true
+tracks/45/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.2]
+}
+tracks/46/type = "value"
+tracks/46/imported = false
+tracks/46/enabled = true
+tracks/46/path = NodePath("CollisionShape3D/Barrel/BarrelEnd/SmokeParticles:emitting")
+tracks/46/interp = 1
+tracks/46/loop_wrap = true
+tracks/46/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_78vft"]
@@ -1030,6 +1294,70 @@ disable_receive_shadows = true
 [sub_resource type="BoxMesh" id="BoxMesh_r84oa"]
 material = SubResource("StandardMaterial3D_yqw4q")
 size = Vector3(0.02, 0.02, 0.02)
+
+[sub_resource type="Gradient" id="Gradient_lbqb5"]
+colors = PackedColorArray(0.2, 0.2, 0.2, 0.792157, 0.333333, 0.333333, 0.333333, 0.498039)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_6xwvg"]
+gradient = SubResource("Gradient_lbqb5")
+width = 128
+
+[sub_resource type="Curve" id="Curve_lbqb5"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.022472), -2.28553, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_6xwvg"]
+width = 128
+curve = SubResource("Curve_lbqb5")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_6xwvg"]
+lifetime_randomness = 0.5
+particle_flag_damping_as_friction = true
+emission_shape_scale = Vector3(0.2, 0.1, 0.1)
+emission_shape = 3
+emission_box_extents = Vector3(1, 1, 1)
+angle_min = -92.5
+angle_max = 63.0
+direction = Vector3(0, -0.5, -2)
+spread = 95.0
+flatness = 0.9
+initial_velocity_min = 5.0
+initial_velocity_max = 10.0
+orbit_velocity_min = 9.49949e-08
+orbit_velocity_max = 12.0
+radial_velocity_min = -2.23517e-05
+radial_velocity_max = -2.23517e-05
+gravity = Vector3(0, 1, 0)
+linear_accel_min = -4.0
+linear_accel_max = -1.0
+scale_min = 0.0
+scale_curve = SubResource("CurveTexture_6xwvg")
+color_ramp = SubResource("GradientTexture1D_6xwvg")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lbqb5"]
+transparency = 1
+blend_mode = 1
+depth_draw_mode = 2
+diffuse_mode = 3
+specular_mode = 2
+disable_fog = true
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+metallic_specular = 0.0
+emission = Color(0.219501, 0.219501, 0.219501, 1)
+disable_receive_shadows = true
+billboard_mode = 3
+billboard_keep_scale = true
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="SphereMesh" id="SphereMesh_6xwvg"]
+material = SubResource("StandardMaterial3D_lbqb5")
+radius = 0.05
+height = 0.1
+radial_segments = 8
+rings = 8
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_yj6mr"]
 resource_name = "Куб_001"
@@ -1167,6 +1495,34 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_rlvs8")
 
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_lbqb5"]
+lifetime_randomness = 0.2
+emission_shape_scale = Vector3(0.2, 0.1, 0.1)
+emission_shape = 3
+emission_box_extents = Vector3(1, 1, 1)
+direction = Vector3(0, -0.2, -1)
+spread = 20.0
+flatness = 0.5
+initial_velocity_min = 5.0
+initial_velocity_max = 10.0
+orbit_velocity_min = 9.49949e-08
+orbit_velocity_max = 12.0
+radial_velocity_min = -2.23517e-05
+radial_velocity_max = -2.23517e-05
+gravity = Vector3(0, 1, 0)
+linear_accel_min = -4.0
+linear_accel_max = -1.0
+scale_min = 0.0
+scale_curve = SubResource("CurveTexture_6xwvg")
+color_ramp = SubResource("GradientTexture1D_6xwvg")
+
+[sub_resource type="SphereMesh" id="SphereMesh_lbqb5"]
+material = SubResource("StandardMaterial3D_lbqb5")
+radius = 0.05
+height = 0.1
+radial_segments = 8
+rings = 4
+
 [node name="RailGun_Jaeforzs" type="StaticBody3D" node_paths=PackedStringArray("_cameraController", "TurretYaw", "TurretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
 collision_layer = 3
 collision_mask = 3
@@ -1209,8 +1565,15 @@ shape = SubResource("BoxShape3D_rlvs8")
 transform = Transform3D(0.28, 3.33786e-08, -1.66893e-08, -3.33786e-08, 0.28, -1.98952e-15, 1.66893e-08, 3.97904e-15, 0.28, 0.000390053, 0, 0.00165756)
 mesh = SubResource("ArrayMesh_xeoym")
 
-[node name="ChargeParticlesB" type="GPUParticles3D" parent="CollisionShape3D/Barrel"]
-transform = Transform3D(0.0434783, 4.44089e-16, 2.22045e-16, 4.44089e-16, 0.0434783, -5.29396e-23, 4.44089e-16, 0, 0.0434783, 0.00818893, 0.0018363, -6.54578)
+[node name="BarrelEnd" type="Marker3D" parent="CollisionShape3D/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00824786, 0.00173065, -6.53243)
+
+[node name="FireAudio" type="AudioStreamPlayer3D" parent="CollisionShape3D/Barrel/BarrelEnd"]
+transform = Transform3D(2.12874e-07, 3.57143, 2.69635e-07, 5.8186e-07, 2.69635e-07, -3.57143, -3.57143, 2.12874e-07, -5.8186e-07, -0.0082482, 0.0370562, 0.836897)
+stream = ExtResource("6_ca4b8")
+
+[node name="ChargeParticlesB" type="GPUParticles3D" parent="CollisionShape3D/Barrel/BarrelEnd"]
+transform = Transform3D(0.0434783, 4.44089e-16, 2.22045e-16, 4.44089e-16, 0.0434783, -5.29396e-23, 4.44089e-16, 0, 0.0434783, -5.89285e-05, 0.00010565, -0.01335)
 cast_shadow = 0
 amount = 512
 amount_ratio = 0.0
@@ -1224,7 +1587,7 @@ draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_rw2m1")
 draw_pass_1 = SubResource("BoxMesh_r84oa")
 
-[node name="SpotLightB" type="SpotLight3D" parent="CollisionShape3D/Barrel/ChargeParticlesB"]
+[node name="SpotLightB" type="SpotLight3D" parent="CollisionShape3D/Barrel/BarrelEnd/ChargeParticlesB"]
 transform = Transform3D(1, -8.47033e-22, 1.66082e-14, 8.47033e-22, 1, -1.3199e-21, -1.66082e-14, 1.3199e-21, 1, -1.04308e-07, 1.0975, 0.503387)
 light_color = Color(0.262745, 0.717647, 0.819608, 1)
 light_energy = 0.0
@@ -1235,12 +1598,17 @@ spot_range = 90.0
 spot_attenuation = 2.0
 spot_angle = 89.99
 
-[node name="BarrelEnd" type="Marker3D" parent="CollisionShape3D/Barrel"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00824786, 0.00173065, -6.53243)
-
-[node name="FireAudio" type="AudioStreamPlayer3D" parent="CollisionShape3D/Barrel"]
-transform = Transform3D(2.12874e-07, 3.57143, 2.69635e-07, 5.8186e-07, 2.69635e-07, -3.57143, -3.57143, 2.12874e-07, -5.8186e-07, -2.6077e-07, 0.0387869, -4.32651)
-stream = ExtResource("6_ca4b8")
+[node name="SmokeParticles" type="GPUParticles3D" parent="CollisionShape3D/Barrel/BarrelEnd"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+cast_shadow = 0
+emitting = false
+amount = 210
+one_shot = true
+speed_scale = 0.9
+explosiveness = 1.0
+randomness = 0.5
+process_material = SubResource("ParticleProcessMaterial_6xwvg")
+draw_pass_1 = SubResource("SphereMesh_6xwvg")
 
 [node name="FakeLight" type="MeshInstance3D" parent="CollisionShape3D"]
 transform = Transform3D(0.28, 0, 0, 0, 0.28, 0, 0, 0, 0.28, 0, 0, 0)
@@ -1393,6 +1761,26 @@ shadow_opacity = 0.85
 spot_range = 100.0
 spot_attenuation = 2.2
 spot_angle = 70.0
+
+[node name="SmokeParticlesL" type="GPUParticles3D" parent="CollisionShape3D/Base"]
+transform = Transform3D(0.85522, -6.42221e-05, -0.518266, 4.10548e-05, 1, -5.61703e-05, 0.518266, 2.67607e-05, 0.85522, 0.598565, 0.000200514, 1.5027)
+cast_shadow = 0
+amount = 64
+amount_ratio = 0.0
+speed_scale = 0.9
+explosiveness = 0.2
+process_material = SubResource("ParticleProcessMaterial_lbqb5")
+draw_pass_1 = SubResource("SphereMesh_lbqb5")
+
+[node name="SmokeParticlesR" type="GPUParticles3D" parent="CollisionShape3D/Base"]
+transform = Transform3D(0.855364, -1.29674e-12, 0.518027, -1.09139e-11, 1, 2.91038e-11, -0.518027, -1.45519e-11, 0.855364, -0.593015, -0.010985, 1.47845)
+cast_shadow = 0
+amount = 64
+amount_ratio = 0.0
+speed_scale = 0.9
+explosiveness = 0.2
+process_material = SubResource("ParticleProcessMaterial_lbqb5")
+draw_pass_1 = SubResource("SphereMesh_lbqb5")
 
 [node name="ControlPoint" type="Marker3D" parent="CollisionShape3D/Base"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00400887, -0.412916, 5.4763)

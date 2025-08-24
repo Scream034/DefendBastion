@@ -107,4 +107,4 @@ uppercase = true
 layout_mode = 0
 offset_right = 164.0
 offset_bottom = 41.0
-text = "dev build: 3"
+text = "dev build"
