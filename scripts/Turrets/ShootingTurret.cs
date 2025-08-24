@@ -271,6 +271,11 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     public Node3D GetShootInitiator() => this;
 
     /// <summary>
+    /// Возвращает сцену снаряда, используемую этой турелью.
+    /// </summary>
+    public PackedScene GetProjectileScene() => ProjectileScene;
+
+    /// <summary>
     /// Безопасно изменяет состояние турели и вызывает событие <see cref="OnStateChanged"/>.
     /// </summary>
     /// <param name="newState">Новое состояние.</param>

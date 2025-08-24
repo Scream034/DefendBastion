@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://q2747brlyw05"]
+[gd_scene load_steps=17 format=3 uid="uid://q2747brlyw05"]
 
 [ext_resource type="Script" uid="uid://q58hirmnykj5" path="res://scripts/GameManager.cs" id="1_sugp2"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_4mrxx"]
@@ -16,6 +16,8 @@ playback_mode = 2
 streams_count = 2
 stream_0/stream = ExtResource("2_4mrxx")
 stream_1/stream = ExtResource("3_7r4gi")
+
+[sub_resource type="Environment" id="Environment_w7kh3"]
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_sgp6g"]
 albedo_color = Color(0.359069, 0.359069, 0.359069, 1)
@@ -61,6 +63,7 @@ directional_shadow_blend_splits = true
 sky_mode = 1
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_w7kh3")
 
 [node name="Ground" type="StaticBody3D" parent="."]
 
@@ -104,6 +107,12 @@ shape = SubResource("BoxShape3D_0wfyh")
 
 [node name="Kaiju" parent="." instance=ExtResource("8_4mrxx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.01081, -121.823)
+
+[node name="Kaiju2" parent="." instance=ExtResource("8_4mrxx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80.2731, 5.01081, -94.4997)
+
+[node name="Kaiju3" parent="." instance=ExtResource("8_4mrxx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -77.1652, 5.01081, -94.4997)
 
 [node name="RailGunTurret" parent="." instance=ExtResource("10_e3hyu")]
 process_mode = 4
