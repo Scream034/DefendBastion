@@ -1599,7 +1599,6 @@ spot_attenuation = 2.0
 spot_angle = 89.99
 
 [node name="SmokeParticles" type="GPUParticles3D" parent="CollisionShape3D/Barrel/BarrelEnd"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 cast_shadow = 0
 emitting = false
 amount = 210
