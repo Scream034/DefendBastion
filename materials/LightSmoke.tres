@@ -1,0 +1,18 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dwtxephbdjen0"]
+
+[resource]
+transparency = 1
+blend_mode = 1
+depth_draw_mode = 2
+diffuse_mode = 3
+specular_mode = 2
+disable_fog = true
+vertex_color_use_as_albedo = true
+metallic_specular = 0.0
+emission = Color(0.219501, 0.219501, 0.219501, 1)
+disable_receive_shadows = true
+billboard_mode = 3
+billboard_keep_scale = true
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false

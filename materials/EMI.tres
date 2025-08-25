@@ -1,0 +1,21 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://njqerq0i4stc"]
+
+[resource]
+render_priority = -1
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 2
+diffuse_mode = 3
+specular_mode = 2
+disable_fog = true
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+metallic_specular = 0.0
+roughness = 0.0
+emission_enabled = true
+emission = Color(0.391594, 0.5956, 0.999999, 1)
+emission_energy_multiplier = 1.5
+emission_on_uv2 = true
+texture_filter = 0
+texture_repeat = false

@@ -10,14 +10,22 @@ size = Vector3(0.01, 0.01, 2)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_40e65"]
 render_priority = 1
+transparency = 1
+blend_mode = 1
 shading_mode = 2
-disable_ambient_light = true
+diffuse_mode = 3
+specular_mode = 2
 disable_fog = true
 vertex_color_use_as_albedo = true
-albedo_color = Color(0, 0.494118, 1, 1)
+vertex_color_is_srgb = true
+albedo_color = Color(0.675285, 0.441388, 0.999998, 1)
+roughness = 0.0
 emission_enabled = true
-emission = Color(0, 0.411765, 1, 1)
-emission_energy_multiplier = 1000.0
+emission = Color(0.660493, 0.000326904, 0.660488, 1)
+emission_energy_multiplier = 90.0
+texture_filter = 0
+texture_repeat = false
+disable_receive_shadows = true
 
 [sub_resource type="BoxMesh" id="BoxMesh_40e65"]
 material = SubResource("StandardMaterial3D_40e65")

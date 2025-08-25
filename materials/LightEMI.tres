@@ -1,0 +1,21 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bjc7h7uqx5o0q"]
+
+[resource]
+render_priority = -1
+transparency = 1
+blend_mode = 1
+cull_mode = 1
+diffuse_mode = 3
+disable_fog = true
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+emission_enabled = true
+emission = Color(0.553328, 0.573233, 1, 1)
+emission_energy_multiplier = 10.0
+texture_filter = 0
+texture_repeat = false
+billboard_mode = 3
+billboard_keep_scale = true
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false

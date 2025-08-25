@@ -1,0 +1,10 @@
+[gd_resource type="SphereMesh" load_steps=2 format=3 uid="uid://bdk55pdj5fk5u"]
+
+[ext_resource type="Material" uid="uid://dwtxephbdjen0" path="res://materials/LightSmoke.tres" id="1_kjflv"]
+
+[resource]
+material = ExtResource("1_kjflv")
+radius = 0.01
+height = 0.02
+radial_segments = 8
+rings = 8

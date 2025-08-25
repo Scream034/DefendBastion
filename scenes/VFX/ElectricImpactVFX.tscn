@@ -1,6 +1,11 @@
-[gd_scene load_steps=25 format=3 uid="uid://dgo3h3uf35i4r"]
+[gd_scene load_steps=22 format=3 uid="uid://dgo3h3uf35i4r"]
 
 [ext_resource type="Script" uid="uid://bawxsmi1ivutw" path="res://scripts/VFX/AnimationVFX3D.cs" id="1_e2bf0"]
+[ext_resource type="Texture2D" uid="uid://dxx0yjvwv6m04" path="res://curves/LightEMIColorRamp.tres" id="2_82fve"]
+[ext_resource type="Texture2D" uid="uid://c1aonuv6vsmeb" path="res://curves/EMIColorRamp.tres" id="3_3k43t"]
+[ext_resource type="Material" uid="uid://bjc7h7uqx5o0q" path="res://materials/LightEMI.tres" id="3_konhu"]
+[ext_resource type="Texture2D" uid="uid://dg1hd3ae2u2xe" path="res://curves/LightEMI2_ColorRamp.tres" id="4_uiu7c"]
+[ext_resource type="Material" uid="uid://njqerq0i4stc" path="res://materials/EMI.tres" id="5_43bjs"]
 
 [sub_resource type="Animation" id="Animation_e2bf0"]
 length = 0.001
@@ -47,10 +52,10 @@ tracks/3/path = NodePath("DataShards:emitting")
 tracks/3/interp = 1
 tracks/3/loop_wrap = true
 tracks/3/keys = {
-"times": PackedFloat32Array(0),
+"times": PackedFloat32Array(-0.0370186),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/4/type = "value"
 tracks/4/imported = false
@@ -59,10 +64,10 @@ tracks/4/path = NodePath("DataCubs:emitting")
 tracks/4/interp = 1
 tracks/4/loop_wrap = true
 tracks/4/keys = {
-"times": PackedFloat32Array(0),
+"times": PackedFloat32Array(-0.0370186),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/5/type = "value"
 tracks/5/imported = false
@@ -74,7 +79,7 @@ tracks/5/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
-"values": [true]
+"values": [false]
 }
 tracks/6/type = "value"
 tracks/6/imported = false
@@ -255,13 +260,6 @@ _data = {
 &"VFX": SubResource("Animation_acw60")
 }
 
-[sub_resource type="Gradient" id="Gradient_acw60"]
-colors = PackedColorArray(0, 1, 1, 1, 0, 0.333333, 1, 1)
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_e2bf0"]
-gradient = SubResource("Gradient_acw60")
-width = 32
-
 [sub_resource type="Curve" id="Curve_acw60"]
 _data = [Vector2(0.00543478, 1), 0.0, 0.0, 0, 0, Vector2(0.858696, 0.865169), -0.413483, -0.413483, 0, 0, Vector2(0.994565, 0), 2.89438, 0.0, 0, 0]
 point_count = 3
@@ -287,39 +285,12 @@ damping_min = 4.0
 damping_max = 7.0
 scale_min = 0.0
 scale_curve = SubResource("CurveTexture_e2bf0")
-color_ramp = SubResource("GradientTexture1D_e2bf0")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_acw60"]
-render_priority = 1
-transparency = 1
-cull_mode = 1
-shading_mode = 2
-disable_ambient_light = true
-disable_fog = true
-vertex_color_use_as_albedo = true
-vertex_color_is_srgb = true
-emission_enabled = true
-emission = Color(0.431784, 0.624338, 1, 1)
-emission_energy_multiplier = 8.0
-texture_filter = 0
-texture_repeat = false
-billboard_mode = 3
-billboard_keep_scale = true
-particles_anim_h_frames = 1
-particles_anim_v_frames = 1
-particles_anim_loop = false
+color_ramp = ExtResource("2_82fve")
 
 [sub_resource type="PrismMesh" id="PrismMesh_acw60"]
-material = SubResource("StandardMaterial3D_acw60")
+material = ExtResource("5_43bjs")
 left_to_right = 1.0
 size = Vector3(0.1, 0.1, 0.003)
-
-[sub_resource type="Gradient" id="Gradient_e2bf0"]
-colors = PackedColorArray(0, 1, 1, 1, 0, 0.333333, 1, 1)
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_82fve"]
-gradient = SubResource("Gradient_e2bf0")
-width = 32
 
 [sub_resource type="Curve" id="Curve_3k43t"]
 _data = [Vector2(0.00543478, 1), 0.0, 0.0, 0, 0, Vector2(0.858696, 0.865169), -0.413483, -0.413483, 0, 0, Vector2(0.994565, 0), 2.89438, 0.0, 0, 0]
@@ -353,35 +324,12 @@ tangential_accel_max = -2.23517e-06
 damping_max = 3.0
 scale_min = 0.0
 scale_curve = SubResource("CurveTexture_uiu7c")
-color = Color(0.431373, 0.623529, 1, 1)
-color_ramp = SubResource("GradientTexture1D_82fve")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e2bf0"]
-transparency = 1
-shading_mode = 2
-specular_mode = 2
-disable_fog = true
-vertex_color_use_as_albedo = true
-vertex_color_is_srgb = true
-metallic_specular = 0.0
-roughness = 0.0
-emission_enabled = true
-emission = Color(0.431373, 0.623529, 1, 1)
-emission_energy_multiplier = 1.5
-emission_on_uv2 = true
-texture_filter = 0
-texture_repeat = false
+color = Color(0.526252, 0.688852, 1, 1)
+color_ramp = ExtResource("3_3k43t")
 
 [sub_resource type="BoxMesh" id="BoxMesh_acw60"]
-material = SubResource("StandardMaterial3D_e2bf0")
+material = ExtResource("5_43bjs")
 size = Vector3(0.2, 0.2, 0.2)
-
-[sub_resource type="Gradient" id="Gradient_82fve"]
-colors = PackedColorArray(0, 1, 1, 1, 0, 0.333333, 1, 1)
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_3k43t"]
-gradient = SubResource("Gradient_82fve")
-width = 32
 
 [sub_resource type="Curve" id="Curve_uiu7c"]
 _data = [Vector2(0.00543478, 1), 0.0, 0.0, 0, 0, Vector2(0.858696, 0.865169), -0.413483, -0.413483, 0, 0, Vector2(0.994565, 0), 2.89438, 0.0, 0, 0]
@@ -408,10 +356,10 @@ damping_min = 4.0
 damping_max = 7.0
 scale_min = 0.0
 scale_curve = SubResource("CurveTexture_konhu")
-color_ramp = SubResource("GradientTexture1D_3k43t")
+color_ramp = ExtResource("4_uiu7c")
 
 [sub_resource type="SphereMesh" id="SphereMesh_acw60"]
-material = SubResource("StandardMaterial3D_acw60")
+material = ExtResource("3_konhu")
 radius = 0.05
 height = 0.1
 radial_segments = 8
@@ -428,6 +376,7 @@ libraries = {
 
 [node name="DataShards" type="GPUParticles3D" parent="."]
 cast_shadow = 0
+emitting = false
 amount = 150
 amount_ratio = 0.01
 lifetime = 1.2
@@ -439,6 +388,7 @@ draw_pass_1 = SubResource("PrismMesh_acw60")
 [node name="DataCubs" type="GPUParticles3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00233459, 0.0188651, -0.004565)
 cast_shadow = 0
+emitting = false
 amount = 64
 amount_ratio = 0.01
 lifetime = 6.0
@@ -450,6 +400,7 @@ process_material = SubResource("ParticleProcessMaterial_konhu")
 draw_pass_1 = SubResource("BoxMesh_acw60")
 
 [node name="DataCircle" type="GPUParticles3D" parent="."]
+emitting = false
 amount = 64
 amount_ratio = 0.01
 lifetime = 0.6
