@@ -1,4 +1,4 @@
-using Game.Entity;
+using System.Threading.Tasks;
 using Game.Singletons;
 using Godot;
 
@@ -6,82 +6,72 @@ namespace Game;
 
 public partial class GameManager : Node3D
 {
-    [Export]
-    private AudioStreamPlayer _audioAmbient;
+    public static GameManager Instance { get; private set; }
 
-    [Export]
-    private AudioStreamPlayer _audioVictory;
+    [Signal]
+    public delegate void NavigationReadyEventHandler();
 
-    [Export]
-    private AudioStreamPlayer _audioDefeat;
+    [Export] private AudioStreamPlayer _audioAmbient;
+    [Export] private AudioStreamPlayer _audioVictory;
+    [Export] private AudioStreamPlayer _audioDefeat;
 
-    private Kaiju _kaiju;
+    private Rid _navigationMapRid; // Сохраняем RID карты здесь
 
-    public GameManager()
+    public bool IsNavigationReady { get; private set; } = false;
+
+    public override void _EnterTree()
     {
-        LivingEntityManager.OnAdded += OnEntityAdded;
-        LivingEntityManager.OnRemoved += OnEntityRemoved;
+        // Установка синглтона
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            GD.PushWarning("GameManager instance already exists. Overwriting.");
+            Instance = this;
+        }
     }
 
     public override async void _Ready()
     {
-        base._Ready();
-        await ToSignal(Constants.Tree, SceneTree.SignalName.PhysicsFrame);
+        // Получаем и сохраняем RID карты
+        _navigationMapRid = GetWorld3D().NavigationMap;
 
-        Constants.UpdateWorldConstants(GetWorld3D());
-        KaijuHealthChanged(_kaiju.Health);
+        // Подписываемся, используя ИМЯ метода, а не лямбду
+        NavigationServer3D.Singleton.MapChanged += OnMapChanged;
+
+        while (!IsNavigationReady)
+        {
+            await Task.Delay(25);
+        }
+
         AudioServer.SetBusVolumeDb(0, -16f);
     }
 
-    private void OnEntityAdded(LivingEntity sender)
+    /// <summary>
+    /// Этот метод будет вызываться КАЖДЫЙ раз, когда ЛЮБАЯ навигационная карта меняется.
+    /// </summary>
+    private void OnMapChanged(Rid mapRid)
     {
-        if (sender is Kaiju kaiju)
+        // Мы проверяем, что изменилась именно та карта, которая нас интересует.
+        if (mapRid == _navigationMapRid)
         {
-            _kaiju = kaiju;
-            _kaiju.OnDestroyed += OnKaijuDeath;
-            _kaiju.OnHealthChanged += KaijuHealthChanged;
+            OnNavigationMapReady();
         }
     }
 
-    private void OnEntityRemoved(LivingEntity sender)
+    private void OnNavigationMapReady()
     {
-        if (sender is Kaiju)
-        {
-            _kaiju = null;
-        }
-    }
+        if (IsNavigationReady) return; // Защита от повторного вызова
 
-    private void OnKaijuDeath()
-    {
-        GD.Print($"Victory! Kaiju is dead!");
+        // Теперь отписка работает, потому что мы используем ту же самую ссылку на метод
+        NavigationServer3D.Singleton.MapChanged -= OnMapChanged;
 
-        _audioAmbient.Stop();
-        _audioVictory.Play();
+        Constants.UpdateWorldConstants(GetWorld3D());
 
-        UI.Instance.ShowEndState("ПОБЕДА! Кайдзю был уничтожен!");
-    }
-
-    private void OnTargetZoneEnter(Node3D body)
-    {
-        if (body is not Kaiju) return;
-        GD.Print("Lose! Bastion fell!");
-
-        DetachEventsKaiju();
-
-        _audioAmbient.Stop();
-        _audioDefeat.Play();
-
-        UI.Instance.ShowEndState("ПОРАЖЕНИЕ! Бастион пал!");
-    }
-
-    private void KaijuHealthChanged(float health)
-    {
-        UI.Instance.UpdateProgress(health / _kaiju.MaxHealth * 100f);
-    }
-
-    public void DetachEventsKaiju()
-    {
-        _kaiju.OnDestroyed -= OnKaijuDeath;
-        _kaiju.OnHealthChanged -= KaijuHealthChanged;
+        IsNavigationReady = true;
+        GD.Print("-> Navigation map is ready! Emitting NavigationReady signal.");
+        EmitSignal(SignalName.NavigationReady);
     }
 }

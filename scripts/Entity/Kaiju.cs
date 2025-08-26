@@ -22,7 +22,7 @@ public sealed partial class Kaiju : AIEntity
             SetMaxHealth(GD.RandRange(900, 2222));
         }
 
-        GD.Print("Kaiju created! Health: " + Health + ". AI is active.");
+        GD.Print($"Kaiju created: {GlobalPosition}! Health: {Health}. AI is active.");
     }
 
     public override async Task<bool> DamageAsync(float amount)

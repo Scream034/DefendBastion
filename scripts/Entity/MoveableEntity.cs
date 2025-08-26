@@ -10,7 +10,7 @@ namespace Game.Entity;
 public abstract partial class MoveableEntity : LivingEntity
 {
     [ExportGroup("Movement")]
-    [Export] public float Speed { get; protected set; } = 20.0f;
+    [Export] public float Speed { get; protected set; } = 5.0f;
     [Export] public float Acceleration { get; protected set; } = 4.0f;
     [Export] public float Deceleration { get; protected set; } = 4.0f;
     [Export] public float JumpVelocity { get; protected set; } = 4.5f;

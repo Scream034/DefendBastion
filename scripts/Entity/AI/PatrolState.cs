@@ -3,49 +3,116 @@ using Godot;
 namespace Game.Entity.AI;
 
 /// <summary>
-/// Состояние патрулирования. ИИ бесцельно бродит по заданным точкам или в радиусе.
+/// Состояние патрулирования. ИИ движется к случайной достижимой точке
+/// в пределах заданного радиуса от своей точки спавна, ждет некоторое время,
+/// а затем выбирает новую точку.
 /// </summary>
-public sealed class PatrolState(AIEntity context) : State(context)
+public sealed class PatrolState : State
 {
-    private Vector3 _patrolTargetPosition;
+    private enum SubState
+    {
+        Moving,
+        Waiting
+    }
 
-    // Для патрулирования можно использовать массив точек или просто случайные точки в радиусе.
-    // Для простоты выберем второй вариант.
-    private readonly float _patrolRadius = 20f;
+    private SubState _currentSubState;
+    private float _waitTimer;
+
+    public PatrolState(AIEntity context) : base(context) { }
 
     public override void Enter()
     {
-        GD.Print($"{_context.Name} entering Patrol state.");
-        PickNewPatrolPoint();
+        GD.Print($"{_context.Name} входит в состояние Patrol.");
+        _currentSubState = SubState.Moving;
+        FindAndMoveToNewPatrolPoint();
     }
 
-    public override void Update(double delta)
+    public override void Update(float delta)
     {
-        // Если была дана внешняя команда атаковать цель, немедленно переключаемся.
+        // Главный приоритет: если появилась цель, немедленно переходим в атаку.
         if (_context.CurrentTarget != null)
         {
             _context.ChangeState(new AttackState(_context));
             return;
         }
 
-        // Если ИИ достиг точки патрулирования, выбираем новую.
-        if (_context.GlobalPosition.DistanceTo(_patrolTargetPosition) < 1.0f)
+        switch (_currentSubState)
         {
-            PickNewPatrolPoint();
-        }
+            case SubState.Moving:
+                // Если мы дошли до цели...
+                if (_context.NavigationAgent.IsNavigationFinished())
+                {
+                    // ...переключаемся в режим ожидания.
+                    _currentSubState = SubState.Waiting;
+                    SetWaitTimer();
+                    GD.Print($"{_context.Name} достиг точки патрулирования, ждет {_waitTimer:0.0} сек.");
+                }
+                break;
 
-        _context.MoveTowards(_patrolTargetPosition, (float)delta);
+            case SubState.Waiting:
+                _waitTimer -= delta;
+                // Если время ожидания вышло...
+                if (_waitTimer <= 0)
+                {
+                    // ...ищем новую точку и начинаем движение.
+                    _currentSubState = SubState.Moving;
+                    FindAndMoveToNewPatrolPoint();
+                }
+                break;
+        }
     }
 
-    private void PickNewPatrolPoint()
+    public override void Exit()
     {
-        var randomDirection = new Vector3(
-            (float)GD.RandRange(-1.0, 1.0),
-            0,
-            (float)GD.RandRange(-1.0, 1.0)
-        ).Normalized();
+        // При выходе из состояния патрулирования (например, для атаки)
+        // мы останавливаем текущее движение, чтобы избежать "скольжения"
+        // к последней патрульной точке.
+        _context.StopMovement();
+        GD.Print($"{_context.Name} выходит из состояния Patrol.");
+    }
 
-        _patrolTargetPosition = _context.GlobalPosition + randomDirection * _patrolRadius;
-        GD.Print($"{_context.Name} new patrol point: {_patrolTargetPosition}");
+    /// <summary>
+    /// Устанавливает таймер ожидания в соответствии с настройками в AIEntity.
+    /// </summary>
+    private void SetWaitTimer()
+    {
+        if (_context.UseRandomWaitTime)
+        {
+            _waitTimer = (float)GD.RandRange(_context.MinPatrolWaitTime, _context.MaxPatrolWaitTime);
+        }
+        else
+        {
+            _waitTimer = _context.MaxPatrolWaitTime; // Используем максимальное значение как фиксированное
+        }
+    }
+
+    /// <summary>
+    /// Находит случайную точку на NavMesh в пределах радиуса патрулирования и
+    /// дает команду AIEntity двигаться к ней.
+    /// </summary>
+    private void FindAndMoveToNewPatrolPoint()
+    {
+        float radius;
+
+        // Определяем радиус поиска в зависимости от настроек
+        if (_context.UseRandomPatrolRadius)
+        {
+            radius = (float)GD.RandRange(_context.MinPatrolRadius, _context.MaxPatrolRadius);
+        }
+        else
+        {
+            radius = _context.MaxPatrolRadius;
+        }
+
+        // 1. Генерируем случайную точку внутри 2D-окружности
+        var randomDirection = Vector2.FromAngle((float)GD.RandRange(0, Mathf.Tau)).Normalized();
+        var targetPoint = _context.SpawnPosition + new Vector3(randomDirection.X, 0, randomDirection.Y) * radius;
+
+        // 2. Находим ближайшую к этой случайной точке валидную точку на навигационной сетке
+        var navMap = _context.GetWorld3D().NavigationMap;
+        var reachablePoint = NavigationServer3D.MapGetClosestPoint(navMap, targetPoint);
+
+        GD.Print($"{_context.Name} получил новую точку патрулирования: {reachablePoint}");
+        _context.MoveTo(reachablePoint);
     }
 }

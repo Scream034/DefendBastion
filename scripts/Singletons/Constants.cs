@@ -13,6 +13,7 @@ public sealed partial class Constants : Node
     public static float DefaultGravity { get; private set; }
     public static Vector3 DefaultGravityVector { get; private set; }
     public static PhysicsDirectSpaceState3D DirectSpaceState { get; private set; }
+    public static World3D World { get; private set; }
 
     public override void _EnterTree()
     {
@@ -30,5 +31,6 @@ public sealed partial class Constants : Node
     public static void UpdateWorldConstants(World3D world)
     {
         DirectSpaceState = world.DirectSpaceState;
+        World = world;
     }
 }

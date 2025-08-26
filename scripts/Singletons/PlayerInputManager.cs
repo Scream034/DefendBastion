@@ -1,6 +1,5 @@
 using Godot;
 using Game.Interfaces;
-using Game.Turrets;
 
 namespace Game.Singletons;
 
@@ -43,6 +42,7 @@ public partial class PlayerInputManager : Node
 
     public override void _Input(InputEvent @event)
     {
+        // TODO: Заменить в будущем на более надёжную проверку на null
         if (_activeController == null) return;
 
         // Перенаправляем движение мыши

@@ -3,6 +3,7 @@ using Game.Entity;
 using Game.Interfaces;
 using Game.Turrets;
 using Game.Singletons;
+using System.Threading.Tasks;
 
 namespace Game.Player;
 
@@ -67,6 +68,19 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         MoveAndSlide();
     }
 
+    public override async Task<bool> DestroyAsync()
+    {
+        var isDestroyed = await base.DestroyAsync();
+
+        if (isDestroyed)
+        {
+            PlayerInputManager.Instance.SwitchController(null);
+            _currentTurret?.ExitTurret();
+        }
+
+        return isDestroyed;
+    }
+
     public void SetBodyYaw(in float yaw)
     {
         _collisionShape.Rotation = _collisionShape.Rotation with { Y = yaw };
@@ -102,7 +116,6 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         velocity.Z = Mathf.Lerp(velocity.Z, targetVelocity.Z, lerpSpeed * currentAirControl * delta);
 
         Velocity = velocity;
-        // MoveAndSlide() теперь вызывается в конце _PhysicsProcess
     }
 
     private void HandleInteractionUI()

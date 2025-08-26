@@ -28,5 +28,5 @@ public abstract class State
     /// <summary>
     /// Вызывается каждый кадр физики. Здесь находится основная логика состояния.
     /// </summary>
-    public abstract void Update(double delta);
+    public abstract void Update(float delta);
 }
