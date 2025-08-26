@@ -40,6 +40,7 @@ public partial class RangedAttackStrategy : Node, IAttackAction
         spawnTransform = spawnTransform.LookingAt(target.GlobalPosition, Vector3.Up);
 
         var projectile = ProjectilePool.Get(_projectileScene);
+        projectile.IgnoredEntities.Add(attacker);
         projectile.GlobalTransform = spawnTransform;
 
         // Добавляем снаряд в корень сцены, чтобы его жизненный цикл не зависел от ИИ.

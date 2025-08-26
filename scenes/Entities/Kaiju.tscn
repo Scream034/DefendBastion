@@ -73,6 +73,7 @@ max_polyphony = 2
 attenuation_filter_cutoff_hz = 9000.0
 
 [node name="DetectionArea3D" type="Area3D" parent="."]
+monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0189514, 0.0261226, -14.8681)

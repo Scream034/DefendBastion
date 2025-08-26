@@ -10,7 +10,8 @@ public abstract partial class LivingEntity : CharacterBody3D, IDamageable
     public enum IDs
     {
         Player, // Игрок
-        Kaiju // Кайдзю
+        Kaiju, // Кайдзю
+        ShortShip // Маленький корабль
     }
 
     public IDs ID { get; protected set; }

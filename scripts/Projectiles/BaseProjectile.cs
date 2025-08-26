@@ -180,6 +180,7 @@ public partial class BaseProjectile : Area3D
         if (collisionShape != null) collisionShape.Disabled = true;
 
         lifetimeTimer.Stop();
+        IgnoredEntities.Clear();
     }
 
     /// <summary>

@@ -1,0 +1,102 @@
+[gd_scene load_steps=13 format=3 uid="uid://cnm2m7s2pec0k"]
+
+[ext_resource type="Script" uid="uid://7nkc1mkmph08" path="res://scripts/Entity/ShortShip.cs" id="1_lcrii"]
+[ext_resource type="Script" uid="uid://b04h8f2jx6qgi" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="2_lcrii"]
+[ext_resource type="Script" uid="uid://dx6710e53hdvi" path="res://scripts/Entity/AI/AttackStrategies/RangedAttackStrategy.cs" id="3_cti50"]
+[ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="4_lcrii"]
+[ext_resource type="AudioStream" uid="uid://d1i4b4dxh5s0g" path="res://sounds/electric_impact.wav" id="4_syiwd"]
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_ypjiq"]
+playback_mode = 1
+random_volume_offset_db = 3.0
+streams_count = 1
+stream_0/stream = ExtResource("4_syiwd")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_etufe"]
+size = Vector3(25, 18.0688, 51.5674)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_lcrii"]
+size = Vector3(3, 4.52332, 3)
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_cti50"]
+transparency = 1
+blend_mode = 1
+diffuse_mode = 3
+specular_mode = 2
+disable_fog = true
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+albedo_color = Color(0.73246, 0, 0.316097, 1)
+emission_enabled = true
+emission = Color(0.733333, 0, 0.317647, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_lcrii"]
+material = SubResource("ORMMaterial3D_cti50")
+size = Vector3(3.01, 1.5, 3.01)
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_ypjiq"]
+albedo_color = Color(0.0745098, 0, 0.0235294, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ypjiq"]
+material = SubResource("ORMMaterial3D_ypjiq")
+size = Vector3(3, 4, 3)
+
+[node name="ShortShip" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "_navigationAgent", "_targetDetectionArea", "_combatBehaviorNode", "_headPivot")]
+collision_layer = 5
+collision_mask = 5
+script = ExtResource("1_lcrii")
+_audio = NodePath("AudioStreamPlayer3D")
+_navigationAgent = NodePath("NavigationAgent3D")
+_targetDetectionArea = NodePath("DetectionArea3D")
+_combatBehaviorNode = NodePath("CombatBehavior")
+_headPivot = NodePath("CollisionShape3D/Head")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 3.1
+target_desired_distance = 3.1
+height = 6.6
+radius = 3.1
+debug_enabled = true
+
+[node name="CombatBehavior" type="Node" parent="." node_paths=PackedStringArray("_attackActionNode")]
+script = ExtResource("2_lcrii")
+AttackRange = 45.0
+_attackActionNode = NodePath("../AttackStrategy")
+
+[node name="AttackStrategy" type="Node" parent="." node_paths=PackedStringArray("_muzzlePoint")]
+script = ExtResource("3_cti50")
+_projectileScene = ExtResource("4_lcrii")
+_muzzlePoint = NodePath("../MazzlePoint")
+
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+stream = SubResource("AudioStreamRandomizer_ypjiq")
+attenuation_model = 1
+volume_db = 6.5
+unit_size = 25.0
+pitch_scale = 1.02
+max_polyphony = 2
+attenuation_filter_cutoff_hz = 9000.0
+
+[node name="DetectionArea3D" type="Area3D" parent="."]
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0189514, 0.0261226, -28.3613)
+shape = SubResource("BoxShape3D_etufe")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.738342, 0)
+shape = SubResource("BoxShape3D_lcrii")
+
+[node name="Head" type="MeshInstance3D" parent="CollisionShape3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.51729, 0)
+mesh = SubResource("BoxMesh_lcrii")
+skeleton = NodePath("")
+
+[node name="Body" type="MeshInstance3D" parent="CollisionShape3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.261658, 0)
+mesh = SubResource("BoxMesh_ypjiq")
+skeleton = NodePath("")
+
+[node name="MazzlePoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.173953, -1.88945)

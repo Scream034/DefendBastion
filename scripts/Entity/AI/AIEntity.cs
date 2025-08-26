@@ -85,7 +85,7 @@ public abstract partial class AIEntity : MoveableEntity
         // Перед запуском ИИ, принудительно "примагничиваем" его к ближайшей
         // точке на NavMesh. Это решает проблему, если ИИ заспавнился
         // в миллиметре от сетки.
-        GlobalPosition = NavigationServer3D.MapGetClosestPoint(GetWorld3D().NavigationMap, GlobalPosition);
+        // GlobalPosition = NavigationServer3D.MapGetClosestPoint(GetWorld3D().NavigationMap, GlobalPosition);
 
         GD.Print($"{Name} initializing AI, navigation map is ready.");
         _isAiActive = true;
@@ -190,7 +190,7 @@ public abstract partial class AIEntity : MoveableEntity
     {
         if (_navigationAgent.TargetPosition == targetPosition) return;
         _navigationAgent.TargetPosition = targetPosition;
-        GD.Print($"MoveTo: {targetPosition}");
+        GD.Print($"{Name} MoveTo: {targetPosition}");
     }
 
     /// <summary>
