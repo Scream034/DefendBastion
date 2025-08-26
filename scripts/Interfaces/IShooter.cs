@@ -1,4 +1,3 @@
-using Game.Projectiles;
 using Godot;
 
 namespace Game.Interfaces

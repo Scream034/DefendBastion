@@ -6,7 +6,7 @@ using Game.Singletons;
 
 namespace Game.Player;
 
-public sealed partial class Player : LivingEntity, IOwnerCameraController, ITurretControllable
+public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITurretControllable
 {
     [Signal]
     public delegate void OnInteractableDetectedEventHandler(Node3D interactable);
@@ -22,11 +22,7 @@ public sealed partial class Player : LivingEntity, IOwnerCameraController, ITurr
     [Export] private CollisionShape3D _collisionShape; // Ссылка на CollisionShape3D
 
     [ExportGroup("Movement")]
-    [Export] public float Speed = 4.25f;
-    [Export] public float JumpVelocity = 3f;
     [Export(PropertyHint.Range, "0.0, 1.0, 0.05")] public float AirControl = 0.1f;
-    [Export(PropertyHint.Range, "0, 20, 1")] public float Acceleration = 10f;
-    [Export(PropertyHint.Range, "0, 20, 1")] public float Deceleration = 10f;
     [Export(PropertyHint.Range, "0, 20, 1")] public float BodyRotationSpeed = 5f;
 
     public PlayerState CurrentState { get; private set; } = PlayerState.Normal;
@@ -34,7 +30,6 @@ public sealed partial class Player : LivingEntity, IOwnerCameraController, ITurr
     private Vector3 _inputDir;
     private bool _jumpPressed;
 
-    private Node _originalHeadParent;
     private ControllableTurret _currentTurret;
 
     public Player() : base(IDs.Player) { }
@@ -42,7 +37,6 @@ public sealed partial class Player : LivingEntity, IOwnerCameraController, ITurr
     public override void _Ready()
     {
         base._Ready();
-        _originalHeadParent = _head.GetParent(); // Настоящий родитель головы игрока
 
         // Устанавливаем голову игрока как стартовый контроллер камеры
         PlayerInputManager.Instance.SwitchController(_head);
@@ -56,9 +50,11 @@ public sealed partial class Player : LivingEntity, IOwnerCameraController, ITurr
 
     public override void _PhysicsProcess(double delta)
     {
+        // 3. Вызываем базовую логику для применения гравитации
+        base._PhysicsProcess(delta);
+
         SetBodyYaw(_head.Rotation.Y);
 
-        // В турели физика игрока полностью отключается
         if (CurrentState == PlayerState.InTurret)
         {
             Velocity = Vector3.Zero;
@@ -66,6 +62,9 @@ public sealed partial class Player : LivingEntity, IOwnerCameraController, ITurr
         }
 
         ProcessNormal((float)delta);
+
+        // 5. Финальный вызов MoveAndSlide()
+        MoveAndSlide();
     }
 
     public void SetBodyYaw(in float yaw)
@@ -81,29 +80,29 @@ public sealed partial class Player : LivingEntity, IOwnerCameraController, ITurr
 
     private void HandleMovement(in float delta)
     {
-        var isOnFloor = IsOnFloor();
+        // 4. Упрощаем метод движения. Гравитация уже применена в base._PhysicsProcess.
         Vector3 velocity = Velocity;
 
-        if (!isOnFloor)
-            velocity.Y -= Constants.DefaultGravity * delta;
-
-        if (_jumpPressed && isOnFloor)
+        // Используем метод Jump() из базового класса
+        if (_jumpPressed)
         {
-            velocity.Y = JumpVelocity;
+            Jump();
+            // Обновляем локальную `velocity`, т.к. Jump() изменил свойство `Velocity`
+            velocity.Y = Velocity.Y;
         }
         _jumpPressed = false;
 
         Vector3 direction = (_head.Transform.Basis * _inputDir).Normalized();
         Vector3 targetVelocity = direction * Speed;
 
-        float currentAirControl = isOnFloor ? 1.0f : AirControl;
+        float currentAirControl = IsOnFloor() ? 1.0f : AirControl;
         float lerpSpeed = direction.IsZeroApprox() ? Deceleration : Acceleration;
 
         velocity.X = Mathf.Lerp(velocity.X, targetVelocity.X, lerpSpeed * currentAirControl * delta);
         velocity.Z = Mathf.Lerp(velocity.Z, targetVelocity.Z, lerpSpeed * currentAirControl * delta);
 
         Velocity = velocity;
-        MoveAndSlide();
+        // MoveAndSlide() теперь вызывается в конце _PhysicsProcess
     }
 
     private void HandleInteractionUI()
