@@ -2,6 +2,7 @@ using Godot;
 using Game.Projectiles;
 using Game.Interfaces;
 using Game.Singletons;
+using Game.Entity;
 
 namespace Game.Turrets;
 
@@ -37,9 +38,9 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
         _cameraController.ShakeAsync((float)GD.RandRange(0.09f, 0.15f), (float)GD.RandRange(0.05f, 0.07f));
     }
 
-    public override BaseProjectile CreateProjectile(Transform3D spawnPoint)
+    public override BaseProjectile CreateProjectile(Transform3D spawnPoint, LivingEntity initiator = null)
     {
-        var projectile = base.CreateProjectile(spawnPoint);
+        var projectile = base.CreateProjectile(spawnPoint, PlayerController);
         if (PlayerController != null)
         {
             projectile.IgnoredEntities.Add(PlayerController);

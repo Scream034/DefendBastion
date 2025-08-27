@@ -4,6 +4,7 @@ using System;
 using Game.Interfaces;
 using System.Threading.Tasks;
 using Game.Singletons;
+using Game.Entity;
 
 namespace Game.Turrets;
 
@@ -201,7 +202,7 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     /// <summary>
     /// Создает (или получает из пула) экземпляр снаряда в указанной точке.
     /// </summary>
-    public virtual BaseProjectile CreateProjectile(Transform3D spawnPoint)
+    public virtual BaseProjectile CreateProjectile(Transform3D spawnPoint, LivingEntity initiator = null)
     {
         // Вместо Instantiate используем наш пул!
         var projectile = ProjectilePool.Get(ProjectileScene);
@@ -212,7 +213,7 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
         Constants.Root.AddChild(projectile);
 
         // Инициализируем снаряд после того, как он добавлен в сцену и его позиция установлена
-        projectile.Initialize(this);
+        projectile.Initialize(initiator);
         return projectile;
     }
 

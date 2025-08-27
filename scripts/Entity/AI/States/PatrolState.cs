@@ -1,13 +1,13 @@
 using Godot;
 
-namespace Game.Entity.AI;
+namespace Game.Entity.AI.States;
 
 /// <summary>
 /// Состояние патрулирования. ИИ движется к случайной достижимой точке
 /// в пределах заданного радиуса от своей точки спавна, ждет некоторое время,
 /// а затем выбирает новую точку.
 /// </summary>
-public sealed class PatrolState : State
+public sealed class PatrolState(AIEntity context) : State(context)
 {
     private enum SubState
     {
@@ -18,11 +18,9 @@ public sealed class PatrolState : State
     private SubState _currentSubState;
     private float _waitTimer;
 
-    public PatrolState(AIEntity context) : base(context) { }
-
     public override void Enter()
     {
-        GD.Print($"{_context.Name} входит в состояние Patrol.");
+        GD.Print($"{_context.Name} enter Patrol.");
         _currentSubState = SubState.Moving;
         FindAndMoveToNewPatrolPoint();
     }
@@ -68,7 +66,7 @@ public sealed class PatrolState : State
         // мы останавливаем текущее движение, чтобы избежать "скольжения"
         // к последней патрульной точке.
         _context.StopMovement();
-        GD.Print($"{_context.Name} выходит из состояния Patrol.");
+        GD.Print($"{_context.Name} exit from Patrol.");
     }
 
     /// <summary>
@@ -112,7 +110,7 @@ public sealed class PatrolState : State
         var navMap = _context.GetWorld3D().NavigationMap;
         var reachablePoint = NavigationServer3D.MapGetClosestPoint(navMap, targetPoint);
 
-        GD.Print($"{_context.Name} получил новую точку патрулирования: {reachablePoint}");
+        GD.Print($"{_context.Name} find new patrol point: {reachablePoint}");
         _context.MoveTo(reachablePoint);
     }
 }

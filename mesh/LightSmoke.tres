@@ -4,7 +4,7 @@
 
 [resource]
 material = ExtResource("1_kjflv")
-radius = 0.01
-height = 0.02
+radius = 0.022
+height = 0.044
 radial_segments = 8
 rings = 8

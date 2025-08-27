@@ -1,4 +1,4 @@
-namespace Game.Entity.AI;
+namespace Game.Entity.AI.States;
 
 /// <summary>
 /// Абстрактный базовый класс для всех состояний ИИ.

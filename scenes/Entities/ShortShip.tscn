@@ -41,21 +41,25 @@ albedo_color = Color(0.0745098, 0, 0.0235294, 1)
 material = SubResource("ORMMaterial3D_ypjiq")
 size = Vector3(3, 4, 3)
 
-[node name="ShortShip" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "_navigationAgent", "_targetDetectionArea", "_combatBehaviorNode", "_headPivot")]
+[node name="ShortShip" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "_navigationAgent", "_targetDetectionArea", "_combatBehaviorNode", "_headPivot", "_eyesPosition")]
 collision_layer = 5
 collision_mask = 5
 script = ExtResource("1_lcrii")
 _audio = NodePath("AudioStreamPlayer3D")
+SlowSpeed = 5.0
+NormalSpeed = 7.0
+FastSpeed = 10.0
 _navigationAgent = NodePath("NavigationAgent3D")
 _targetDetectionArea = NodePath("DetectionArea3D")
 _combatBehaviorNode = NodePath("CombatBehavior")
 _headPivot = NodePath("CollisionShape3D/Head")
+_eyesPosition = NodePath("CollisionShape3D/EyesPoint")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
-path_desired_distance = 3.1
-target_desired_distance = 3.1
+path_desired_distance = 3.3
+target_desired_distance = 3.3
 height = 6.6
-radius = 3.1
+radius = 3.3
 debug_enabled = true
 
 [node name="CombatBehavior" type="Node" parent="." node_paths=PackedStringArray("_attackActionNode")]
@@ -98,5 +102,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.261658, 0)
 mesh = SubResource("BoxMesh_ypjiq")
 skeleton = NodePath("")
 
+[node name="EyesPoint" type="Marker3D" parent="CollisionShape3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.99017, -1.5604)
+
 [node name="MazzlePoint" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.173953, -1.88945)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.806455, -1.69736)

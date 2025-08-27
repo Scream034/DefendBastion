@@ -25,9 +25,9 @@ public sealed partial class ShortShip : AIEntity
         GD.Print($"ShortShip created: {GlobalPosition}! Health: {Health}. AI is active.");
     }
 
-    public override async Task<bool> DamageAsync(float amount)
+    public override async Task<bool> DamageAsync(float amount, LivingEntity source = null)
     {
-        if (!await base.DamageAsync(amount)) return false;
+        if (!await base.DamageAsync(amount, source)) return false;
 
         _audio.Play();
 

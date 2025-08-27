@@ -1,265 +1,302 @@
-using Game.Entity.AI.Behaviors;
 using Godot;
+using Game.Entity.AI.Behaviors;
+using Game.Entity.AI.States;
+using System.Threading.Tasks;
 
-namespace Game.Entity.AI;
-
-/// <summary>
-/// Базовый класс для всех сущностей, управляемых ИИ.
-/// Инкапсулирует логику навигации и машину состояний.
-/// </summary>
-public abstract partial class AIEntity : MoveableEntity
+namespace Game.Entity.AI
 {
-    [ExportGroup("AI Patrol Parameters")]
-    [Export(PropertyHint.Range, "1, 20, 0.5")] public float BodyRotationSpeed { get; private set; } = 10f;
-    [Export(PropertyHint.Range, "1, 20, 0.5")] public float HeadRotationSpeed { get; private set; } = 15f;
-    [Export] public bool UseRandomPatrolRadius { get; private set; } = true;
-    [Export] public float MinPatrolRadius { get; private set; } = 5f;
-    [Export] public float MaxPatrolRadius { get; private set; } = 20f;
-
-    [Export] public bool UseRandomWaitTime { get; private set; } = true;
-    [Export(PropertyHint.Range, "0, 10, 0.5")] public float MinPatrolWaitTime { get; private set; } = 1.0f;
-    [Export(PropertyHint.Range, "0, 10, 0.5")] public float MaxPatrolWaitTime { get; private set; } = 3.0f;
-
-    [ExportGroup("Dependencies")]
-    [Export] private NavigationAgent3D _navigationAgent;
-    [Export] private Area3D _targetDetectionArea;
-    [Export] private Node _combatBehaviorNode;
-    [Export] private Node3D _headPivot;
-
-    public NavigationAgent3D NavigationAgent => _navigationAgent;
-    public LivingEntity CurrentTarget { get; private set; }
-    public ICombatBehavior CombatBehavior { get; private set; }
-    public Vector3 SpawnPosition { get; private set; }
-
-    private State _currentState;
-    private bool _isAiActive = false;
-
-    protected AIEntity(IDs id) : base(id) { }
-
-    public AIEntity() { } // Для Godot-компилятора
-
-    public override async void _Ready()
+    /// <summary>
+    /// Главная задача, которую выполняет ИИ, когда не находится в бою.
+    /// </summary>
+    public enum AIMainTask
     {
-        base._Ready();
-        SpawnPosition = GlobalPosition;
-
-#if DEBUG
-        // Валидация зависимостей
-        if (!ValidateDependencies())
-        {
-            SetPhysicsProcess(false);
-            return;
-        }
-#endif
-
-        if (_targetDetectionArea != null)
-        {
-            _targetDetectionArea.BodyEntered += OnTargetDetected;
-            _targetDetectionArea.BodyExited += OnTargetLost;
-        }
-
-        // Проверяем, готова ли навигация сразу. Если да - запускаем ИИ.
-        if (GameManager.Instance.IsNavigationReady)
-        {
-            InitializeAI();
-        }
-        else
-        {
-            // Если нет - подписываемся на сигнал и ждем.
-            // Используем 'await' чтобы код был более линейным и читаемым.
-            GD.Print($"{Name} waiting for navigation map...");
-            await ToSignal(GameManager.Instance, GameManager.SignalName.NavigationReady);
-            InitializeAI();
-        }
+        /// <summary>Патрулирование в случайных точках в радиусе от спавна.</summary>
+        FreePatrol,
+        /// <summary>Патрулирование по заданному пути (Path3D).</summary>
+        PathPatrol,
+        /// <summary>Движение по пути к конечной цели.</summary>
+        Assault
     }
 
     /// <summary>
-    /// Централизованный метод для запуска машины состояний ИИ.
-    /// Вызывается только после того, как навигация будет готова.
+    /// Режим поведения при выполнении задачи "Штурм".
     /// </summary>
-    private void InitializeAI()
+    public enum AssaultMode
     {
-        if (_isAiActive) return;
-
-        // --- КЛЮЧЕВОЙ ЗАЩИТНЫЙ МЕХАНИЗМ ---
-        // Перед запуском ИИ, принудительно "примагничиваем" его к ближайшей
-        // точке на NavMesh. Это решает проблему, если ИИ заспавнился
-        // в миллиметре от сетки.
-        // GlobalPosition = NavigationServer3D.MapGetClosestPoint(GetWorld3D().NavigationMap, GlobalPosition);
-
-        GD.Print($"{Name} initializing AI, navigation map is ready.");
-        _isAiActive = true;
-        ChangeState(new PatrolState(this));
-    }
-
-    private bool ValidateDependencies()
-    {
-        if (_navigationAgent == null)
-        {
-            GD.PushError($"NavigationAgent3D dont be assigned to {Name}!");
-            return false;
-        }
-
-        if (_headPivot == null)
-        {
-            // Это не критическая ошибка, а предупреждение, т.к. не у всех ИИ может быть голова
-            GD.PushWarning($"HeadPivot is not assigned to {Name}. Head rotation methods will not work.");
-        }
-
-        if (_combatBehaviorNode is ICombatBehavior behavior)
-        {
-            CombatBehavior = behavior;
-        }
-        else
-        {
-            GD.PushError($"Node, assigned as CombatBehavior for {Name}, does not implement ICombatBehavior interface or is not assigned!");
-            return false;
-        }
-        return true;
-    }
-
-#if DEBUG
-    private void OnPathChanged()
-    {
-        GD.Print($"[{Name}] New path calculated! Points: {_navigationAgent.GetCurrentNavigationPath().Length}");
-    }
-#endif
-
-    public override void _PhysicsProcess(double delta)
-    {
-        base._PhysicsProcess(delta);
-
-        _currentState?.Update((float)delta);
-
-        Vector3 targetVelocity = Vector3.Zero;
-
-        if (_isAiActive && !_navigationAgent.IsNavigationFinished())
-        {
-            var nextPoint = _navigationAgent.GetNextPathPosition();
-            var direction = GlobalPosition.DirectionTo(nextPoint);
-            targetVelocity = direction * Speed;
-        }
-
-        // Velocity рассчитывается с учетом гравитации из base._PhysicsProcess
-        Velocity = Velocity.Lerp(targetVelocity, Acceleration * (float)delta);
-
-        // Вращение тела в сторону движения
-        var horizontalVelocity = Velocity with { Y = 0 };
-        if (horizontalVelocity.LengthSquared() > 0.1f) // Вращаем, только если есть горизонтальное движение
-        {
-            // Плавно интерполируем вращение тела в сторону движения
-            var targetRotation = Basis.LookingAt(horizontalVelocity.Normalized());
-            Basis = Basis.Slerp(targetRotation, BodyRotationSpeed * (float)delta);
-        }
-
-        MoveAndSlide();
-    }
-
-    public void ChangeState(State newState)
-    {
-        _currentState?.Exit();
-        _currentState = newState;
-        _currentState.Enter();
-    }
-
-    public void SetAttackTarget(LivingEntity target)
-    {
-        if (target == this || target == null) return;
-
-        GD.Print($"{Name} recvieve {target.Name}");
-        CurrentTarget = target;
-
-        if (_currentState is not AttackState)
-        {
-            ChangeState(new AttackState(this));
-        }
-    }
-
-    public void ClearTarget()
-    {
-        CurrentTarget = null;
-    }
-
-    #region Movement API for States
-
-    /// <summary>
-    /// Устанавливает финальную цель для навигационного агента.
-    /// Само движение теперь обрабатывается в _PhysicsProcess.
-    /// </summary>
-    public void MoveTo(Vector3 targetPosition)
-    {
-        if (_navigationAgent.TargetPosition == targetPosition) return;
-        _navigationAgent.TargetPosition = targetPosition;
-        GD.Print($"{Name} MoveTo: {targetPosition}");
+        /// <summary>Атаковать всех врагов на пути к цели.</summary>
+        Destroy,
+        /// <summary>Игнорировать врагов и как можно быстрее добраться до цели.</summary>
+        Rush
     }
 
     /// <summary>
-    /// Останавливает движение, устанавливая цель в текущую позицию.
+    /// Базовый класс для всех сущностей, управляемых ИИ.
+    /// Инкапсулирует логику навигации, машину состояний и базовое поведение.
     /// </summary>
-    public void StopMovement()
+    public abstract partial class AIEntity : MoveableEntity
     {
-        // Самый простой способ остановить агента - сказать ему идти туда, где он уже стоит.
-        _navigationAgent.TargetPosition = GlobalPosition;
-        GD.Print("StopMovement");
-    }
+        [ExportGroup("AI Mission Settings")]
+        [Export] public AIMainTask MainTask { get; private set; } = AIMainTask.FreePatrol;
+        [Export] public AssaultMode AssaultBehavior { get; private set; } = AssaultMode.Destroy;
+        [Export] public Path3D MissionPath { get; private set; }
 
-    #endregion
+        [ExportGroup("AI Movement Profiles")]
+        [Export] public float SlowSpeed { get; private set; } = 3.0f;
+        [Export] public float NormalSpeed { get; private set; } = 5.0f;
+        [Export] public float FastSpeed { get; private set; } = 8.0f;
 
-    #region Rotation API
 
-    /// <summary>
-    /// Плавно поворачивает тело ИИ в сторону указанной цели.
-    /// Используется для ситуаций, когда ИИ стоит на месте, но должен смотреть на что-то.
-    /// </summary>
-    public void RotateBodyTowards(Vector3 targetPoint, float delta)
-    {
-        var direction = GlobalPosition.DirectionTo(targetPoint) with { Y = 0 };
-        if (direction.IsZeroApprox())
+        [ExportGroup("AI Patrol Parameters")]
+        [Export(PropertyHint.Range, "1, 20, 0.5")] public float BodyRotationSpeed { get; private set; } = 10f;
+        [Export(PropertyHint.Range, "1, 20, 0.5")] public float HeadRotationSpeed { get; private set; } = 15f;
+        [Export] public bool UseRandomPatrolRadius { get; private set; } = true;
+        [Export] public float MinPatrolRadius { get; private set; } = 5f;
+        [Export] public float MaxPatrolRadius { get; private set; } = 20f;
+        [Export] public bool UseRandomWaitTime { get; private set; } = true;
+        [Export(PropertyHint.Range, "0, 10, 0.5")] public float MinPatrolWaitTime { get; private set; } = 1.0f;
+        [Export(PropertyHint.Range, "0, 10, 0.5")] public float MaxPatrolWaitTime { get; private set; } = 3.0f;
+
+        [ExportGroup("Dependencies")]
+        [Export] private NavigationAgent3D _navigationAgent;
+        [Export] private Area3D _targetDetectionArea;
+        [Export] private Node _combatBehaviorNode;
+        [Export] private Node3D _headPivot;
+        [Export] private Marker3D _eyesPosition; // Точка для проверки линии видимости
+
+        public NavigationAgent3D NavigationAgent => _navigationAgent;
+        public LivingEntity CurrentTarget { get; private set; }
+        public ICombatBehavior CombatBehavior { get; private set; }
+        public Vector3 SpawnPosition { get; private set; }
+        public Vector3 LastKnownTargetPosition { get; set; }
+        public Vector3 InvestigationPosition { get; set; }
+
+        private State _currentState;
+        private State _defaultState; // Состояние, к которому ИИ возвращается после боя/тревоги
+        private bool _isAiActive = false;
+
+        protected AIEntity(IDs id) : base(id) { }
+        public AIEntity() { }
+
+        public override async void _Ready()
         {
-            var targetRotation = Basis.LookingAt(direction.Normalized());
-            Basis = Basis.Slerp(targetRotation, BodyRotationSpeed * delta);
-        }
-    }
+            base._Ready();
+            SpawnPosition = GlobalPosition;
 
-    /// <summary>
-    /// Плавно поворачивает "голову" ИИ (дочерний узел) в сторону указанной цели.
-    /// Тело при этом может двигаться в другую сторону.
-    /// </summary>
-    public void RotateHeadTowards(Vector3 targetPoint, float delta)
-    {
-        if (_headPivot == null) return;
-
-        // Вращаем голову в ее локальном пространстве, чтобы она поворачивалась относительно тела
-        var localTarget = _headPivot.ToLocal(targetPoint).Normalized();
-        var targetRotation = Basis.LookingAt(localTarget);
-        _headPivot.Basis = _headPivot.Basis.Slerp(targetRotation, HeadRotationSpeed * delta); // Голова обычно вращается быстрее тела
-    }
-
-    #endregion
-
-    #region Signal Handlers
-
-    private void OnTargetDetected(Node3D body)
-    {
-        if (CurrentTarget == null && body is LivingEntity entity && entity != this)
-        {
-            // TODO: Заменить на систему фракций
-            if (entity.ID != IDs.Kaiju)
+            if (!ValidateDependencies())
             {
-                GD.Print($"{Name} find target: {entity.Name}");
-                CurrentTarget = entity;
+                SetPhysicsProcess(false);
+                return;
+            }
+
+            if (_targetDetectionArea != null)
+            {
+                _targetDetectionArea.BodyEntered += OnTargetDetected;
+                _targetDetectionArea.BodyExited += OnTargetLost;
+            }
+
+            if (GameManager.Instance.IsNavigationReady)
+            {
+                InitializeAI();
+            }
+            else
+            {
+                GD.Print($"{Name} waiting for navigation map...");
+                await ToSignal(GameManager.Instance, GameManager.SignalName.NavigationReady);
+                InitializeAI();
             }
         }
-    }
 
-    private void OnTargetLost(Node3D body)
-    {
-        if (body == CurrentTarget)
+        private void InitializeAI()
         {
-            GD.Print($"{Name} lost target: {CurrentTarget.Name}");
-            ClearTarget();
-        }
-    }
+            if (_isAiActive) return;
 
-    #endregion
+            // GlobalPosition = NavigationServer3D.MapGetClosestPoint(GetWorld3D().NavigationMap, GlobalPosition);
+
+            GD.Print($"{Name} initializing AI, navigation map is ready.");
+            _isAiActive = true;
+
+            // Определяем "домашнее" состояние на основе настроек
+            _defaultState = MainTask switch
+            {
+                AIMainTask.PathPatrol or AIMainTask.Assault => new PathFollowingState(this),
+                _ => new PatrolState(this),
+            };
+            ChangeState(_defaultState);
+        }
+
+        private bool ValidateDependencies()
+        {
+            if (_navigationAgent == null) { GD.PushError($"NavigationAgent3D not assigned to {Name}!"); return false; }
+            if (_combatBehaviorNode is ICombatBehavior behavior) { CombatBehavior = behavior; }
+            else { GD.PushError($"CombatBehavior for {Name} is not assigned or invalid!"); return false; }
+
+            if (_headPivot == null) { GD.PushWarning($"HeadPivot not assigned to {Name}. Head rotation will not work."); }
+            if (_eyesPosition == null) { GD.PushWarning($"EyesPosition not assigned to {Name}. Line-of-sight checks will originate from the entity's center."); }
+
+            if ((MainTask == AIMainTask.PathPatrol || MainTask == AIMainTask.Assault) && MissionPath == null)
+            {
+                GD.PushError($"AI {Name} is set to PathPatrol or Assault but has no MissionPath assigned!");
+                return false;
+            }
+
+            return true;
+        }
+
+        public override void _PhysicsProcess(double delta)
+        {
+            base._PhysicsProcess(delta);
+
+            _currentState?.Update((float)delta);
+
+            Vector3 targetVelocity = Vector3.Zero;
+
+            if (_isAiActive && !_navigationAgent.IsNavigationFinished())
+            {
+                var nextPoint = _navigationAgent.GetNextPathPosition();
+                var direction = GlobalPosition.DirectionTo(nextPoint);
+                targetVelocity = direction * Speed;
+            }
+
+            Velocity = Velocity.Lerp(targetVelocity, Acceleration * (float)delta);
+
+            var horizontalVelocity = Velocity with { Y = 0 };
+            if (horizontalVelocity.LengthSquared() > 0.1f)
+            {
+                var targetRotation = Basis.LookingAt(horizontalVelocity.Normalized());
+                Basis = Basis.Slerp(targetRotation, BodyRotationSpeed * (float)delta);
+            }
+
+            MoveAndSlide();
+        }
+
+        public override async Task<bool> DamageAsync(float amount, LivingEntity source = null)
+        {
+            if (!await base.DamageAsync(amount, source)) return false;
+
+            // РЕАКЦИЯ НА УРОН
+            if (source != null && _currentState is not AttackState)
+            {
+                GD.Print($"[{Name}] took damage from {source.Name} direction!");
+                InvestigationPosition = source.GlobalPosition;
+                // Немедленно переходим в состояние расследования, если мы не в активном бою с другой целью
+                if (CurrentTarget == null)
+                {
+                    ChangeState(new InvestigateState(this));
+                }
+            }
+            return true;
+        }
+
+        public void ChangeState(State newState)
+        {
+            _currentState?.Exit();
+            _currentState = newState;
+            GD.Print($"[{Name}] changing state to -> {newState.GetType().Name}");
+            _currentState.Enter();
+        }
+
+        public void ReturnToDefaultState()
+        {
+            ClearTarget();
+            ChangeState(_defaultState);
+        }
+
+        public void SetAttackTarget(LivingEntity target)
+        {
+            if (target == this || target == null) return;
+            CurrentTarget = target;
+            ChangeState(new AttackState(this));
+        }
+
+        public void ClearTarget()
+        {
+            CurrentTarget = null;
+        }
+
+        public bool HasLineOfSightTo(LivingEntity target)
+        {
+            if (target == null) return false;
+
+            var spaceState = GetWorld3D().DirectSpaceState;
+            var query = new PhysicsRayQueryParameters3D
+            {
+                // Начальная точка - "глаза" ИИ, или его центр, если они не заданы
+                From = _eyesPosition?.GlobalPosition ?? GlobalPosition,
+                // Конечная точка - центр цели
+                To = target.GlobalPosition,
+                // Исключаем себя и цель из столкновения луча (чтобы луч не уперся в нас самих)
+                Exclude = [GetRid(), target.GetRid()],
+                // Проверяем столкновение с геометрией мира (стены и т.д.)
+                CollisionMask = 1 // Предполагаем, что мир находится на 1-м слое физики
+            };
+
+            var result = spaceState.IntersectRay(query);
+
+            // Если result пустой, значит, на пути луча ничего не было - есть прямая видимость
+            return result.Count == 0;
+        }
+
+        #region Movement API for States
+        public void SetMovementSpeed(float speed)
+        {
+            Speed = speed;
+        }
+
+        public void MoveTo(Vector3 targetPosition)
+        {
+            if (_navigationAgent.TargetPosition == targetPosition) return;
+            _navigationAgent.TargetPosition = targetPosition;
+        }
+
+        public void StopMovement()
+        {
+            _navigationAgent.TargetPosition = GlobalPosition;
+        }
+        #endregion
+
+        #region Rotation API
+        public void RotateBodyTowards(Vector3 targetPoint, float delta)
+        {
+            var direction = GlobalPosition.DirectionTo(targetPoint) with { Y = 0 };
+            if (!direction.IsZeroApprox())
+            {
+                var targetRotation = Basis.LookingAt(direction.Normalized());
+                Basis = Basis.Slerp(targetRotation, BodyRotationSpeed * delta);
+            }
+        }
+
+        public void RotateHeadTowards(Vector3 targetPoint, float delta)
+        {
+            if (_headPivot == null) return;
+            var localTarget = _headPivot.ToLocal(targetPoint).Normalized();
+            var targetRotation = Basis.LookingAt(localTarget);
+            _headPivot.Basis = _headPivot.Basis.Slerp(targetRotation, HeadRotationSpeed * delta);
+        }
+        #endregion
+
+        #region Signal Handlers
+        private void OnTargetDetected(Node3D body)
+        {
+            // Атакуем только если нет текущей цели и это подходящая сущность
+            if (CurrentTarget == null && body is LivingEntity entity && entity.ID != ID)
+            {
+                SetAttackTarget(entity);
+            }
+        }
+
+        private void OnTargetLost(Node3D body)
+        {
+            // Если мы потеряли из виду *текущую* цель
+            if (body == CurrentTarget)
+            {
+                // Не очищаем цель сразу, а переходим в преследование
+                if (_currentState is AttackState)
+                {
+                    LastKnownTargetPosition = CurrentTarget.GlobalPosition;
+                    ChangeState(new PursuitState(this));
+                }
+            }
+        }
+        #endregion
+    }
 }

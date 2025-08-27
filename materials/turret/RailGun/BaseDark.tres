@@ -4,8 +4,10 @@
 resource_name = "Base2"
 vertex_color_use_as_albedo = true
 vertex_color_is_srgb = true
-albedo_color = Color(0.23193, 0.23193, 0.28571, 1)
-metallic_specular = 0.0
+albedo_color = Color(0.256856, 0.25687, 0.314854, 1)
+metallic = 0.03
+metallic_specular = 0.1
+roughness = 0.8
 emission = Color(1, 1, 1, 1)
 emission_energy_multiplier = 0.0
 texture_filter = 0

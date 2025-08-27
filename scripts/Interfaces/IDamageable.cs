@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using Game.Entity;
+using Godot;
 
 namespace Game.Interfaces;
 
@@ -22,7 +24,7 @@ public interface IDamageable
     /// Наносит урон объекту.
     /// </summary>
     /// <param name="amount">Количество урона.</param>
-    Task<bool> DamageAsync(float amount);
+    Task<bool> DamageAsync(float amount, LivingEntity source = null);
 
     /// <summary>
     /// Ремонтирует объект.

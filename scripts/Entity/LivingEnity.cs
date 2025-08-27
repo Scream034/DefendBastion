@@ -60,13 +60,10 @@ public abstract partial class LivingEntity : CharacterBody3D, IDamageable
         }
     }
 
-    public virtual async Task<bool> DamageAsync(float amount)
+    public virtual async Task<bool> DamageAsync(float amount, LivingEntity source = null)
     {
         if (Health <= 0) return false;
-
         await SetHealthAsync(Health - amount);
-        GD.Print($"Entity {ID} damaged {amount} -> {Health}!");
-
         return true;
     }
 

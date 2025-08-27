@@ -2,6 +2,7 @@ using Godot;
 using Game.Interfaces;
 using System;
 using System.Threading.Tasks;
+using Game.Entity;
 
 namespace Game.Turrets;
 
@@ -46,7 +47,7 @@ public abstract partial class BaseTurret : StaticBody3D, IDamageable, IInteracta
     /// </summary>
     /// <param name="amount">Количество урона.</param>
     /// <returns>true, если урон был нанесен; false, если турель уже уничтожена.</returns>
-    public virtual async Task<bool> DamageAsync(float amount)
+    public virtual async Task<bool> DamageAsync(float amount, LivingEntity source = null)
     {
         if (Health <= 0) return false;
 

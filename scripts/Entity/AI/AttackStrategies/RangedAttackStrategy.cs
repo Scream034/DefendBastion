@@ -33,22 +33,25 @@ public partial class RangedAttackStrategy : Node, IAttackAction
     {
         if (_projectileScene == null) return;
 
-        // Определяем точку спавна. Если muzzlePoint не задан, используем позицию самого атакующего.
-        var spawnTransform = _muzzlePoint?.GlobalTransform ?? attacker.GlobalTransform;
+        // ДОБАВЛЕНА ПРОВЕРКА ЛИНИИ ВИДИМОСТИ ПЕРЕД ВЫСТРЕЛОМ
+        if (!attacker.HasLineOfSightTo(target))
+        {
+            GD.Print($"[{attacker.Name}] cannot shoot at [{target.Name}]. No line of sight.");
+            return;
+        }
 
-        // Поворачиваем точку спавна в сторону цели, чтобы снаряд полетел правильно.
+        var spawnTransform = _muzzlePoint?.GlobalTransform ?? attacker.GlobalTransform;
         spawnTransform = spawnTransform.LookingAt(target.GlobalPosition, Vector3.Up);
 
         var projectile = ProjectilePool.Get(_projectileScene);
         projectile.IgnoredEntities.Add(attacker);
         projectile.GlobalTransform = spawnTransform;
 
-        // Добавляем снаряд в корень сцены, чтобы его жизненный цикл не зависел от ИИ.
         Constants.Root.AddChild(projectile);
 
-        // Инициализируем, указывая, кто стрелял, чтобы снаряд не попал в самого себя.
+        // Передаем атакующего как источник урона
         projectile.Initialize(attacker);
 
-        GD.Print($"[{attacker.Name}] выполнил выстрел в [{target.Name}] с помощью {Name}.");
+        GD.Print($"[{attacker.Name}] fired at [{target.Name}].");
     }
 }

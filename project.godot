@@ -20,6 +20,10 @@ config/icon="res://icon.svg"
 Constants="*res://scripts/Singletons/Constants.cs"
 PlayerInputManager="*res://scripts/Singletons/PlayerInputManager.cs"
 
+[debug]
+
+settings/stdout/verbose_stdout=true
+
 [display]
 
 window/size/viewport_width=1280
