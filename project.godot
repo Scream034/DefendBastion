@@ -10,7 +10,9 @@ config_version=5
 
 [application]
 
-config/name="Бастион"
+config/name="Bastion"
+config/description="This is tower defense game with waves in 3D minimal low-poly."
+config/version="0.07"
 run/main_scene="uid://csly2gql2kjru"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 config/icon="res://icon.svg"
