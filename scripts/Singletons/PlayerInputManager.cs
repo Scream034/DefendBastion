@@ -19,6 +19,12 @@ public partial class PlayerInputManager : Node
         Instance = this;
     }
 
+    public override void _Ready()
+    {
+        // Подписываемся на глобальное событие тряски
+        GlobalEvents.Instance.WorldShakeRequested += OnWorldShakeRequested;
+    }
+
     /// <summary>
     /// Переключает активный контроллер камеры.
     /// </summary>
@@ -42,19 +48,70 @@ public partial class PlayerInputManager : Node
 
     public override void _Input(InputEvent @event)
     {
-        // TODO: Заменить в будущем на более надёжную проверку на null
         if (_activeController == null) return;
 
-        // Перенаправляем движение мыши
-        if (@event is InputEventMouseMotion mouseMotion)
+        ProcessMouseInput(@event);
+        ProcessOwnerInput(@event);
+    }
+    
+    public override void _Process(double delta)
+    {
+        // Передаем delta в контроллер камеры для плавного возврата тряски
+        // Только если есть активный контроллер
+        _activeController?.HandleMouseInput(Vector2.Zero, (float)delta);
+    }
+    
+    /// <summary>
+    /// Обрабатывает ввод мыши
+    /// </summary>
+    private void ProcessMouseInput(InputEvent @event)
+    {
+        if (@event is InputEventMouseMotion mouseMotion && mouseMotion.Relative != Vector2.Zero)
         {
-            _activeController.HandleMouseInput(mouseMotion.Relative);
+            _activeController?.HandleMouseInput(mouseMotion.Relative);
         }
-
-        // Централизованная обработка действий, которые могут исходить от разных контроллеров (Проверка на null через интерфейс)
-        if (_activeController.GetCameraOwner() is IOwnerCameraController ownerCamera)
+    }
+    
+    /// <summary>
+    /// Обрабатывает ввод владельца камеры
+    /// </summary>
+    private void ProcessOwnerInput(InputEvent @event)
+    {
+        if (_activeController?.GetCameraOwner() is IOwnerCameraController ownerCamera)
         {
             ownerCamera.HandleInput(@event);
         }
+    }
+
+    private void OnWorldShakeRequested(Vector3 origin, float strength, float maxRadius, float duration)
+    {
+        if (_activeController == null) return;
+
+        var camera = _activeController.GetCamera();
+        if (camera == null) return;
+
+        if (IsShakeInRange(camera.GlobalPosition, origin, maxRadius))
+        {
+            float finalStrength = CalculateShakeStrength(camera.GlobalPosition, origin, strength, maxRadius);
+            _activeController.ApplyShake(duration, finalStrength);
+        }
+    }
+    
+    /// <summary>
+    /// Проверяет, находится ли камера в радиусе действия тряски
+    /// </summary>
+    private static bool IsShakeInRange(Vector3 cameraPosition, Vector3 origin, float maxRadius)
+    {
+        return cameraPosition.DistanceTo(origin) <= maxRadius;
+    }
+    
+    /// <summary>
+    /// Вычисляет финальную силу тряски с учетом расстояния
+    /// </summary>
+    private static float CalculateShakeStrength(Vector3 cameraPosition, Vector3 origin, float strength, float maxRadius)
+    {
+        float distance = cameraPosition.DistanceTo(origin);
+        float falloff = 1.0f - (distance / maxRadius);
+        return strength * falloff;
     }
 }

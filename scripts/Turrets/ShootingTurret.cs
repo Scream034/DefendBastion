@@ -54,6 +54,22 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     [Export(PropertyHint.File, "*.tscn,*.scn")]
     public PackedScene ProjectileScene { get; private set; }
 
+    [ExportGroup("Shooting Effects")]
+    /// <summary>
+    /// Сила тряски камеры при выстреле
+    /// </summary>
+    [Export(PropertyHint.Range, "0, 100, 0.1")] private float _shotShakeStrength = 1f;
+    
+    /// <summary>
+    /// Радиус действия тряски в метрах (тряска ощущается только в пределах этого радиуса)
+    /// </summary>
+    [Export(PropertyHint.Range, "1, 100, 1")] private float _shotShakeRadius = 50f;
+    
+    /// <summary>
+    /// Длительность тряски в секундах
+    /// </summary>
+    [Export(PropertyHint.Range, "0.05, 1.0, 0.05")] private float _shotShakeDuration = 0.2f;
+
     [Export(PropertyHint.Range, "-1,10000,1")]
     public int MaxAmmo { get; protected set; } = 100;
 
@@ -181,7 +197,16 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
         SetState(TurretState.FiringCooldown);
         _cooldownTimer?.Start();
         AnimationPlayer.Play(Animations.Fire);
+
         return true;
+    }
+
+    /// <summary>
+    /// Вызывает эффект тряски камеры. Может быть вызван из AnimationPlayer.
+    /// </summary>
+    public void TriggerShotShake()
+    {
+        GlobalEvents.Instance.RequestWorldShake(BarrelEnd.GlobalPosition, _shotShakeStrength, _shotShakeRadius, _shotShakeDuration);
     }
 
     /// <summary>
@@ -195,8 +220,7 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
         // NOTE: Используем GlobalTransform точки вылета, если она есть, иначе - самой турели.
         var spawnPoint = BarrelEnd != null ? BarrelEnd.GlobalTransform : GlobalTransform;
         var projectile = CreateProjectile(spawnPoint);
-
-        GD.Print($"[{Name}] Выстрел с {projectile.Name} в {spawnPoint.Origin}!");
+        GD.Print($"{Name} Shooting with {projectile.Name} at: {BarrelEnd.Position}");
     }
 
     /// <summary>

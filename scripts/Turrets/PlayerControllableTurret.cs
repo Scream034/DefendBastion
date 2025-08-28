@@ -30,14 +30,6 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
         }
     }
 
-    public void ShakeCamera()
-    {
-        // Обратите внимание, что трясти нужно камеру игрока, а не турели.
-        // Или можно добавить тряску и камере турели.
-        // Для примера оставим тряску головы игрока.
-        _cameraController.ShakeAsync((float)GD.RandRange(0.09f, 0.15f), (float)GD.RandRange(0.05f, 0.07f));
-    }
-
     public override BaseProjectile CreateProjectile(Transform3D spawnPoint, LivingEntity initiator = null)
     {
         var projectile = base.CreateProjectile(spawnPoint, PlayerController);
@@ -53,7 +45,7 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
         base.EnterTurret(entity);
 
         // Передаем контроллеру все необходимые ему компоненты и параметры
-        _cameraController.Initialize(this, TurretYaw, TurretPitch, BarrelEnd);
+        _cameraController.Initialize(this);
 
         // Сообщаем менеджеру, что нужно переключиться на камеру турели
         PlayerInputManager.Instance.SwitchController(_cameraController);

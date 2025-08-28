@@ -1,0 +1,22 @@
+[gd_resource type="ParticleProcessMaterial" load_steps=3 format=3 uid="uid://drrpmxr1vqlht"]
+
+[ext_resource type="Texture2D" uid="uid://bnspki1na2llk" path="res://curves/LinearPump_ScaleCurve.tres" id="1_85dxc"]
+[ext_resource type="Texture2D" uid="uid://dqhxmo5dedcir" path="res://curves/Linear_ScaleCurve.tres" id="2_mefmc"]
+
+[resource]
+lifetime_randomness = 0.5
+emission_shape = 3
+emission_box_extents = Vector3(50, 10, 50)
+spread = 180.0
+angular_velocity_min = -90.0
+angular_velocity_max = 90.0
+linear_accel_min = -15.0
+linear_accel_max = -5.0
+tangential_accel_min = -25.0
+tangential_accel_max = -20.0
+scale_min = 0.5
+scale_curve = ExtResource("2_mefmc")
+alpha_curve = ExtResource("1_85dxc")
+turbulence_enabled = true
+turbulence_noise_strength = 3.0
+turbulence_noise_scale = 2.0

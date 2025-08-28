@@ -1,11 +1,11 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://vtogbnsqcfxk"]
 
 [resource]
-resource_name = "Base2"
+resource_name = "BaseDark"
 vertex_color_use_as_albedo = true
 vertex_color_is_srgb = true
-albedo_color = Color(0.256856, 0.25687, 0.314854, 1)
-metallic = 0.03
+albedo_color = Color(0.307389, 0.307443, 0.373415, 1)
+metallic = 0.5
 metallic_specular = 0.1
 roughness = 0.8
 emission = Color(1, 1, 1, 1)

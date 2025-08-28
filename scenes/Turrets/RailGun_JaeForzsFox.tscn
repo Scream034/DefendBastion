@@ -1,8 +1,9 @@
-[gd_scene load_steps=41 format=4 uid="uid://h4e5iifitbua"]
+[gd_scene load_steps=42 format=4 uid="uid://h4e5iifitbua"]
 
 [ext_resource type="Script" uid="uid://cgntm3mej3m3f" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_lbqb5"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="2_6xwvg"]
 [ext_resource type="Script" uid="uid://bvi6phoj3adou" path="res://scripts/Turrets/TurretCameraController.cs" id="3_ddxjo"]
+[ext_resource type="Script" uid="uid://cx67w2h83h0j7" path="res://scripts/Components/Shaker3D.cs" id="3_s7gp7"]
 [ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/turret/RailGun/Base.tres" id="4_lrb7t"]
 [ext_resource type="Material" uid="uid://dgx370rssxhh5" path="res://materials/turret/RailGun/Accent.tres" id="5_qh1gm"]
 [ext_resource type="AudioStream" uid="uid://biph0x4s4cufb" path="res://sounds/railgun_fire.wav" id="6_ca4b8"]
@@ -35,7 +36,11 @@ markers = [{
 }, {
 "color": Color(1, 1, 1, 1),
 "name": &"пар",
-"time": 1.83333
+"time": 1.9
+}, {
+"color": Color(0.552956, 0.552956, 0.552956, 1),
+"name": &"пар_2",
+"time": 2.73333
 }]
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -464,11 +469,11 @@ tracks/35/path = NodePath(".")
 tracks/35/interp = 1
 tracks/35/loop_wrap = true
 tracks/35/keys = {
-"times": PackedFloat32Array(1.96667, 2, 5.4),
+"times": PackedFloat32Array(1.999, 2, 5.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "values": [{
 "args": [],
-"method": &"ShakeCamera"
+"method": &"TriggerShotShake"
 }, {
 "args": [],
 "method": &"PerformShotLogic"
@@ -752,6 +757,54 @@ tracks/58/keys = {
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
 "values": [true, false]
+}
+tracks/59/type = "value"
+tracks/59/imported = false
+tracks/59/enabled = true
+tracks/59/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:visible")
+tracks/59/interp = 1
+tracks/59/loop_wrap = true
+tracks/59/keys = {
+"times": PackedFloat32Array(0, 2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/60/type = "value"
+tracks/60/imported = false
+tracks/60/enabled = true
+tracks/60/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:strength")
+tracks/60/interp = 1
+tracks/60/loop_wrap = true
+tracks/60/keys = {
+"times": PackedFloat32Array(0, 2),
+"transitions": PackedFloat32Array(5, 1),
+"update": 0,
+"values": [25.0, 200.0]
+}
+tracks/61/type = "value"
+tracks/61/imported = false
+tracks/61/enabled = true
+tracks/61/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:directionality")
+tracks/61/interp = 1
+tracks/61/loop_wrap = true
+tracks/61/keys = {
+"times": PackedFloat32Array(0, 2),
+"transitions": PackedFloat32Array(100, 1),
+"update": 0,
+"values": [0.0, 1.0]
+}
+tracks/62/type = "value"
+tracks/62/imported = false
+tracks/62/enabled = true
+tracks/62/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:radius")
+tracks/62/interp = 1
+tracks/62/loop_wrap = true
+tracks/62/keys = {
+"times": PackedFloat32Array(0, 2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [1.0, 25.0]
 }
 
 [sub_resource type="Animation" id="Animation_yqw4q"]
@@ -1452,6 +1505,54 @@ tracks/57/keys = {
 "update": 1,
 "values": [true]
 }
+tracks/58/type = "value"
+tracks/58/imported = false
+tracks/58/enabled = true
+tracks/58/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:visible")
+tracks/58/interp = 1
+tracks/58/loop_wrap = true
+tracks/58/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/59/type = "value"
+tracks/59/imported = false
+tracks/59/enabled = true
+tracks/59/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:strength")
+tracks/59/interp = 1
+tracks/59/loop_wrap = true
+tracks/59/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [25.0]
+}
+tracks/60/type = "value"
+tracks/60/imported = false
+tracks/60/enabled = true
+tracks/60/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:directionality")
+tracks/60/interp = 1
+tracks/60/loop_wrap = true
+tracks/60/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/61/type = "value"
+tracks/61/imported = false
+tracks/61/enabled = true
+tracks/61/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:radius")
+tracks/61/interp = 1
+tracks/61/loop_wrap = true
+tracks/61/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.0]
+}
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_78vft"]
 _data = {
@@ -1835,6 +1936,7 @@ _aimSpeed = 1.25
 _controlPoint = NodePath("Turret/Base/ControlPoint")
 _exitPoint = NodePath("Turret/Base/ExitPoint")
 ProjectileScene = ExtResource("2_6xwvg")
+_shotShakeStrength = 20.0
 MaxAmmo = -1
 FireRate = 20.0
 BarrelEnd = NodePath("Turret/Barrel/BarrelEnd")
@@ -1842,10 +1944,16 @@ AutoReload = false
 AnimationPlayer = NodePath("AnimationPlayer")
 MaxHealth = 500.0
 
-[node name="TurretCameraController" type="Node" parent="." node_paths=PackedStringArray("_camera")]
+[node name="Shaker3D" type="Node" parent="." node_paths=PackedStringArray("_target")]
+script = ExtResource("3_s7gp7")
+_target = NodePath("../Camera3D")
+Type = 2
+metadata/_custom_type_script = "uid://cx67w2h83h0j7"
+
+[node name="TurretCameraController" type="Node" parent="." node_paths=PackedStringArray("_camera", "_shaker")]
 script = ExtResource("3_ddxjo")
 _camera = NodePath("../Camera3D")
-SensitivityMultiplier = 0.7
+_shaker = NodePath("../Shaker3D")
 TurretMinPitch = -0.25
 TurretMaxPitch = 1.0
 TurretMaxYaw = 80.0
@@ -1893,6 +2001,7 @@ explosiveness = 0.12
 randomness = 0.5
 fixed_fps = 60
 fract_delta = false
+local_coords = true
 draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_rw2m1")
 draw_pass_1 = ExtResource("7_6ktbg")
@@ -1926,6 +2035,11 @@ fixed_fps = 31
 process_material = SubResource("ParticleProcessMaterial_6xwvg")
 draw_pass_1 = ExtResource("9_lrb7t")
 
+[node name="GPUParticlesAttractorBox3D" type="GPUParticlesAttractorSphere3D" parent="Turret/Barrel/BarrelEnd"]
+visible = false
+strength = 25.0
+attenuation = 0.1
+
 [node name="RemoteTransform3DTurretBarrel" type="RemoteTransform3D" parent="Turret/Barrel"]
 transform = Transform3D(3.57143, -4.25747e-07, 2.12874e-07, 4.25747e-07, 3.57143, 5.07531e-14, -2.12874e-07, -2.53765e-14, 3.57143, -0.00139305, -1.66064e-10, -0.00591969)
 remote_path = NodePath("../../../CollisionShape3DTurretBarrel")
@@ -1947,6 +2061,7 @@ lifetime = 0.15
 speed_scale = 0.3
 randomness = 0.5
 fixed_fps = 60
+local_coords = true
 draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
@@ -1972,6 +2087,7 @@ lifetime = 0.15
 speed_scale = 0.3
 randomness = 0.5
 fixed_fps = 60
+local_coords = true
 draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
@@ -1997,6 +2113,7 @@ lifetime = 0.15
 speed_scale = 0.3
 randomness = 0.5
 fixed_fps = 60
+local_coords = true
 draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
@@ -2022,6 +2139,7 @@ lifetime = 0.15
 speed_scale = 0.3
 randomness = 0.5
 fixed_fps = 60
+local_coords = true
 draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
@@ -2054,6 +2172,7 @@ lifetime = 0.01
 speed_scale = 0.4
 randomness = 0.5
 fixed_fps = 60
+local_coords = true
 draw_order = 1
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
@@ -2079,6 +2198,7 @@ lifetime = 0.01
 speed_scale = 0.4
 randomness = 0.5
 fixed_fps = 60
+local_coords = true
 draw_order = 1
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
@@ -2147,7 +2267,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.65661e-10, 1.4129, 0.89381
 fov = 71.5487
 
 [node name="CollisionShape3DTurretBarrel" type="CollisionShape3D" parent="."]
-transform = Transform3D(0.5, 3.97904e-14, 4.9738e-14, -3.97904e-14, 0.5, -1.5416e-20, -4.9738e-14, 1.5416e-20, 0.5, -0.000696525, 0.750318, -1.28687)
+transform = Transform3D(0.5, 3.97904e-14, 4.9738e-14, -3.97904e-14, 0.5, -1.5416e-20, -4.9738e-14, 1.5416e-20, 0.5, -0.000696525, 0.750318, -1.16829)
 visible = false
 shape = SubResource("ConvexPolygonShape3D_s7gp7")
 

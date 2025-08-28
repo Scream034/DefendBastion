@@ -60,7 +60,6 @@ path_desired_distance = 3.3
 target_desired_distance = 3.3
 height = 6.6
 radius = 3.3
-debug_enabled = true
 
 [node name="CombatBehavior" type="Node" parent="." node_paths=PackedStringArray("_attackActionNode")]
 script = ExtResource("2_lcrii")

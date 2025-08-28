@@ -17,4 +17,4 @@ disable_receive_shadows = true
 
 [resource]
 material = SubResource("StandardMaterial3D_yqw4q")
-size = Vector3(0.035, 0.035, 0.035)
+size = Vector3(0.032, 0.032, 0.032)

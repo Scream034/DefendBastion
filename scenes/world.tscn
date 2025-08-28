@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://q2747brlyw05"]
+[gd_scene load_steps=19 format=3 uid="uid://q2747brlyw05"]
 
 [ext_resource type="Script" uid="uid://q58hirmnykj5" path="res://scripts/GameManager.cs" id="1_pdh0q"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_h1bdy"]
@@ -9,9 +9,12 @@
 [ext_resource type="Material" uid="uid://j13dik6cqlqh" path="res://materials/Ground.tres" id="6_h1bdy"]
 [ext_resource type="PackedScene" uid="uid://c0aomjglyx2a7" path="res://scenes/Entities/Kaiju.tscn" id="7_o1tcx"]
 [ext_resource type="PackedScene" uid="uid://daxwujwpv62hb" path="res://scenes/Turrets/RailGunTurret.tscn" id="8_rpuxp"]
+[ext_resource type="Material" uid="uid://drrpmxr1vqlht" path="res://materials/process/SnowFall_PPM.tres" id="9_i4b1j"]
 [ext_resource type="PackedScene" uid="uid://c48vh6kflnrnw" path="res://scenes/Entities/Player.tscn" id="9_nthub"]
 [ext_resource type="PackedScene" uid="uid://h4e5iifitbua" path="res://scenes/Turrets/RailGun_JaeForzsFox.tscn" id="10_44lqw"]
+[ext_resource type="QuadMesh" uid="uid://dg1h52u00q1tl" path="res://mesh/Snowflake.tres" id="10_c0d7e"]
 [ext_resource type="PackedScene" uid="uid://cnm2m7s2pec0k" path="res://scenes/Entities/ShortShip.tscn" id="12_7c4bj"]
+[ext_resource type="PackedScene" uid="uid://cel18k7e5iwx8" path="res://scenes/Objects/ArmorTurretStand_merrytwer.tscn" id="15_c0d7e"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_w7kh3"]
 playback_mode = 2
@@ -59,8 +62,6 @@ shadow_enabled = true
 directional_shadow_blend_splits = true
 sky_mode = 1
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-
 [node name="TargetZone" type="Area3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.2757)
 priority = 1
@@ -82,6 +83,17 @@ visible = false
 
 [node name="Player" parent="." instance=ExtResource("9_nthub")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.783809, 1.49353, 0.485633)
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.7801, 0)
+cast_shadow = 0
+lod_bias = 0.5
+gi_mode = 0
+amount = 4096
+lifetime = 10.0
+visibility_aabb = AABB(-50, -10, -50, 100, 20, 100)
+process_material = ExtResource("9_i4b1j")
+draw_pass_1 = ExtResource("10_c0d7e")
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
 navigation_mesh = SubResource("NavigationMesh_h1bdy")
@@ -166,9 +178,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48.9597, 15.0748, -71.7484)
 size = Vector3(51.8821, 0.404175, 10.6218)
 material = ExtResource("6_h1bdy")
 
-[node name="RailGun_Jaeforzs" parent="NavigationRegion3D/BakeMap" instance=ExtResource("10_44lqw")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.150088, 1.43683, -3.11998)
-
 [node name="House" parent="NavigationRegion3D" instance=ExtResource("6_c0d7e")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27.0732, 0.851555, 38.0465)
 
@@ -189,6 +198,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.7503, 0.851555, 21.2657)
 
 [node name="House6" parent="NavigationRegion3D" instance=ExtResource("6_c0d7e")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.8076, 0.851555, 21.2657)
+
+[node name="ArmorTurretStand_merrytwer" parent="NavigationRegion3D" instance=ExtResource("15_c0d7e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.259629, 1.11195, -3.54442)
+
+[node name="RailGun_Jaeforzs" parent="NavigationRegion3D/ArmorTurretStand_merrytwer" instance=ExtResource("10_44lqw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.789, 0.52838)
 
 [node name="ShortShip" parent="." instance=ExtResource("12_7c4bj")]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 4.06408, 9.02048, -73.4608)

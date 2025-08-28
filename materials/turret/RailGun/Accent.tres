@@ -4,9 +4,9 @@
 resource_name = "Accent"
 vertex_color_use_as_albedo = true
 vertex_color_is_srgb = true
-albedo_color = Color(0.260174, 0.260167, 0.321141, 1)
-metallic = 0.6
-metallic_specular = 0.2
+albedo_color = Color(0.314384, 0.314423, 0.384223, 1)
+metallic = 0.5
+metallic_specular = 0.1
 emission = Color(1, 1, 1, 1)
 emission_energy_multiplier = 0.0
 clearcoat_roughness = 0.0

@@ -4,7 +4,7 @@
 
 [resource]
 material = ExtResource("1_1wofk")
-radius = 0.02
-height = 0.04
+radius = 0.015
+height = 0.03
 radial_segments = 8
 rings = 8

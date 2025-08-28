@@ -55,7 +55,6 @@ _eyesPosition = NodePath("CollisionShape3D/Head/EyesPoint")
 path_desired_distance = 5.1
 target_desired_distance = 5.1
 radius = 5.1
-debug_enabled = true
 
 [node name="CombatBehavior" type="Node" parent="." node_paths=PackedStringArray("_attackActionNode")]
 script = ExtResource("2_df46c")
