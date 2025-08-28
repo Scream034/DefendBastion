@@ -162,7 +162,7 @@ namespace Game.Entity.AI
             var horizontalVelocity = Velocity with { Y = 0 };
             if (horizontalVelocity.LengthSquared() > 0.1f)
             {
-                var targetRotation = Basis.LookingAt(horizontalVelocity.Normalized());
+                var targetRotation = Basis.LookingAt(horizontalVelocity.Normalized()).Orthonormalized();
                 Basis = Basis.Slerp(targetRotation, BodyRotationSpeed * (float)delta);
             }
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://q2747brlyw05"]
+[gd_scene load_steps=22 format=3 uid="uid://q2747brlyw05"]
 
 [ext_resource type="Script" uid="uid://q58hirmnykj5" path="res://scripts/GameManager.cs" id="1_pdh0q"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_h1bdy"]
@@ -9,11 +9,13 @@
 [ext_resource type="Material" uid="uid://j13dik6cqlqh" path="res://materials/Ground.tres" id="6_h1bdy"]
 [ext_resource type="PackedScene" uid="uid://c0aomjglyx2a7" path="res://scenes/Entities/Kaiju.tscn" id="7_o1tcx"]
 [ext_resource type="PackedScene" uid="uid://daxwujwpv62hb" path="res://scenes/Turrets/RailGunTurret.tscn" id="8_rpuxp"]
-[ext_resource type="Material" uid="uid://drrpmxr1vqlht" path="res://materials/process/SnowFall_PPM.tres" id="9_i4b1j"]
+[ext_resource type="Material" uid="uid://drrpmxr1vqlht" path="res://materials/process/SlowSnowFall_PPM.tres" id="9_i4b1j"]
 [ext_resource type="PackedScene" uid="uid://c48vh6kflnrnw" path="res://scenes/Entities/Player.tscn" id="9_nthub"]
 [ext_resource type="PackedScene" uid="uid://h4e5iifitbua" path="res://scenes/Turrets/RailGun_JaeForzsFox.tscn" id="10_44lqw"]
-[ext_resource type="QuadMesh" uid="uid://dg1h52u00q1tl" path="res://mesh/Snowflake.tres" id="10_c0d7e"]
+[ext_resource type="QuadMesh" uid="uid://1h4jxde1jsa5" path="res://mesh/BigSnowflake.tres" id="10_c0d7e"]
 [ext_resource type="PackedScene" uid="uid://cnm2m7s2pec0k" path="res://scenes/Entities/ShortShip.tscn" id="12_7c4bj"]
+[ext_resource type="Texture2D" uid="uid://dqhxmo5dedcir" path="res://curves/Linear_ScaleCurve.tres" id="12_nthub"]
+[ext_resource type="QuadMesh" uid="uid://dg1h52u00q1tl" path="res://mesh/SmallSnowflake.tres" id="13_nthub"]
 [ext_resource type="PackedScene" uid="uid://cel18k7e5iwx8" path="res://scenes/Objects/ArmorTurretStand_merrytwer.tscn" id="15_c0d7e"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_w7kh3"]
@@ -24,6 +26,24 @@ stream_1/stream = ExtResource("3_7c4bj")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0wfyh"]
 size = Vector3(74.9939, 18.0591, 36.8823)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_44lqw"]
+lifetime_randomness = 0.5
+emission_shape = 3
+emission_box_extents = Vector3(50, 10, 50)
+direction = Vector3(0.25, -0.5, 0)
+spread = 180.0
+angular_velocity_min = -90.0
+angular_velocity_max = 90.0
+linear_accel_min = -2.23517e-06
+linear_accel_max = 20.0
+tangential_accel_min = -25.0
+tangential_accel_max = 10.0
+scale_min = 0.5
+scale_curve = ExtResource("12_nthub")
+turbulence_enabled = true
+turbulence_noise_strength = 3.0
+turbulence_noise_scale = 2.0
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_h1bdy"]
 vertices = PackedVector3Array(-74.2501, 1.02002, -77.751, -29.7501, 1.02002, -77.751, -29.5001, 1.02002, -79.001, -28.2501, 1.02002, -149.251, -74.2501, 1.02002, -149.251, -28.0001, 1.02002, -79.001, -24.2501, 1.02002, -79.001, -24.0001, 1.02002, -149.251, 72.9999, 1.02002, -41.501, 72.9999, 1.02002, -39.751, 74.2499, 1.02002, -40.001, 74.2499, 1.02002, -149.251, -19.7501, 1.02002, -41.501, -19.7501, 1.02002, -39.501, -5.75005, 1.02002, -39.501, -5.75005, 1.02002, -41.501, 72.4999, 1.02002, -42.001, -20.2501, 1.02002, -42.001, -5.25005, 1.02002, -42.001, -22.5001, 1.02002, -78.751, -22.5001, 1.02002, -66.001, -24.2501, 1.02002, -65.751, -24.0001, 1.02002, -42.001, -24.2501, 15.77, -76.001, -23.7501, 15.77, -67.001, -23.7501, 15.77, -77.751, -28.5001, 15.77, -77.751, -29.0001, 15.77, -76.501, -74.2501, 15.77, -76.501, -74.2501, 15.77, -67.001, -40.2501, 15.77, -67.001, -40.0001, 15.77, -76.001, -40.7501, 8.27002, -67.001, -23.7501, 8.27002, -67.001, -23.7501, 8.27002, -76.251, -40.7501, 8.27002, -76.501, -39.0001, 24.27, -73.001, -39.0001, 21.02, -66.001, -25.2501, 21.02, -66.001, -25.2501, 24.27, -73.001, -69.5001, 1.02002, -58.251, -69.5001, 1.02002, -65.751, -74.2501, 1.02002, -65.751, -74.2501, 1.02002, -58.001, -68.2501, 12.02, -65.751, -68.2501, 12.27, -57.751, -54.2501, 12.27, -58.001, -54.2501, 12.02, -65.751, -53.0001, 1.02002, -65.001, -53.5001, 1.02002, -64.751, -53.5001, 1.02002, -59.501, -53.0001, 1.02002, -59.251, -53.0001, 1.02002, -57.251, -54.0001, 1.02002, -56.501, -54.0001, 1.02002, -42.001, -53.0001, 1.02002, -65.751, -69.2501, 1.02002, -56.501, -72.7501, 1.02002, -41.501, -72.2501, 1.02002, -42.001, -74.2501, 1.02002, -32.501, -72.7501, 1.02002, -32.501, -55.7501, 1.02002, -56.501, -56.0001, 1.02002, -57.001, -67.0001, 1.02002, -57.001, -67.2501, 1.02002, -56.501, -71.5001, -5.97998, -40.751, -71.5001, -5.97998, -31.251, -21.0001, -5.97998, -31.251, -21.0001, -5.97998, -40.751, -4.50005, -5.97998, -40.751, -4.50005, -5.97998, -31.251, 71.7499, -5.97998, -31.251, 71.7499, -5.97998, -40.751, 5.74995, 1.02002, 31.499, 5.24995, 1.02002, 31.749, 8.74995, 1.02002, 32.999, 8.99995, 1.02002, 32.499, 1.24995, 1.02002, -4.75096, 1.24995, 1.02002, -1.50096, 5.49995, 1.02002, 29.999, 16.2499, 1.02002, 32.499, 16.4999, 1.02002, 34.499, 23.2499, 1.02002, 34.499, 23.4999, 1.02002, 32.499, 30.7499, 1.02002, 32.499, 74.2499, 1.02002, 33.999, 72.4999, 1.02002, -30.001, 0.249947, 1.02002, -30.001, 72.9999, 1.02002, -30.501, 30.9999, 1.02002, 34.249, 0.249947, 1.02002, -1.25096, 0.249947, 1.02002, 21.749, 0.249947, 1.02002, -5.00096, -19.7501, 1.02002, -32.501, -5.75005, 1.02002, -32.501, -72.7501, 1.02002, -30.501, -74.2501, 1.02002, 17.999, -31.7501, 1.02002, 17.999, -31.7501, 1.02002, 16.249, -32.0001, 1.02002, -30.001, -72.2501, 1.02002, -30.001, -2.00005, 1.02002, -1.00096, -1.00005, 1.02002, -1.75096, -1.00005, 1.02002, -4.75096, -24.2501, 1.02002, 15.749, -24.0001, 1.02002, 17.749, -17.7501, 1.02002, 17.749, -17.5001, 1.02002, 15.749, -31.5001, 1.02002, 15.749, -5.75005, 1.02002, -30.501, -19.7501, 1.02002, -30.501, -20.2501, 1.02002, -30.001, -5.25005, 1.02002, -30.001, -10.5001, 1.02002, 15.749, -0.750053, 1.02002, -1.25096, -10.0001, 1.02002, 16.249, -1.50005, 1.02002, 22.249, -10.0001, 1.02002, 25.499, -6.25005, 1.02002, 25.499, -5.75005, 1.02002, 24.749, -30.5001, 1.02002, 16.999, -30.5001, 1.02002, 25.749, -25.2501, 1.02002, 25.749, -25.2501, 1.02002, 16.999, -16.5001, 1.02002, 16.999, -16.5001, 1.02002, 25.749, -11.2501, 1.02002, 25.749, -11.2501, 1.02002, 16.999, -24.0001, 1.02002, 24.999, -17.7501, 1.02002, 24.999, -74.2501, 1.02002, 24.749, -31.7501, 1.02002, 24.749, -0.250053, 1.02002, 23.499, -4.50005, 1.02002, 25.749, -4.50005, 1.02002, 26.499, -0.250053, 1.02002, 33.249, 3.99995, 1.02002, 30.749, -31.7501, 1.02002, 32.749, -29.5001, 1.02002, 32.499, -29.5001, 1.02002, 26.999, -31.7501, 1.02002, 26.749, -74.2501, 1.02002, 34.749, -31.7501, 1.02002, 34.749, -17.5001, 1.02002, 32.499, -15.5001, 1.02002, 32.499, -15.5001, 1.02002, 26.999, -17.5001, 1.02002, 26.999, -24.2501, 1.02002, 26.999, -24.2501, 1.02002, 32.499, -24.0001, 1.02002, 34.499, -17.7501, 1.02002, 34.499, -10.2501, 1.02002, 26.999, -5.75005, 1.02002, 27.249, -10.2501, 1.02002, 32.499, -10.0001, 1.02002, 32.999, -2.50005, 1.02002, 32.499, -1.25005, 1.02002, 34.749, -10.0001, 1.02002, 43.499, -5.34058e-05, 1.02002, 34.999, 8.74995, 1.02002, 43.499, 10.9999, 1.02002, 43.749, -12.2501, 1.02002, 43.749, -12.2501, 1.02002, 149.249, 10.9999, 1.02002, 149.249, -30.5001, 1.02002, 33.749, -30.5001, 1.02002, 42.499, -25.2501, 1.02002, 42.499, -25.2501, 1.02002, 33.749, -16.5001, 1.02002, 33.749, -16.5001, 1.02002, 42.499, -11.2501, 1.02002, 42.499, -11.2501, 1.02002, 33.749, 9.99995, 1.02002, 33.749, 9.99995, 1.02002, 42.499, 15.2499, 1.02002, 42.499, 15.2499, 1.02002, 33.749, 24.4999, 1.02002, 33.749, 24.4999, 1.02002, 42.499, 29.7499, 1.02002, 42.499, 29.7499, 1.02002, 33.749, 30.9999, 1.02002, 41.999, 74.2499, 1.02002, 42.249, -24.0001, 1.02002, 41.749, -17.7501, 1.02002, 41.749, 16.4999, 1.02002, 41.749, 23.2499, 1.02002, 41.749, -74.2501, 1.02002, 41.499, -31.7501, 1.02002, 41.499, -17.5001, 1.02002, 43.749, -24.2501, 1.02002, 43.749, -15.5001, 1.02002, 149.249, -74.2501, 1.02002, 149.249, -31.5001, 1.02002, 43.749, -15.5001, 1.02002, 43.749, 23.4999, 1.02002, 43.749, 16.2499, 1.02002, 43.749, 14.2499, 1.02002, 149.249, 74.2499, 1.02002, 149.249, 30.7499, 1.02002, 43.749, 14.2499, 1.02002, 43.749)
@@ -84,16 +104,39 @@ visible = false
 [node name="Player" parent="." instance=ExtResource("9_nthub")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.783809, 1.49353, 0.485633)
 
-[node name="GPUParticles3D" type="GPUParticles3D" parent="Player"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.7801, 0)
+[node name="SlowGPUParticles3D" type="GPUParticles3D" parent="Player"]
+process_priority = -1
+process_physics_priority = -1
+process_thread_group = 2
+process_thread_group_order = -1
+process_thread_messages = 3
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.7801, 0)
 cast_shadow = 0
-lod_bias = 0.5
+lod_bias = 2.0
 gi_mode = 0
-amount = 4096
-lifetime = 10.0
-visibility_aabb = AABB(-50, -10, -50, 100, 20, 100)
+amount = 4000
+lifetime = 6.0
+randomness = 0.2
+visibility_aabb = AABB(-30, -4, -30, 60, 8, 60)
 process_material = ExtResource("9_i4b1j")
 draw_pass_1 = ExtResource("10_c0d7e")
+
+[node name="FastGPUParticles3D" type="GPUParticles3D" parent="Player"]
+process_priority = -1
+process_physics_priority = -1
+process_thread_group = 2
+process_thread_group_order = -1
+process_thread_messages = 3
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.7801, 0)
+cast_shadow = 0
+lod_bias = 2.0
+gi_mode = 0
+amount = 6000
+lifetime = 10.0
+randomness = 0.2
+visibility_aabb = AABB(-30, -7.5, -30, 60, 15, 60)
+process_material = SubResource("ParticleProcessMaterial_44lqw")
+draw_pass_1 = ExtResource("13_nthub")
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
 navigation_mesh = SubResource("NavigationMesh_h1bdy")

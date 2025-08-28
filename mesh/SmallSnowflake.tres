@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://bjy4eb06ee4sr" path="res://textures/SoftSirce_5000x5000_vecteezy.png" id="1_rgx3a"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nrtoj"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e08l6"]
 render_priority = 1
 transparency = 1
 shading_mode = 0
@@ -11,14 +11,15 @@ specular_mode = 2
 disable_ambient_light = true
 vertex_color_use_as_albedo = true
 vertex_color_is_srgb = true
+albedo_color = Color(0.156863, 0.713726, 0.886275, 0.113725)
 albedo_texture = ExtResource("1_rgx3a")
 albedo_texture_force_srgb = true
-texture_filter = 1
+texture_repeat = false
 disable_receive_shadows = true
 billboard_mode = 2
 grow = true
 grow_amount = 0.02
 
 [resource]
-material = SubResource("StandardMaterial3D_nrtoj")
-size = Vector2(0.05, 0.05)
+material = SubResource("StandardMaterial3D_e08l6")
+size = Vector2(0.035, 0.035)

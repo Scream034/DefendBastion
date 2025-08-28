@@ -1,0 +1,21 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://ddrxfyltunn40"]
+
+[ext_resource type="Texture2D" uid="uid://bjy4eb06ee4sr" path="res://textures/SoftSirce_5000x5000_vecteezy.png" id="1_palbc"]
+
+[resource]
+render_priority = 1
+transparency = 1
+shading_mode = 0
+diffuse_mode = 1
+specular_mode = 2
+disable_ambient_light = true
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+albedo_color = Color(0.647702, 0.895374, 0.995697, 0.360784)
+albedo_texture = ExtResource("1_palbc")
+albedo_texture_force_srgb = true
+texture_repeat = false
+disable_receive_shadows = true
+billboard_mode = 2
+grow = true
+grow_amount = 0.02
