@@ -14,7 +14,7 @@ public partial class RangedAttackStrategy : Node, IAttackAction
     private PackedScene _projectileScene;
 
     [Export]
-    private Marker3D _muzzlePoint;
+    public Marker3D MuzzlePoint { get; private set; }
 
     public override void _Ready()
     {
@@ -23,9 +23,9 @@ public partial class RangedAttackStrategy : Node, IAttackAction
         {
             GD.PushError($"Для {GetPath()} не назначена сцена снаряда (_projectileScene)!");
         }
-        if (_muzzlePoint == null)
+        if (MuzzlePoint == null)
         {
-            GD.PushWarning($"Для {GetPath()} не назначена точка вылета снаряда (_muzzlePoint). Снаряды будут появляться в центре родителя.");
+            GD.PushWarning($"Для {GetPath()} не назначена точка вылета снаряда (MuzzlePoint). Снаряды будут появляться в центре родителя.");
         }
     }
 
@@ -33,23 +33,15 @@ public partial class RangedAttackStrategy : Node, IAttackAction
     {
         if (_projectileScene == null) return;
 
-        // ДОБАВЛЕНА ПРОВЕРКА ЛИНИИ ВИДИМОСТИ ПЕРЕД ВЫСТРЕЛОМ
-        if (!attacker.HasLineOfSightTo(target))
-        {
-            GD.Print($"{attacker.Name} cannot shoot at [{target.Name}]. No line of sight.");
-            return;
-        }
-
-        var spawnTransform = _muzzlePoint?.GlobalTransform ?? attacker.GlobalTransform;
+        var spawnTransform = MuzzlePoint?.GlobalTransform ?? attacker.GlobalTransform;
         spawnTransform = spawnTransform.LookingAt(target.GlobalPosition, Vector3.Up);
 
         var projectile = ProjectilePool.Get(_projectileScene);
-        projectile.IgnoredEntities.Add(attacker);
+        projectile.RayQueryParams.Exclude.Add(attacker.GetRid());
         projectile.GlobalTransform = spawnTransform;
 
         Constants.Root.AddChild(projectile);
 
-        // Передаем атакующего как источник урона
         projectile.Initialize(attacker);
 
         GD.Print($"{attacker.Name} fired at [{target.Name}].");

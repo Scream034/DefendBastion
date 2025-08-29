@@ -12,19 +12,6 @@ public sealed partial class Kaiju : AIEntity
 
     public Kaiju() : base(IDs.Kaiju) { }
 
-    public override void _Ready()
-    {
-        base._Ready(); // Вызываем _Ready() из AIEntity, который запустит машину состояний
-
-        // Если хп в 0, значит Кайдзю нужно создать со случайном хп
-        if (Health == 0)
-        {
-            Stats.MaxHealth = GD.RandRange(900, 2222);
-        }
-
-        GD.Print($"Kaiju created: {GlobalPosition}! Health: {Health}. AI is active.");
-    }
-
     public override async Task<bool> DamageAsync(float amount, LivingEntity source = null)
     {
         if (!await base.DamageAsync(amount, source)) return false;

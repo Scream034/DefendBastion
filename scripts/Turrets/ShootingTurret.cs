@@ -59,12 +59,12 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     /// Сила тряски камеры при выстреле
     /// </summary>
     [Export(PropertyHint.Range, "0, 100, 0.1")] private float _shotShakeStrength = 1f;
-    
+
     /// <summary>
     /// Радиус действия тряски в метрах (тряска ощущается только в пределах этого радиуса)
     /// </summary>
     [Export(PropertyHint.Range, "1, 100, 1")] private float _shotShakeRadius = 50f;
-    
+
     /// <summary>
     /// Длительность тряски в секундах
     /// </summary>
@@ -131,11 +131,11 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     {
         get
         {
-            if (CurrentState == TurretState.Idle && HasAmmo && Stats.IsAlive)
+            if (CurrentState == TurretState.Idle && HasAmmo && IsAlive)
             {
                 return true;
             }
-            GD.Print($"{Name} Cant shoot: State={CurrentState}, HasAmmo={HasAmmo}, IsAlive={Stats.IsAlive}");
+            GD.Print($"{Name} Cant shoot: State={CurrentState}, HasAmmo={HasAmmo}, IsAlive={IsAlive}");
             return false;
         }
     }

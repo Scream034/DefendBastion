@@ -5,6 +5,8 @@ namespace Game.Entity.AI.AttackStrategies
 {
     public partial class MeleeAttackStrategy : Node, IAttackAction
     {
+        public Marker3D MuzzlePoint => null;
+
         [ExportGroup("Melee Attack Settings")]
         [Export(PropertyHint.Range, "1,500,1")]
         private float _damage = 25f;

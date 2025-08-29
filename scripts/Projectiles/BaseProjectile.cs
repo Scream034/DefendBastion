@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Game.Singletons;
 using Game.Entity;
+using System.Linq;
 
 namespace Game.Projectiles;
 
@@ -23,88 +24,61 @@ public partial class BaseProjectile : Area3D
     [Export(PropertyHint.Range, "0.1, 30.0, 0.1")]
     public float Lifetime = 5f;
 
-    public readonly List<Node> IgnoredEntities = [];
-
-    /// <summary>
-    /// Ссылка на исходную сцену, из которой был создан этот объект.
-    /// Необходимо для возврата в правильный пул.
-    /// </summary>
     public PackedScene SourceScene { get; set; }
-
-    /// <summary>
-    /// Сущность, которая выпустила этот снаряд.
-    /// </summary>
     public LivingEntity Initiator { get; private set; }
+    public PhysicsRayQueryParameters3D RayQueryParams { get; private set; }
 
     protected Timer lifetimeTimer;
-    protected PhysicsRayQueryParameters3D rayQueryParams;
     protected CollisionShape3D collisionShape;
 
     public override void _Ready()
     {
-        foreach (var child in GetChildren())
-        {
-            if (child is CollisionShape3D shape)
-            {
-                collisionShape = shape;
-                break;
-            }
-        }
+        collisionShape = GetNodeOrNull<CollisionShape3D>("CollisionShape3D");
 
         if (collisionShape == null)
         {
             GD.PushError($"Снаряд '{Name}' не имеет дочернего узла CollisionShape3D! Физика работать не будет.");
+            SetPhysicsProcess(false);
         }
     }
 
     /// <summary>
     /// Инициализирует снаряд ПОСЛЕ его добавления в сцену.
     /// </summary>
-    public virtual void Initialize(LivingEntity initiator = null) // Изменен тип на Node3D для большей точности
+    public virtual void Initialize(LivingEntity initiator = null)
     {
         Initiator = initiator;
 
+        RayQueryParams ??= PhysicsRayQueryParameters3D.Create(GlobalPosition, GlobalPosition, CollisionMask);
+
+        RayQueryParams.Exclude.Add(GetRid()); // Всегда игнорируем себя
+
         if (initiator != null)
         {
-            IgnoredEntities.Add(initiator);
+            RayQueryParams.Exclude.Add(initiator.GetRid());
         }
 
-        if (rayQueryParams == null)
-        {
-            rayQueryParams = PhysicsRayQueryParameters3D.Create(
-                GlobalPosition,
-                GlobalPosition,
-                CollisionMask,
-                [GetRid()]
-            );
-        }
-        else
-        {
-            rayQueryParams.From = GlobalPosition;
-            rayQueryParams.To = GlobalPosition;
-        }
+        RayQueryParams.From = GlobalPosition;
+        RayQueryParams.To = GlobalPosition;
+
         lifetimeTimer.Start(Lifetime);
     }
 
-    public override void _PhysicsProcess(double delta)
+    public override async void _PhysicsProcess(double delta)
     {
         float travelDistance = Speed * (float)delta;
         Vector3 velocity = -GlobalTransform.Basis.Z * travelDistance;
         Vector3 nextPosition = GlobalPosition + velocity;
 
-        rayQueryParams.From = GlobalPosition;
-        rayQueryParams.To = nextPosition;
+        RayQueryParams.From = GlobalPosition;
+        RayQueryParams.To = nextPosition;
 
-        var result = Constants.DirectSpaceState.IntersectRay(rayQueryParams);
+        var result = Constants.DirectSpaceState.IntersectRay(RayQueryParams);
 
         if (result.Count > 0)
         {
-            var collider = result["collider"].As<Node>();
-            if (!IgnoredEntities.Contains(collider))
-            {
-                OnHit(result).Wait();
-                return;
-            }
+            await OnHit(result);
+            return;
         }
 
         GlobalPosition = nextPosition;
@@ -116,9 +90,10 @@ public partial class BaseProjectile : Area3D
         GlobalPosition = hitInfo["position"].AsVector3();
         if (collider is ICharacter damageable)
         {
-            // <<--- [ИЗМЕНЕНИЕ 2] Передаем инициатора как источник урона!
             await damageable.DamageAsync(Damage, Initiator);
         }
+
+        GD.Print($"{Name} hit {collider.Name}");
     }
 
     protected virtual async Task OnHit(Godot.Collections.Dictionary hitInfo)
@@ -134,8 +109,8 @@ public partial class BaseProjectile : Area3D
         SetPhysicsProcess(true);
         if (collisionShape != null) collisionShape.Disabled = false;
 
-        IgnoredEntities.Clear();
-        Initiator = null; // <<--- [ИЗМЕНЕНИЕ 3] Сбрасываем инициатора при возврате в пул
+        RayQueryParams?.Exclude.Clear();
+        Initiator = null;
 
         if (lifetimeTimer == null)
         {
@@ -153,7 +128,7 @@ public partial class BaseProjectile : Area3D
         if (collisionShape != null) collisionShape.Disabled = true;
 
         lifetimeTimer.Stop();
-        IgnoredEntities.Clear();
+        RayQueryParams.Exclude.Clear();
     }
 
     private void OnLifetimeTimeout()

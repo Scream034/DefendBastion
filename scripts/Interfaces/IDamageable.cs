@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Game.Entity;
-using Game.Entity.Components.Resources;
 
 namespace Game.Interfaces;
 
@@ -10,10 +9,7 @@ namespace Game.Interfaces;
 /// </summary>
 public interface ICharacter : IDamageable
 {
-    /// <summary>
-    /// Статистика объекта.
-    /// </summary>
-    CharacterStats Stats { get; protected set; }
+    float BaseThreatValue { get; }
 }
 
 public interface IDamageable

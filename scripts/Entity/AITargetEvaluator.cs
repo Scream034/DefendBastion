@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using Godot;
 using Game.Interfaces;
 using Game.Turrets;
-using Game.Entity.Components.Resources;
-using System.Runtime.CompilerServices;
 
 namespace Game.Entity.AI
 {
@@ -14,8 +12,8 @@ namespace Game.Entity.AI
     public static class AITargetEvaluator
     {
         // Константы для настройки весов различных факторов при оценке угрозы.
-        private const float DistanceWeight = 1.5f; // Насколько сильно расстояние влияет на угрозу.
-        private const float TurretPriorityMultiplier = 2.5f; // Множитель угрозы для турелей.
+        private const float DistanceWeight = 2f; // Насколько сильно расстояние влияет на угрозу.
+        private const float TurretPriorityMultiplier = 3f; // Множитель угрозы для турелей.
         private const float LowHealthBonusMultiplier = 0.5f; // Бонус за низкое здоровье цели (0.5 = до 50% бонуса).
 
         /// <summary>
@@ -53,7 +51,7 @@ namespace Game.Entity.AI
                 return -1f;
             }
 
-            // 2Специальная логика для игрока в турели.
+            // Специальная логика для игрока в турели.
             else if (target is Player.Player player && player.IsInTurret())
             {
                 var turret = player.CurrentTurret;
@@ -73,37 +71,33 @@ namespace Game.Entity.AI
 
             // Если это турель, в которой сидит игрок, мы уже обработали ее выше. 
             // Но если это автономная турель, или в ней сидит вражеский AI, ее нужно оценить.
-            if (target is ControllableTurret controlledTurret && controlledTurret.CurrentController != null)
+            else if (target is ControllableTurret controlledTurret && controlledTurret.CurrentController != null)
             {
                 // Если в турели сидит враг, это ОЧЕНЬ высокая угроза.
                 return CalculateScoreForTarget(evaluator, controlledTurret, TurretPriorityMultiplier);
             }
 
-            // 3. Стандартная оценка для всех остальных целей.
+            // Стандартная оценка для всех остальных целей.
             return CalculateScoreForTarget(evaluator, target, 1.0f);
         }
 
-        private static float CalculateScoreForTarget(AIEntity evaluator, PhysicsBody3D target, float priorityMultiplier)
+        private static float CalculateScoreForTarget(AIEntity evaluator, PhysicsBody3D target, in float priorityMultiplier)
         {
             if (target is not ICharacter character) return -1f;
 
-            // Получаем компонент CharacterStats цели, если он есть.
-            float baseThreat = character.Stats.BaseThreatValue; // Значение по умолчанию, если статов нет.
+            float baseThreat = character.BaseThreatValue; // Значение по умолчанию, если статов нет.
 
-            // 4. Фактор расстояния. Используем DistanceSquared для производительности.
+            // 4Фактор расстояния. Используем DistanceSquared для производительности.
             // Добавляем 1, чтобы избежать деления на ноль.
             float distanceSq = evaluator.GlobalPosition.DistanceSquaredTo(target.GlobalPosition) + 1.0f;
             float distanceFactor = 1.0f / Mathf.Pow(distanceSq, DistanceWeight * 0.5f); // 0.5f, т.к. работаем с квадратом расстояния
 
             float score = baseThreat * distanceFactor * priorityMultiplier;
 
-            // 5. Бонус за низкое здоровье. Помогает ИИ "добивать" раненых.
-            if (target is ICharacter damageable && damageable.Stats.MaxHealth > 0)
-            {
-                float healthPercentage = damageable.Stats.Health / damageable.Stats.MaxHealth;
-                float healthBonus = (1.0f - healthPercentage) * LowHealthBonusMultiplier; // Бонус до 50%
-                score *= 1.0f + healthBonus;
-            }
+            // Бонус за низкое здоровье. Помогает ИИ "добивать" раненых.
+            float healthPercentage = character.Health / character.MaxHealth;
+            float healthBonus = (1.0f - healthPercentage) * LowHealthBonusMultiplier; // Бонус до 50%
+            score *= 1.0f + healthBonus;
 
             return score;
         }

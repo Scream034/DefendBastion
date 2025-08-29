@@ -1,9 +1,11 @@
 using Godot;
 using Game.Interfaces;
+using System.Threading.Tasks;
+using Game.Entity;
 
 namespace Game.Turrets;
 
-public abstract partial class ControllableTurret : ShootingTurret
+public abstract partial class ControllableTurret : ShootingTurret, IContainerEntity
 {
     [ExportGroup("Nodes")]
     [Export] public Node3D TurretYaw { get; private set; }
@@ -37,6 +39,13 @@ public abstract partial class ControllableTurret : ShootingTurret
         float fDelta = (float)delta;
         TurretYaw.Rotation = TurretYaw.Rotation with { Y = Mathf.LerpAngle(TurretYaw.Rotation.Y, targetYawRad, _aimSpeed * fDelta) };
         TurretPitch.Rotation = TurretPitch.Rotation with { X = Mathf.LerpAngle(TurretPitch.Rotation.X, targetPitchRad, _aimSpeed * fDelta) };
+    }
+
+    public override async Task<bool> DestroyAsync()
+    {
+        if (!await base.DestroyAsync()) return false;
+        ExitTurret();
+        return true;
     }
 
     /// <summary>
@@ -81,4 +90,6 @@ public abstract partial class ControllableTurret : ShootingTurret
         // Важно сначала высадить контроллер, а потом переключить камеру
         controllerToExit.ExitTurret(_exitPoint.GlobalPosition);
     }
+
+    public LivingEntity GetContainedEntity() => (LivingEntity)CurrentController;
 }

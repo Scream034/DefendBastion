@@ -22,6 +22,9 @@ public partial class SimpleImpactProjectile : BaseProjectile
 
     private bool HasSFX => _impactSfx != null && _audioPlayer != null;
 
+    // Константа для сравнения с плавающей точкой во избежание магических чисел
+    private const float ALMOST_ONE = 0.999f;
+
     public override void _Ready()
     {
         base._Ready();
@@ -31,7 +34,7 @@ public partial class SimpleImpactProjectile : BaseProjectile
             _audioPlayer.Finished += () =>
             {
 #if DEBUG
-                GD.Print($"{this} Will return to pool because audio is finished!");
+                GD.Print($"{Name} Will return to pool because audio is finished!");
 #endif
                 ProjectilePool.Return(this);
             };
@@ -49,7 +52,6 @@ public partial class SimpleImpactProjectile : BaseProjectile
         }
         else if (_impactVfx != null && _impactVfx.InstantiateOrNull<BaseVfx3D>() == null)
         {
-            // Эта проверка может быть полезной, если у вас есть базовый класс для VFX
             GD.PushError($"Current projectile VFX is not BaseVfx3D!");
         }
 #endif
@@ -61,19 +63,36 @@ public partial class SimpleImpactProjectile : BaseProjectile
     protected override async Task OnHit(Godot.Collections.Dictionary hitInfo)
     {
         // Вызываем базовую логику, которая наносит урон и перемещает снаряд.
-        //    Этот метод больше НЕ возвращает снаряд в пул.
         await HandleHitAndDamage(hitInfo);
 
         var hitPosition = hitInfo["position"].AsVector3();
         var hitNormal = hitInfo["normal"].AsVector3();
 
-        // Создаем VFX, как и раньше.
         if (_impactVfx != null)
         {
             var vfxInstance = _impactVfx.Instantiate<Node3D>();
             Constants.Root.AddChild(vfxInstance);
             vfxInstance.GlobalPosition = hitPosition;
-            vfxInstance.LookAt(hitPosition + hitNormal, Vector3.Up);
+
+            // --- НАЧАЛО ИСПРАВЛЕНИЯ ---
+            // Проверяем, не является ли нормаль попадания почти вертикальной.
+            // Используем скалярное произведение, чтобы определить коллинеарность с вектором Vector3.Up.
+            // Mathf.Abs(hitNormal.Dot(Vector3.Up)) будет близко к 1, если векторы параллельны.
+            Vector3 upVector;
+            if (Mathf.Abs(hitNormal.Dot(Vector3.Up)) > ALMOST_ONE)
+            {
+                // Если мы попали в пол или потолок, используем Vector3.Forward как "верх",
+                // чтобы дать LookAt однозначное направление для ориентации.
+                upVector = Vector3.Forward;
+            }
+            else
+            {
+                // В остальных случаях стандартный Vector3.Up подходит.
+                upVector = Vector3.Up;
+            }
+
+            vfxInstance.LookAt(hitPosition + hitNormal, upVector);
+            // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
             if (vfxInstance is BaseVfx3D baseVfx)
             {
@@ -83,14 +102,12 @@ public partial class SimpleImpactProjectile : BaseProjectile
         }
 
         // Прячем снаряд и отключаем его физику, чтобы он не летел дальше,
-        //    пока проигрывается звук.
+        // пока проигрывается звук.
         HideAndDisable();
 
-        // Реализуем логику возврата в пул.
         if (HasSFX)
         {
-            // Если есть звук, проигрываем его. Снаряд вернется в пул
-            // по сигналу Finished, который мы подцепили в _Ready().
+            // Если есть звук, проигрываем его. Снаряд вернется в пул по сигналу Finished.
             _audioPlayer.Play();
         }
         else
@@ -111,10 +128,11 @@ public partial class SimpleImpactProjectile : BaseProjectile
         SetProcess(false);
         SetPhysicsProcess(false);
 
-        // Отключаем дальнейшее обнаружение столкновений
-        collisionShape.Disabled = true;
+        if (collisionShape != null)
+        {
+            collisionShape.Disabled = true;
+        }
 
-        // Останавливаем таймер жизни, так как снаряд уже "умер"
         lifetimeTimer.Stop();
     }
 }

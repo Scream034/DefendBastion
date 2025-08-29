@@ -66,6 +66,12 @@ namespace Game.Entity.AI
         [Export(PropertyHint.Range, "0.1, 2.0, 0.1")]
         public float TargetEvaluationInterval = 0.5f;
 
+        [ExportGroup("AI Combat Parameters")]
+        /// <summary>
+        /// Шаг в метрах для поиска новой огневой позиции. Меньшие значения - точнее, но больше проверок.
+        /// </summary>
+        [Export(PropertyHint.Range, "0.5, 5.0, 0.1")] public float RepositionSearchStep { get; private set; } = 1.5f;
+
         [ExportGroup("Dependencies")]
         [Export] private NavigationAgent3D _navigationAgent;
         [Export] private Area3D _targetDetectionArea;
@@ -259,39 +265,245 @@ namespace Game.Entity.AI
             CurrentTarget = null;
         }
 
+        /// <summary>
+        /// Проверяет прямую видимость от "глаз" ИИ до центра цели.
+        /// Это основной метод для обнаружения и преследования.
+        /// </summary>
         public bool HasLineOfSightTo(PhysicsBody3D target)
         {
-            if (target == null) return false;
+            if (target == null || !IsInstanceValid(target)) return false;
 
+            var fromPosition = _eyesPosition?.GlobalPosition ?? GlobalPosition;
+            return HasClearPath(fromPosition, target.GlobalPosition, [GetRid(), target.GetRid()]);
+        }
+
+        /// <summary>
+        /// Универсальный метод проверки прямой видимости между двумя точками.
+        /// </summary>
+        /// <param name="from">Начальная точка луча.</param>
+        /// <param name="to">Конечная точка луча.</param>
+        /// <param name="exclude">Список объектов, которые луч должен игнорировать.</param>
+        /// <param name="collisionMask">Маска физики для проверки.</param>
+        /// <returns>True, если между точками нет препятствий.</returns>
+        public bool HasClearPath(Vector3 from, Vector3 to, Godot.Collections.Array<Rid> exclude = null, uint collisionMask = 1)
+        {
             var spaceState = GetWorld3D().DirectSpaceState;
-            var query = new PhysicsRayQueryParameters3D
+            var query = PhysicsRayQueryParameters3D.Create(from, to, collisionMask, exclude);
+            var result = spaceState.IntersectRay(query);
+            return result.Count == 0;
+        }
+
+        /// <summary>
+        /// [МЕТОД 1: СТАНДАРТНОЕ ЗОНДИРОВАНИЕ] Ищет позицию, "прощупывая" пространство вокруг себя 
+        /// в приоритетных направлениях (фланги, отступление).
+        /// </summary>
+        public Vector3? FindOptimalFiringPosition_Probing(PhysicsBody3D target, Vector3 weaponLocalOffset, float searchRadius)
+        {
+            if (target == null || !IsInstanceValid(target)) return null;
+
+            var targetPosition = target.GlobalPosition;
+            var navMap = GetWorld3D().NavigationMap;
+            var exclusionList = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
+
+            var directionToTarget = GlobalPosition.DirectionTo(targetPosition).Normalized();
+            var flankDirection = directionToTarget.Cross(Vector3.Up).Normalized();
+
+            var searchVectors = new Vector3[]
             {
-                // Начальная точка - "глаза" ИИ, или его центр, если они не заданы
-                From = _eyesPosition?.GlobalPosition ?? GlobalPosition,
-                // Конечная точка - центр цели
-                To = target.GlobalPosition,
-                // Исключаем себя и цель из столкновения луча (чтобы луч не уперся в нас самих)
-                Exclude = [GetRid(), target.GetRid()],
-                // Проверяем столкновение с геометрией мира (стены и т.д.)
-                CollisionMask = 1 // Предполагаем, что мир находится на 1-м слое физики
+                flankDirection, -flankDirection, -directionToTarget, directionToTarget,
+                (flankDirection - directionToTarget).Normalized(), (-flankDirection - directionToTarget).Normalized(),
             };
 
+            var bestPosition = ProbeDirections(searchVectors, targetPosition, weaponLocalOffset, searchRadius, navMap, exclusionList);
+            if (bestPosition.HasValue)
+            {
+                GD.Print($"{Name} found position via standard probing at {bestPosition.Value}");
+                return bestPosition;
+            }
+
+            GD.PushWarning($"{Name} could not find any optimal firing position via standard probing.");
+            return null;
+        }
+
+        /// <summary>
+        /// [МЕТОД 2: ГИБРИДНЫЙ АНАЛИЗ] Продвинутый алгоритм. Сначала определяет препятствие,
+        /// затем вычисляет оптимальные векторы для его обхода (вдоль поверхности) и использует
+        /// их для приоритетного зондирования. Если анализ не удался, откатывается к стандартному методу.
+        /// </summary>
+        public Vector3? FindOptimalFiringPosition_Hybrid(PhysicsBody3D target, Vector3 weaponLocalOffset, float searchRadius)
+        {
+            if (target == null || !IsInstanceValid(target)) return null;
+
+            var targetPosition = target.GlobalPosition;
+            var navMap = GetWorld3D().NavigationMap;
+            var exclusionList = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
+
+            // 1. Анализ препятствия
+            var weaponPosition = GlobalPosition + (Basis * weaponLocalOffset);
+            var spaceState = GetWorld3D().DirectSpaceState;
+            var query = PhysicsRayQueryParameters3D.Create(weaponPosition, targetPosition, 1, [GetRid(), target.GetRid()]);
             var result = spaceState.IntersectRay(query);
 
-            // Если result пустой, значит, на пути луча ничего не было - есть прямая видимость
-            return result.Count == 0;
+            List<Vector3> searchVectors = new List<Vector3>();
+
+            if (result.Count > 0)
+            {
+                var hitNormal = (Vector3)result["normal"];
+                GD.Print($"{Name} obstacle detected. Surface normal: {hitNormal.Normalized()}");
+
+                // 2. Вычисление векторов обхода (вдоль поверхности препятствия)
+                var surfaceTangent = hitNormal.Cross(Vector3.Up).Normalized();
+
+                // Если тангенс нулевой (например, смотрим ровно вверх или вниз на плоскую поверхность),
+                // используем альтернативный расчет.
+                if (surfaceTangent.IsZeroApprox())
+                {
+                    var directionToTarget = GlobalPosition.DirectionTo(targetPosition).Normalized();
+                    surfaceTangent = directionToTarget.Cross(hitNormal).Normalized();
+                }
+
+                // 3. Формирование приоритетного списка векторов
+                searchVectors.Add(surfaceTangent);      // Двигаться вдоль стены в одну сторону
+                searchVectors.Add(-surfaceTangent);     // Двигаться вдоль стены в другую сторону
+            }
+
+            // 4. Добавляем стандартные векторы в качестве запасного варианта (fallback)
+            var dirToTarget = GlobalPosition.DirectionTo(targetPosition).Normalized();
+            var flankDir = dirToTarget.Cross(Vector3.Up).Normalized();
+            searchVectors.Add(flankDir);
+            searchVectors.Add(-flankDir);
+            searchVectors.Add(-dirToTarget);
+
+            // 5. Выполняем зондирование по вычисленным векторам
+            var bestPosition = ProbeDirections(searchVectors.ToArray(), targetPosition, weaponLocalOffset, searchRadius, navMap, exclusionList);
+            if (bestPosition.HasValue)
+            {
+                GD.Print($"{Name} found position via hybrid analysis at {bestPosition.Value}");
+                return bestPosition;
+            }
+
+            GD.PushWarning($"{Name} could not find any optimal firing position via hybrid analysis.");
+            return null;
+        }
+
+        /// <summary>
+        /// Вспомогательный метод, который выполняет итеративное зондирование по заданному набору векторов.
+        /// </summary>
+        private Vector3? ProbeDirections(Vector3[] directions, Vector3 targetPosition, Vector3 weaponLocalOffset, float searchRadius, Rid navMap, Godot.Collections.Array<Rid> exclusionList)
+        {
+            foreach (var vector in directions.Where(v => !v.IsZeroApprox()))
+            {
+                for (float offset = RepositionSearchStep; offset <= searchRadius; offset += RepositionSearchStep)
+                {
+                    var candidatePoint = GlobalPosition + vector * offset;
+                    var navMeshPoint = NavigationServer3D.MapGetClosestPoint(navMap, candidatePoint);
+
+                    if (navMeshPoint.DistanceSquaredTo(candidatePoint) > RepositionSearchStep * RepositionSearchStep)
+                    {
+                        continue;
+                    }
+
+                    var weaponPositionAtCandidate = navMeshPoint + (Basis * weaponLocalOffset);
+
+                    if (HasClearPath(weaponPositionAtCandidate, targetPosition, exclusionList))
+                    {
+                        return navMeshPoint;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Находит оптимальную позицию для стрельбы методом итеративного зондирования.
+        /// Алгоритм проверяет приоритетные направления (фланги) с заданным шагом, привязывая каждую
+        /// точку к навигационной сетке, и немедленно возвращает первую найденную валидную позицию.
+        /// Это значительно производительнее "слепого" семплирования по кругу.
+        /// </summary>
+        /// <param name="target">Цель для атаки.</param>
+        /// <param name="weaponLocalOffset">Локальное смещение оружия относительно центра AI.</param>
+        /// <param name="searchRadius">Максимальный радиус поиска новой позиции.</param>
+        /// <returns>Найденная позиция или null, если подходящей точки не найдено.</returns>
+        public Vector3? FindOptimalFiringPosition(PhysicsBody3D target, Vector3 weaponLocalOffset, float searchRadius)
+        {
+            if (target == null || !IsInstanceValid(target)) return null;
+
+            var targetPosition = target.GlobalPosition;
+            var navMap = GetWorld3D().NavigationMap;
+            var exclusionList = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
+
+            // Определяем основные векторы для поиска
+            var directionToTarget = GlobalPosition.DirectionTo(targetPosition).Normalized();
+            // Вектор для стрейфа/фланга (перпендикулярный)
+            var flankDirection = directionToTarget.Cross(Vector3.Up).Normalized();
+
+            // Приоритетный список направлений для зондирования
+            var searchVectors = new Vector3[]
+            {
+                flankDirection,          // Сначала пытаемся уйти на правый фланг
+                -flankDirection,         // Затем на левый фланг
+                -directionToTarget,      // Затем отступить назад
+                directionToTarget,       // В крайнем случае - сократить дистанцию
+                (flankDirection - directionToTarget).Normalized(), // Диагональ назад-вправо
+                (-flankDirection - directionToTarget).Normalized(),// Диагональ назад-влево
+            };
+
+            // Итеративное зондирование по каждому вектору
+            foreach (var vector in searchVectors)
+            {
+                // Начинаем с шага, постепенно увеличивая дистанцию
+                for (float offset = RepositionSearchStep; offset <= searchRadius; offset += RepositionSearchStep)
+                {
+                    var candidatePoint = GlobalPosition + vector * offset;
+
+                    // Привязываем точку к ближайшему месту на NavMesh
+                    var navMeshPoint = NavigationServer3D.MapGetClosestPoint(navMap, candidatePoint);
+
+                    // Проверяем, что точка на NavMesh не слишком далеко от нашей пробы.
+                    // Если это так, значит, мы зондируем стену или пропасть. Пропускаем.
+                    if (navMeshPoint.DistanceSquaredTo(candidatePoint) > RepositionSearchStep * RepositionSearchStep)
+                    {
+                        continue;
+                    }
+
+                    // Вычисляем, где будет дуло, если AI переместится в эту точку
+                    var weaponPositionAtCandidate = navMeshPoint + (Basis * weaponLocalOffset);
+
+                    if (HasClearPath(weaponPositionAtCandidate, targetPosition, exclusionList))
+                    {
+                        // НАЙДЕНО! Немедленно возвращаем первую подходящую позицию.
+                        GD.Print($"{Name} found optimal position via probing at {navMeshPoint}");
+                        return navMeshPoint;
+                    }
+                }
+            }
+
+            // Если после всех проверок ничего не найдено
+            GD.PushWarning($"{Name} could not find any optimal firing position.");
+            return null;
         }
 
         private void EvaluateTargets()
         {
             // 1. Очищаем список от уничтоженных или невалидных целей
-            _potentialTargets.RemoveAll(t => !IsInstanceValid(t) || (t is ICharacter d && d.Health <= 0));
-
-            if (_potentialTargets.Count == 0)
+            for (int i = _potentialTargets.Count - 1; i >= 0; i--)
             {
-                // Если в зоне видимости не осталось врагов, и мы были в бою,
-                // то нужно перейти в состояние преследования последней цели.
-                // Этот переход обрабатывается в AttackState при потере LoS.
+                var target = _potentialTargets[i];
+                if (!IsInstanceValid(target) || (target is ICharacter character && character.Health <= 0))
+                {
+                    _potentialTargets.RemoveAt(i);
+                    // ВАЖНО: Если уничтожена наша ТЕКУЩАЯ цель, обрабатываем это событие.
+                    if (target == CurrentTarget)
+                    {
+                        OnCurrentTargetDestroyed(target);
+                    }
+                }
+            }
+
+            if (_potentialTargets.Count == 0 && CurrentTarget == null)
+            {
+                // Если в зоне видимости нет врагов, и текущей цели тоже нет, то ничего не делаем.
+                // Переход в PursuitState обрабатывается в AttackState при потере LoS.
                 return;
             }
 
@@ -305,6 +517,43 @@ namespace Game.Entity.AI
             }
             // Если bestTarget == null (например, все цели за стеной), мы сохраняем текущую цель
             // и продолжим ее преследовать, пока не потеряем.
+        }
+
+        /// <summary>
+        /// Вызывается, когда текущая цель AI была уничтожена.
+        /// Проверяет, была ли цель контейнером, и переключается на её содержимое.
+        /// </summary>
+        private void OnCurrentTargetDestroyed(PhysicsBody3D destroyedTarget)
+        {
+            GD.Print($"{Name}: My target [{destroyedTarget.Name}] was destroyed.");
+
+            // Очищаем текущую цель в любом случае.
+            ClearTarget();
+
+            // Проверяем, был ли уничтоженный объект контейнером
+            if (destroyedTarget is IContainerEntity container)
+            {
+                var containedEntity = container.GetContainedEntity();
+                if (containedEntity != null && IsInstanceValid(containedEntity) && IsHostile(containedEntity as IFactionMember))
+                {
+                    GD.Print($"{Name}: Target was a container. Now targeting its content: [{containedEntity.Name}].");
+
+                    // Немедленно делаем "содержимое" новой целью
+                    // Мы добавляем его в список потенциальных целей, чтобы оценщик мог его учесть,
+                    // и сразу же устанавливаем как текущую цель для быстрой реакции.
+                    if (!_potentialTargets.Contains(containedEntity))
+                    {
+                        _potentialTargets.Add(containedEntity);
+                    }
+                    SetAttackTarget(containedEntity);
+                    return; // Новая цель найдена, выходим
+                }
+            }
+
+            // Если это был не контейнер или он был пуст,
+            // то мы просто остаемся без цели. Следующий вызов EvaluateTargets
+            // найдет новую цель из оставшихся в _potentialTargets.
+            // Если их нет, AI вернется в дефолтное состояние через логику состояний.
         }
 
         #region Movement API for States
@@ -348,7 +597,6 @@ namespace Game.Entity.AI
         #region Signal Handlers
         private void OnTargetDetected(Node3D body)
         {
-            GD.Print($"{Name} Dected {body.Name}");
             if (body is PhysicsBody3D physicsBody && body is IFactionMember factionMember && body != this)
             {
                 GD.Print($"{Name} finding {body.Name} ({factionMember.Faction}).");

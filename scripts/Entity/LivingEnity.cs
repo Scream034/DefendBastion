@@ -3,23 +3,13 @@ using System.Threading.Tasks;
 using Game.Interfaces;
 using Godot;
 using Game.Entity.AI;
-using Game.Entity.Components.Resources;
 
 namespace Game.Entity;
 
 public abstract partial class LivingEntity : CharacterBody3D, ICharacter, IFactionMember
 {
-    public virtual event Action OnDestroyed
-    {
-        add => Stats.OnDestroyed += value;
-        remove => Stats.OnDestroyed -= value;
-    }
-
-    public virtual event Action<float> OnHealthChanged
-    {
-        add => Stats.OnHealthChanged += value;
-        remove => Stats.OnHealthChanged -= value;
-    }
+    public event Action OnDestroyed;
+    public event Action<float> OnHealthChanged;
 
     public enum IDs
     {
@@ -30,16 +20,29 @@ public abstract partial class LivingEntity : CharacterBody3D, ICharacter, IFacti
 
     public IDs ID { get; protected set; }
 
-    [Export]
-    public CharacterStats Stats { get; set; }
-
     [ExportGroup("Faction")]
     [Export]
     public Faction Faction { get; set; } = Faction.Neutral;
 
-    public float Health => Stats.Health;
+    [ExportGroup("Health & Durability")]
+    [Export(PropertyHint.Range, "0,30000")]
+    public float MaxHealth { get; private set; } = 100f;
+    public float Health { get; private set; }
+    public bool IsAlive => Health > 0;
 
-    public float MaxHealth => Stats.MaxHealth;
+    [ExportGroup("Combat Modifiers")]
+    [Export(PropertyHint.Range, "0.1, 10.0, 0.1")]
+    public float DamageMultiplier { get; private set; } = 1.0f;
+
+    [Export(PropertyHint.Range, "0.0, 1.0, 0.01")]
+    public float DamageResistance { get; private set; } = 0.0f;
+
+    [Export(PropertyHint.Range, "0, 1000, 1")]
+    public float Armor { get; private set; } = 0.0f;
+
+    [ExportGroup("AI Threat Evaluation")]
+    [Export(PropertyHint.Range, "0, 1000, 10")]
+    public float BaseThreatValue { get; private set; } = 100f;
 
     /// <summary>
     /// Исполузуется для Godot-компилятора
@@ -63,20 +66,67 @@ public abstract partial class LivingEntity : CharacterBody3D, ICharacter, IFacti
 
     public override void _Ready()
     {
-        Stats.Initialize(this);
+        Health = MaxHealth;
 
-        if (!Stats.IsAlive)
+        if (!IsAlive)
         {
             SetProcess(false);
             SetPhysicsProcess(false);
         }
     }
 
-    public virtual Task<bool> DamageAsync(float amount, LivingEntity source = null) => Stats.DamageAsync(amount, source);
+    public float CalculateIncomingDamage(float baseDamage)
+    {
+        float finalDamage = baseDamage * (1.0f - DamageResistance);
+        finalDamage -= Armor;
+        return finalDamage < 0 ? 0 : finalDamage;
+    }
 
-    public virtual Task<bool> HealAsync(float amount) => Stats.HealAsync(amount);
+    public virtual async Task<bool> DamageAsync(float amount, LivingEntity source = null)
+    {
+        if (!IsAlive) return false;
 
-    public virtual Task<bool> DestroyAsync() => Stats.DestroyAsync();
+        float finalDamage = CalculateIncomingDamage(amount);
+        await SetHealthAsync(Health - finalDamage);
+        GD.Print($"{Name} took {finalDamage} damage from {source?.Name}!");
+        return true;
+    }
+
+    public virtual async Task<bool> HealAsync(float amount)
+    {
+        if (!IsAlive || Health >= MaxHealth) return false;
+        await SetHealthAsync(Health + amount);
+        GD.Print($"{Name} healed for {amount}!");
+        return true;
+    }
+
+    public virtual Task<bool> DestroyAsync()
+    {
+        if (IsQueuedForDeletion()) return Task.FromResult(false);
+
+        GD.Print($"Entity {Name} died!");
+        QueueFree();
+        OnDestroyed?.Invoke();
+
+        return Task.FromResult(true);
+    }
+
+    protected async Task SetMaxHealthAsync(float health)
+    {
+        MaxHealth = Mathf.Clamp(health, 0, MaxHealth);
+        await SetHealthAsync(Health);
+    }
+
+    protected async Task SetHealthAsync(float health)
+    {
+        Health = Mathf.Clamp(health, 0, MaxHealth);
+        OnHealthChanged?.Invoke(Health);
+
+        if (Health <= 0)
+        {
+            await DestroyAsync();
+        }
+    }
 
     public bool IsHostile(IFactionMember other)
     {

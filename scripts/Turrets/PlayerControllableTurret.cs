@@ -35,7 +35,7 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
         var projectile = base.CreateProjectile(spawnPoint, PlayerController);
         if (PlayerController != null)
         {
-            projectile.IgnoredEntities.Add(PlayerController);
+            projectile.RayQueryParams.Exclude.Add(PlayerController.GetRid());
         }
         return projectile;
     }
