@@ -27,7 +27,16 @@ namespace Game.Entity.AI.States
             _context.SetMovementSpeed(_context.SlowSpeed);
             _totalVigilanceTimer = _context.VigilanceDuration;
 
+            // В этом состоянии мы всегда хотим смотреть на опасную зону.
+            _context.SetLookTarget(_context.LastEngagementPosition);
+
             ChooseNextAction();
+        }
+
+        public override void Exit()
+        {
+            // При выходе из состояния сбрасываем точку интереса.
+            _context.SetLookTarget(null);
         }
 
         public override void Update(float delta)
@@ -80,7 +89,7 @@ namespace Game.Entity.AI.States
                 // Получаем вектор, перпендикулярный направлению на врага (для стрейфа влево/вправо).
                 var perpendicular = directionToLastEnemy.Cross(Vector3.Up).Normalized();
                 _strafeDirection = Random.Shared.Next(0, 2) == 0 ? perpendicular : -perpendicular;
-                
+
                 var targetPos = _context.GlobalPosition + _strafeDirection * 2f; // Двигаемся на пару метров
                 _context.MoveTo(NavigationServer3D.MapGetClosestPoint(_context.GetWorld3D().NavigationMap, targetPos));
                 GD.Print($"{_context.Name} vigilance: Strafing towards {_strafeDirection}.");
@@ -89,12 +98,16 @@ namespace Game.Entity.AI.States
 
         private void ExecuteCurrentAction(float delta)
         {
-            // Независимо от действия, всегда смотрим в сторону, где был враг.
-            _context.RotateBodyTowards(_context.LastEngagementPosition, delta * _context.VigilanceRotationSpeedMultiplier);
-            _context.RotateHeadTowards(_context.LastEngagementPosition, delta * _context.VigilanceRotationSpeedMultiplier);
+            // --- УПРОЩЕННЫЙ МЕТОД ---
+            // Теперь нам не нужно вручную вращать голову и тело,
+            // AIEntity сделает это сам, так как у него установлен _currentLookTarget.
+            // Нам нужно лишь управлять движением для стрейфа.
 
-            // Если мы стрейфимся, навигационный агент уже делает свою работу.
-            // Если мы сканируем, мы просто стоим на месте и крутимся.
+            if (_currentSubState == SubState.Scanning)
+            {
+                // Убеждаемся, что ИИ стоит на месте, пока сканирует.
+                _context.StopMovement();
+            }
         }
     }
 }

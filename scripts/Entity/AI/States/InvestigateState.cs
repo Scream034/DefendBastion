@@ -2,13 +2,9 @@ using Godot;
 
 namespace Game.Entity.AI.States
 {
-    /// <summary>
-    /// Состояние расследования. ИИ движется к источнику угрозы (например, выстрела)
-    /// и осматривается в поисках врага.
-    /// </summary>
     public sealed class InvestigateState(AIEntity context) : State(context)
     {
-        private const float InvestigationTime = 5.0f; // Время на "осмотр"
+        private const float InvestigationTime = 5.0f;
         private float _timer;
         private bool _isAtLocation = false;
 
@@ -18,11 +14,19 @@ namespace Game.Entity.AI.States
             _context.SetMovementSpeed(_context.NormalSpeed);
             _context.MoveTo(_context.InvestigationPosition);
             _timer = InvestigationTime;
+
+            // Говорим ИИ следить за точкой расследования во время движения.
+            _context.SetLookTarget(_context.InvestigationPosition);
+        }
+
+        public override void Exit()
+        {
+            // При выходе из состояния сбрасываем точку интереса.
+            _context.SetLookTarget(null);
         }
 
         public override void Update(float delta)
         {
-            // Если в процессе расследования нашли цель
             if (_context.CurrentTarget != null)
             {
                 _context.ChangeState(new AttackState(_context));
@@ -31,7 +35,6 @@ namespace Game.Entity.AI.States
 
             if (!_isAtLocation)
             {
-                // Если добрались до места
                 if (_context.NavigationAgent.IsNavigationFinished())
                 {
                     _isAtLocation = true;
@@ -40,7 +43,10 @@ namespace Game.Entity.AI.States
             }
             else
             {
-                // "Осматриваемся" на месте
+                // Когда дошли до места, продолжаем смотреть на него, осматриваясь.
+                _context.RotateBodyTowards(_context.InvestigationPosition, delta * 0.5f);
+                _context.RotateHeadTowards(_context.InvestigationPosition, delta);
+
                 _timer -= delta;
                 if (_timer <= 0)
                 {

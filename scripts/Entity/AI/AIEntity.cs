@@ -79,6 +79,13 @@ namespace Game.Entity.AI
         [Export] public bool AllowVigilanceStrafe { get; private set; } = true;
         [Export(PropertyHint.Range, "0.1, 1.0, 0.1")] public float VigilanceRotationSpeedMultiplier { get; private set; } = 0.5f;
 
+        [ExportGroup("AI Look Behavior")]
+        [Export] public bool LookAtInterestPointWhileMoving { get; private set; } = true;
+        [Export(PropertyHint.Range, "0.5, 3.0, 0.1")] public float MinGlanceDuration { get; private set; } = 1.0f;
+        [Export(PropertyHint.Range, "1.0, 4.0, 0.1")] public float MaxGlanceDuration { get; private set; } = 2.5f;
+        [Export(PropertyHint.Range, "0.5, 3.0, 0.1")] public float MinLookForwardDuration { get; private set; } = 0.8f;
+        [Export(PropertyHint.Range, "1.0, 4.0, 0.1")] public float MaxLookForwardDuration { get; private set; } = 2.0f;
+
         [ExportGroup("AI Aiming & Rotation Limits")]
         [Export] public bool EnableHeadRotationLimits { get; private set; } = true;
         [Export(PropertyHint.Range, "0, 180, 1")] public float MaxHeadYawDegrees { get; private set; } = 90f;
@@ -99,6 +106,12 @@ namespace Game.Entity.AI
         public Vector3 LastKnownTargetPosition { get; set; }
         public Vector3 InvestigationPosition { get; set; }
         public Vector3 LastEngagementPosition { get; set; }
+
+        public bool IsMoving => Velocity.LengthSquared() > 0.1f;
+
+        private Vector3? _currentLookTarget; // Точка, на которую ИИ должен поглядывать
+        private float _glanceTimer;
+        private bool _isGlancingAtTarget; // True - смотрим на цель, False - смотрим вперед
 
         private State _currentState;
         private State _defaultState; // Состояние, к которому ИИ возвращается после боя/тревоги
@@ -186,7 +199,6 @@ namespace Game.Entity.AI
 
             _currentState?.Update((float)delta);
 
-            // Периодически запускаем оценку целей
             _targetEvaluationTimer -= (float)delta;
             if (_targetEvaluationTimer <= 0f)
             {
@@ -194,23 +206,28 @@ namespace Game.Entity.AI
                 _targetEvaluationTimer = TargetEvaluationInterval;
             }
 
-            Vector3 targetVelocity = Vector3.Zero;
+            // --- ОБНОВЛЕННАЯ ЛОГИКА ДВИЖЕНИЯ И ВРАЩЕНИЯ ---
 
+            // 1. Управление движением (как и раньше)
+            Vector3 targetVelocity = Vector3.Zero;
             if (_isAiActive && !_navigationAgent.IsNavigationFinished())
             {
                 var nextPoint = _navigationAgent.GetNextPathPosition();
                 var direction = GlobalPosition.DirectionTo(nextPoint);
                 targetVelocity = direction * Speed;
             }
-
             Velocity = Velocity.Lerp(targetVelocity, Acceleration * (float)delta);
 
+            // 2. Вращение тела (всегда по направлению движения)
             var horizontalVelocity = Velocity with { Y = 0 };
             if (horizontalVelocity.LengthSquared() > 0.1f)
             {
                 var targetRotation = Basis.LookingAt(horizontalVelocity.Normalized()).Orthonormalized();
                 Basis = Basis.Orthonormalized().Slerp(targetRotation, BodyRotationSpeed * (float)delta);
             }
+
+            // 3. Вращение головы (сложная логика)
+            HandleHeadRotation((float)delta);
 
             MoveAndSlide();
         }
@@ -233,6 +250,57 @@ namespace Game.Entity.AI
             return true;
         }
 
+        private void HandleHeadRotation(float delta)
+        {
+            Vector3 finalLookPosition;
+
+            // Приоритет №1: Если есть враг, всегда смотрим на него.
+            if (CurrentTarget != null)
+            {
+                finalLookPosition = CurrentTarget.GlobalPosition;
+            }
+            // Приоритет №2: Если разрешено, используем механику "поглядывания" на точку интереса.
+            else if (LookAtInterestPointWhileMoving && _currentLookTarget.HasValue && IsMoving)
+            {
+                _glanceTimer -= delta;
+                if (_glanceTimer <= 0f)
+                {
+                    // Переключаем состояние взгляда
+                    _isGlancingAtTarget = !_isGlancingAtTarget;
+                    // Устанавливаем новый таймер для следующего действия
+                    _glanceTimer = _isGlancingAtTarget
+                        ? (float)GD.RandRange(MinGlanceDuration, MaxGlanceDuration)
+                        : (float)GD.RandRange(MinLookForwardDuration, MaxLookForwardDuration);
+                }
+
+                finalLookPosition = _isGlancingAtTarget
+                    ? _currentLookTarget.Value
+                    : GlobalPosition + Velocity.Normalized() * 10f; // Смотрим вперед
+            }
+            // Приоритет №3 (по умолчанию): Если нет врага и нет точки интереса, смотрим туда, куда идем.
+            else
+            {
+                finalLookPosition = GlobalPosition + Velocity.Normalized() * 10f;
+            }
+
+            // Предотвращаем взгляд в самого себя, если скорость нулевая
+            if (finalLookPosition.IsEqualApprox(GlobalPosition)) return;
+
+            RotateHeadTowards(finalLookPosition, delta);
+        }
+
+        /// <summary>
+        /// Устанавливает или сбрасывает точку интереса для взгляда ИИ.
+        /// </summary>
+        /// <param name="targetPosition">Позиция для наблюдения или null для сброса.</param>
+        public void SetLookTarget(Vector3? targetPosition)
+        {
+            _currentLookTarget = targetPosition;
+            // Сбрасываем таймер, чтобы ИИ сразу принял решение, куда смотреть.
+            _glanceTimer = 0;
+            _isGlancingAtTarget = true; // Начинаем со взгляда на цель
+            GD.Print($"{Name} setting look target to: {targetPosition?.ToString() ?? "None"}");
+        }
 
         public void ChangeState(State newState)
         {
@@ -547,19 +615,25 @@ namespace Game.Entity.AI
             if (_headPivot == null) return;
 
             var localTarget = _headPivot.ToLocal(targetPoint).Normalized();
+
+            // Проверяем, не является ли вектор взгляда почти вертикальным.
+            // Скалярное произведение с вектором "вверх" будет близко к 1 (вверх) или -1 (вниз), если они параллельны.
+            const float verticalThreshold = 0.999f;
+            if (Mathf.Abs(localTarget.Dot(Vector3.Up)) > verticalThreshold)
+            {
+                // Пропускаем вращение в этом кадре, чтобы избежать ошибки.
+                return;
+            }
+
             var targetRotation = Basis.LookingAt(localTarget).Orthonormalized();
 
             if (EnableHeadRotationLimits)
             {
-                var euler = targetRotation.GetEuler(); // Порядок YXZ
+                var euler = targetRotation.GetEuler();
                 float yawLimit = Mathf.DegToRad(MaxHeadYawDegrees);
                 float pitchLimit = Mathf.DegToRad(MaxHeadPitchDegrees);
-
-                // Ограничиваем рыскание (Y) и тангаж (X)
                 euler.Y = Mathf.Clamp(euler.Y, -yawLimit, yawLimit);
                 euler.X = Mathf.Clamp(euler.X, -pitchLimit, pitchLimit);
-
-                // Создаем новый базис из ограниченных углов
                 targetRotation = Basis.FromEuler(euler);
             }
 

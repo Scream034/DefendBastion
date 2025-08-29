@@ -17,6 +17,15 @@ public sealed class PursuitState(AIEntity context) : State(context)
         _context.SetMovementSpeed(_context.FastSpeed);
         _context.MoveTo(_context.LastKnownTargetPosition);
         _timer = PursuitTimeout;
+
+        // Говорим ИИ следить за последней позицией врага во время движения.
+        _context.SetLookTarget(_context.LastKnownTargetPosition);
+    }
+
+    public override void Exit()
+    {
+        // При выходе из состояния сбрасываем точку интереса.
+        _context.SetLookTarget(null);
     }
 
     public override void Update(float delta)
