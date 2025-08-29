@@ -49,17 +49,16 @@ public partial class BaseProjectile : Area3D
     {
         Initiator = initiator;
 
-        RayQueryParams ??= PhysicsRayQueryParameters3D.Create(GlobalPosition, GlobalPosition, CollisionMask);
-
-        RayQueryParams.Exclude.Add(GetRid()); // Всегда игнорируем себя
+        RayQueryParams = PhysicsRayQueryParameters3D.Create(GlobalPosition, GlobalPosition, CollisionMask);
 
         if (initiator != null)
         {
-            RayQueryParams.Exclude.Add(initiator.GetRid());
+            RayQueryParams.Exclude = [GetRid(), initiator.GetRid()];
         }
-
-        RayQueryParams.From = GlobalPosition;
-        RayQueryParams.To = GlobalPosition;
+        else
+        {
+            RayQueryParams.Exclude = [GetRid()];
+        }
 
         lifetimeTimer.Start(Lifetime);
     }
@@ -107,9 +106,12 @@ public partial class BaseProjectile : Area3D
         Visible = true;
         SetProcess(true);
         SetPhysicsProcess(true);
-        if (collisionShape != null) collisionShape.Disabled = false;
+        if (collisionShape != null)
+        {
+            RayQueryParams.Exclude = [];
+            collisionShape.Disabled = false;
+        }
 
-        RayQueryParams?.Exclude.Clear();
         Initiator = null;
 
         if (lifetimeTimer == null)
@@ -128,7 +130,7 @@ public partial class BaseProjectile : Area3D
         if (collisionShape != null) collisionShape.Disabled = true;
 
         lifetimeTimer.Stop();
-        RayQueryParams.Exclude.Clear();
+        RayQueryParams.Exclude = [];
     }
 
     private void OnLifetimeTimeout()

@@ -3,6 +3,8 @@ using Game.Entity.AI.States;
 using Game.Interfaces;
 using Godot;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Game.Entity.AI.Behaviors
 {
@@ -44,15 +46,21 @@ namespace Game.Entity.AI.Behaviors
 
         [ExportGroup("Line of Fire Settings")]
         [Export] private bool _requireMuzzleLoS = true;
-        [Export] private FiringPositionSearchMode _searchMode = FiringPositionSearchMode.Calculate;
         [Export(PropertyHint.Range, "3, 20, 1")] private float _repositionSearchRadius = 10f;
         [Export] private RepositionStrategy _repositionStrategy = RepositionStrategy.HybridAnalysis;
+
+        [ExportGroup("Repositioning Maneuvers")]
+        [Export] private bool _allowReposition = true;
+        [Export] private bool _allowLiveSearch = true;
+        [Export] private bool _liveSearchCanStrafe = true;
+        [Export] private bool _liveSearchCanMoveForwardBack = true;
+        [Export] private bool _liveSearchCanRotate = false;
 
         // Настройки Live Search
         [ExportGroup("Live Search Settings")]
         [Export(PropertyHint.Range, "0.5, 5.0, 0.1")] private float _liveSearchSegmentDuration = 1.5f; // Сколько AI движется в одном направлении
         [Export(PropertyHint.Range, "1.0, 10.0, 0.5")] private float _liveSearchTotalDuration = 5.0f; // Общее время на LiveSearch
-        [Export] private float _liveSearchMovementMultiplier = 0.7f; // Насколько замедлен AI при LiveSearch (относительно NormalSpeed)
+        [Export(PropertyHint.Range, "0.1, 1.0, 0.1")] private float _liveSearchMovementMultiplier = 0.7f; // Насколько замедлен AI при LiveSearch
 
         [ExportGroup("Dependencies")]
         [Export] private Node _attackActionNode;
@@ -60,10 +68,11 @@ namespace Game.Entity.AI.Behaviors
         private IAttackAction _attackAction;
         private double _timeSinceLastAttack = 0;
         private RepositioningSubState _currentRepositionSubState = RepositioningSubState.None;
-        private Vector3 _repositionTargetPosition; // Цель для CalculatedMove или LiveSearch
+        private Vector3 _repositionTargetPosition;
         private double _liveSearchSegmentTimer = 0;
         private double _liveSearchTotalTimer = 0;
-        private Vector3 _liveSearchDirection = Vector3.Zero; // Направление для стрейфа/движения
+        private Vector3 _liveSearchDirection = Vector3.Zero;
+        private readonly List<RepositioningSubState> _availableLiveSearchActions = new();
 
         public override void _Ready()
         {
@@ -74,7 +83,7 @@ namespace Game.Entity.AI.Behaviors
             else
             {
                 GD.PushError($"Для {GetPath()} не назначен узел с IAttackAction!");
-                SetPhysicsProcess(false); // Отключаем, если нет поведения атаки
+                SetPhysicsProcess(false);
                 return;
             }
             _timeSinceLastAttack = AttackCooldown;
@@ -93,27 +102,31 @@ namespace Game.Entity.AI.Behaviors
             var target = context.CurrentTarget;
             float distanceToTarget = context.GlobalPosition.DistanceTo(target.GlobalPosition);
 
+            // Если ИИ активно меняет позицию, делегируем управление соответствующему методу
             if (_currentRepositionSubState != RepositioningSubState.None)
             {
                 HandleRepositioning(context, target, delta);
                 return;
             }
 
+            // Если цель слишком далеко, сближаемся
             if (distanceToTarget > AttackRange)
             {
                 context.MoveTo(target.GlobalPosition);
                 return;
             }
 
-            bool hasClearShot = true;
-            if (_requireMuzzleLoS && _attackAction?.MuzzlePoint != null)
-            {
-                var exclusionList = new Godot.Collections.Array<Rid> { context.GetRid(), target.GetRid() };
-                hasClearShot = context.HasClearPath(_attackAction.MuzzlePoint.GlobalPosition, target.GlobalPosition, exclusionList);
-            }
+            // Проверяем, есть ли чистый прострел от дула оружия
+            bool hasClearShot = !_requireMuzzleLoS || _attackAction?.MuzzlePoint == null 
+                || context.HasClearPath(
+                    _attackAction.MuzzlePoint.GlobalPosition, 
+                    target.GlobalPosition, 
+                    [context.GetRid(), target.GetRid()]
+                );
 
             if (hasClearShot)
             {
+                // Если прострел есть, стоим на месте, целимся и стреляем
                 context.StopMovement();
                 context.RotateBodyTowards(target.GlobalPosition, (float)delta);
                 context.RotateHeadTowards(target.GlobalPosition, (float)delta);
@@ -129,42 +142,36 @@ namespace Game.Entity.AI.Behaviors
                 GD.Print($"{context.Name}'s muzzle is blocked. Attempting to find a new firing position.");
                 context.StopMovement();
 
-                if (_attackAction?.MuzzlePoint != null)
+                bool foundNewPosition = false;
+
+                // 1. Пытаемся рассчитать новую позицию, если разрешено
+                if (_allowReposition && _attackAction?.MuzzlePoint != null)
                 {
                     var weaponLocalOffset = _attackAction.MuzzlePoint.Position;
-                    Vector3? newPos;
-
-                    // ВЫБОР СТРАТЕГИИ ПОИСКА
-                    switch (_repositionStrategy)
+                    Vector3? newPos = _repositionStrategy switch
                     {
-                        case RepositionStrategy.HybridAnalysis:
-                            newPos = context.FindOptimalFiringPosition_Hybrid(target, weaponLocalOffset, _repositionSearchRadius);
-                            break;
-                        case RepositionStrategy.StandardProbing:
-                        default:
-                            newPos = context.FindOptimalFiringPosition_Probing(target, weaponLocalOffset, _repositionSearchRadius);
-                            break;
-                    }
+                        RepositionStrategy.HybridAnalysis => context.FindOptimalFiringPosition_Hybrid(target, weaponLocalOffset, _repositionSearchRadius),
+                        _ => context.FindOptimalFiringPosition_Probing(target, weaponLocalOffset, _repositionSearchRadius),
+                    };
 
                     if (newPos.HasValue)
                     {
                         _repositionTargetPosition = newPos.Value;
                         _currentRepositionSubState = RepositioningSubState.CalculatedMove;
                         context.MoveTo(_repositionTargetPosition);
-                        return;
-                    }
-                    else
-                    {
-                        GD.Print($"{context.Name} could not find a clear firing position via calculation.");
+                        foundNewPosition = true;
                     }
                 }
 
-                if (_searchMode == FiringPositionSearchMode.LiveSearch || _currentRepositionSubState == RepositioningSubState.None)
+                // 2. Если рассчитать не удалось (или запрещено), и разрешен "живой поиск", начинаем его
+                if (!foundNewPosition && _allowLiveSearch)
                 {
                     StartLiveSearch(context, target);
                 }
-                else
+                // 3. Если все маневры запрещены, просто стоим и целимся, ожидая возможности
+                else if (!foundNewPosition)
                 {
+                    GD.Print($"{context.Name} cannot reposition, holding position and aiming.");
                     context.RotateBodyTowards(target.GlobalPosition, (float)delta);
                     context.RotateHeadTowards(target.GlobalPosition, (float)delta);
                 }
@@ -173,16 +180,20 @@ namespace Game.Entity.AI.Behaviors
 
         private void HandleRepositioning(AIEntity context, PhysicsBody3D target, double delta)
         {
+            // Постоянно проверяем, не появился ли прострел во время движения
             if (_requireMuzzleLoS && _attackAction?.MuzzlePoint != null)
             {
-                var exclusionList = new Godot.Collections.Array<Rid> { context.GetRid(), target.GetRid() };
-                if (context.HasClearPath(_attackAction.MuzzlePoint.GlobalPosition, target.GlobalPosition, exclusionList))
+                if (context.HasClearPath(_attackAction.MuzzlePoint.GlobalPosition, target.GlobalPosition, [context.GetRid(), target.GetRid()]))
                 {
                     GD.Print($"{context.Name} reacquired clear shot during repositioning!");
                     ResetRepositioningState(context);
                     return;
                 }
             }
+            
+            // Во время любого маневра всегда смотрим на цель
+            context.RotateBodyTowards(target.GlobalPosition, (float)delta);
+            context.RotateHeadTowards(target.GlobalPosition, (float)delta);
 
             switch (_currentRepositionSubState)
             {
@@ -190,11 +201,12 @@ namespace Game.Entity.AI.Behaviors
                     if (context.NavigationAgent.IsNavigationFinished())
                     {
                         GD.Print($"{context.Name} reached calculated position. Still no clear shot.");
-                        if (_searchMode == FiringPositionSearchMode.LiveSearch)
+                        // Если дошли, но выстрела нет, и разрешен живой поиск, начинаем его
+                        if (_allowLiveSearch)
                         {
                             StartLiveSearch(context, target);
                         }
-                        else
+                        else // Иначе сдаемся и сбрасываем состояние
                         {
                             ResetRepositioningState(context);
                         }
@@ -217,62 +229,81 @@ namespace Game.Entity.AI.Behaviors
                     if (_liveSearchSegmentTimer <= 0)
                     {
                         ChooseNextLiveSearchAction(context, target);
-                        _liveSearchSegmentTimer = _liveSearchSegmentDuration;
                     }
 
-                    PerformLiveSearchMovement(context, target, (float)delta);
+                    PerformLiveSearchMovement(context);
                     break;
             }
         }
 
         private void StartLiveSearch(AIEntity context, PhysicsBody3D target)
         {
+            // Собираем список доступных действий на основе настроек
+            _availableLiveSearchActions.Clear();
+            if (_liveSearchCanStrafe) _availableLiveSearchActions.Add(RepositioningSubState.LiveSearchStrafe);
+            if (_liveSearchCanMoveForwardBack) _availableLiveSearchActions.Add(RepositioningSubState.LiveSearchForward);
+            if (_liveSearchCanRotate) _availableLiveSearchActions.Add(RepositioningSubState.LiveSearchRotate);
+
+            // Если ни одного действия не разрешено, выходим
+            if (!_availableLiveSearchActions.Any())
+            {
+                GD.Print($"{context.Name} has no available LiveSearch actions.");
+                ResetRepositioningState(context);
+                return;
+            }
+
             _liveSearchTotalTimer = _liveSearchTotalDuration;
-            _liveSearchSegmentTimer = 0;
-            ChooseNextLiveSearchAction(context, target);
             context.SetMovementSpeed(context.NormalSpeed * _liveSearchMovementMultiplier);
+            ChooseNextLiveSearchAction(context, target); // Выбираем первое действие
         }
 
         private void ChooseNextLiveSearchAction(AIEntity context, PhysicsBody3D target)
         {
-            var r = Random.Shared.Next(0, 100);
-            if (r < 40) // 40% шанс на стрейф
+            _liveSearchSegmentTimer = _liveSearchSegmentDuration;
+            
+            if (!_availableLiveSearchActions.Any())
             {
-                _currentRepositionSubState = RepositioningSubState.LiveSearchStrafe;
-                var directionToTarget = context.GlobalPosition.DirectionTo(target.GlobalPosition);
-                _liveSearchDirection = directionToTarget.Cross(Vector3.Up).Normalized() * (Random.Shared.NextDouble() > 0.5 ? 1 : -1);
-                GD.Print($"{context.Name} LiveSearch: Strafe {_liveSearchDirection}");
+                ResetRepositioningState(context);
+                return;
             }
-            else if (r < 80) // 40% шанс на движение вперед/назад
-            {
-                _currentRepositionSubState = RepositioningSubState.LiveSearchForward;
-                _liveSearchDirection = context.GlobalPosition.DirectionTo(target.GlobalPosition).Normalized() * (Random.Shared.NextDouble() > 0.5 ? 1 : -1);
-                GD.Print($"{context.Name} LiveSearch: Forward {_liveSearchDirection}");
-            }
-            else // 20% шанс на поворот на месте
-            {
-                _currentRepositionSubState = RepositioningSubState.LiveSearchRotate;
-                _liveSearchDirection = Vector3.Up * (Random.Shared.NextDouble() > 0.5 ? 1 : -1); // Направление поворота
-                GD.Print($"{context.Name} LiveSearch: Rotate {_liveSearchDirection}");
-            }
-            context.StopMovement();
-        }
 
-        private void PerformLiveSearchMovement(AIEntity context, PhysicsBody3D target, float delta)
-        {
-            context.RotateBodyTowards(target.GlobalPosition, delta);
-            context.RotateHeadTowards(target.GlobalPosition, delta);
+            // Выбираем случайное действие из списка разрешенных
+            _currentRepositionSubState = _availableLiveSearchActions[Random.Shared.Next(0, _availableLiveSearchActions.Count)];
+
+            var directionToTarget = context.GlobalPosition.DirectionTo(target.GlobalPosition).Normalized();
 
             switch (_currentRepositionSubState)
             {
                 case RepositioningSubState.LiveSearchStrafe:
+                    _liveSearchDirection = directionToTarget.Cross(Vector3.Up).Normalized() * (Random.Shared.Next(0, 2) * 2 - 1);
+                    GD.Print($"{context.Name} LiveSearch: Strafe {_liveSearchDirection}");
+                    break;
                 case RepositioningSubState.LiveSearchForward:
-                    var movementTarget = context.GlobalPosition + _liveSearchDirection * context.Speed * (float)_liveSearchSegmentDuration;
-                    context.MoveTo(NavigationServer3D.MapGetClosestPoint(context.GetWorld3D().NavigationMap, movementTarget));
+                    _liveSearchDirection = directionToTarget * (Random.Shared.Next(0, 2) * 2 - 1);
+                    GD.Print($"{context.Name} LiveSearch: Move {_liveSearchDirection}");
                     break;
                 case RepositioningSubState.LiveSearchRotate:
-                    context.Basis = context.Basis.Rotated(Vector3.Up, (float)_liveSearchDirection.Y * context.BodyRotationSpeed * delta);
+                    _liveSearchDirection = Vector3.Zero; // Для поворота движение не нужно
+                    GD.Print($"{context.Name} LiveSearch: Rotate");
                     break;
+            }
+            context.StopMovement();
+        }
+
+        private void PerformLiveSearchMovement(AIEntity context)
+        {
+            if (_currentRepositionSubState == RepositioningSubState.LiveSearchRotate)
+            {
+                // Поворот тела уже обрабатывается общим кодом в HandleRepositioning,
+                // поэтому здесь ничего дополнительного не требуется.
+                return;
+            }
+            
+            // Для стрейфа и движения вперед/назад задаем цель для навигации
+            if (!_liveSearchDirection.IsZeroApprox())
+            {
+                var movementTarget = context.GlobalPosition + _liveSearchDirection * context.Speed * (float)_liveSearchSegmentDuration;
+                context.MoveTo(NavigationServer3D.MapGetClosestPoint(context.GetWorld3D().NavigationMap, movementTarget));
             }
         }
 

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Game.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace Game.Entity.AI
 {
@@ -71,6 +72,11 @@ namespace Game.Entity.AI
         /// Шаг в метрах для поиска новой огневой позиции. Меньшие значения - точнее, но больше проверок.
         /// </summary>
         [Export(PropertyHint.Range, "0.5, 5.0, 0.1")] public float RepositionSearchStep { get; private set; } = 1.5f;
+
+        [ExportGroup("AI Aiming & Rotation Limits")]
+        [Export] public bool EnableHeadRotationLimits { get; private set; } = true;
+        [Export(PropertyHint.Range, "0, 180, 1")] public float MaxHeadYawDegrees { get; private set; } = 90f;
+        [Export(PropertyHint.Range, "0, 90, 1")] public float MaxHeadPitchDegrees { get; private set; } = 60f;
 
         [ExportGroup("Dependencies")]
         [Export] private NavigationAgent3D _navigationAgent;
@@ -252,8 +258,10 @@ namespace Game.Entity.AI
                 CurrentTarget = target;
                 GD.Print($"{Name} new best target is: {target.Name}");
 
-                // Если мы не в состоянии атаки/преследования/расследования, переходим в атаку
-                if (_currentState is not (AttackState or PursuitState or InvestigateState))
+                // Если мы сейчас не в состоянии атаки, мы должны немедленно в него перейти,
+                // чтобы атаковать новую цель. Это позволяет прервать состояния Pursuit и Investigate,
+                // если появилась более актуальная угроза.
+                if (_currentState is not AttackState)
                 {
                     ChangeState(new AttackState(this));
                 }
@@ -386,9 +394,6 @@ namespace Game.Entity.AI
             return null;
         }
 
-        /// <summary>
-        /// Вспомогательный метод, который выполняет итеративное зондирование по заданному набору векторов.
-        /// </summary>
         private Vector3? ProbeDirections(Vector3[] directions, Vector3 targetPosition, Vector3 weaponLocalOffset, float searchRadius, Rid navMap, Godot.Collections.Array<Rid> exclusionList)
         {
             foreach (var vector in directions.Where(v => !v.IsZeroApprox()))
@@ -411,75 +416,6 @@ namespace Game.Entity.AI
                     }
                 }
             }
-            return null;
-        }
-
-        /// <summary>
-        /// Находит оптимальную позицию для стрельбы методом итеративного зондирования.
-        /// Алгоритм проверяет приоритетные направления (фланги) с заданным шагом, привязывая каждую
-        /// точку к навигационной сетке, и немедленно возвращает первую найденную валидную позицию.
-        /// Это значительно производительнее "слепого" семплирования по кругу.
-        /// </summary>
-        /// <param name="target">Цель для атаки.</param>
-        /// <param name="weaponLocalOffset">Локальное смещение оружия относительно центра AI.</param>
-        /// <param name="searchRadius">Максимальный радиус поиска новой позиции.</param>
-        /// <returns>Найденная позиция или null, если подходящей точки не найдено.</returns>
-        public Vector3? FindOptimalFiringPosition(PhysicsBody3D target, Vector3 weaponLocalOffset, float searchRadius)
-        {
-            if (target == null || !IsInstanceValid(target)) return null;
-
-            var targetPosition = target.GlobalPosition;
-            var navMap = GetWorld3D().NavigationMap;
-            var exclusionList = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
-
-            // Определяем основные векторы для поиска
-            var directionToTarget = GlobalPosition.DirectionTo(targetPosition).Normalized();
-            // Вектор для стрейфа/фланга (перпендикулярный)
-            var flankDirection = directionToTarget.Cross(Vector3.Up).Normalized();
-
-            // Приоритетный список направлений для зондирования
-            var searchVectors = new Vector3[]
-            {
-                flankDirection,          // Сначала пытаемся уйти на правый фланг
-                -flankDirection,         // Затем на левый фланг
-                -directionToTarget,      // Затем отступить назад
-                directionToTarget,       // В крайнем случае - сократить дистанцию
-                (flankDirection - directionToTarget).Normalized(), // Диагональ назад-вправо
-                (-flankDirection - directionToTarget).Normalized(),// Диагональ назад-влево
-            };
-
-            // Итеративное зондирование по каждому вектору
-            foreach (var vector in searchVectors)
-            {
-                // Начинаем с шага, постепенно увеличивая дистанцию
-                for (float offset = RepositionSearchStep; offset <= searchRadius; offset += RepositionSearchStep)
-                {
-                    var candidatePoint = GlobalPosition + vector * offset;
-
-                    // Привязываем точку к ближайшему месту на NavMesh
-                    var navMeshPoint = NavigationServer3D.MapGetClosestPoint(navMap, candidatePoint);
-
-                    // Проверяем, что точка на NavMesh не слишком далеко от нашей пробы.
-                    // Если это так, значит, мы зондируем стену или пропасть. Пропускаем.
-                    if (navMeshPoint.DistanceSquaredTo(candidatePoint) > RepositionSearchStep * RepositionSearchStep)
-                    {
-                        continue;
-                    }
-
-                    // Вычисляем, где будет дуло, если AI переместится в эту точку
-                    var weaponPositionAtCandidate = navMeshPoint + (Basis * weaponLocalOffset);
-
-                    if (HasClearPath(weaponPositionAtCandidate, targetPosition, exclusionList))
-                    {
-                        // НАЙДЕНО! Немедленно возвращаем первую подходящую позицию.
-                        GD.Print($"{Name} found optimal position via probing at {navMeshPoint}");
-                        return navMeshPoint;
-                    }
-                }
-            }
-
-            // Если после всех проверок ничего не найдено
-            GD.PushWarning($"{Name} could not find any optimal firing position.");
             return null;
         }
 
@@ -515,22 +451,14 @@ namespace Game.Entity.AI
             {
                 SetAttackTarget(bestTarget);
             }
-            // Если bestTarget == null (например, все цели за стеной), мы сохраняем текущую цель
-            // и продолжим ее преследовать, пока не потеряем.
         }
 
-        /// <summary>
-        /// Вызывается, когда текущая цель AI была уничтожена.
-        /// Проверяет, была ли цель контейнером, и переключается на её содержимое.
-        /// </summary>
         private void OnCurrentTargetDestroyed(PhysicsBody3D destroyedTarget)
         {
             GD.Print($"{Name}: My target [{destroyedTarget.Name}] was destroyed.");
 
-            // Очищаем текущую цель в любом случае.
             ClearTarget();
 
-            // Проверяем, был ли уничтоженный объект контейнером
             if (destroyedTarget is IContainerEntity container)
             {
                 var containedEntity = container.GetContainedEntity();
@@ -538,22 +466,14 @@ namespace Game.Entity.AI
                 {
                     GD.Print($"{Name}: Target was a container. Now targeting its content: [{containedEntity.Name}].");
 
-                    // Немедленно делаем "содержимое" новой целью
-                    // Мы добавляем его в список потенциальных целей, чтобы оценщик мог его учесть,
-                    // и сразу же устанавливаем как текущую цель для быстрой реакции.
                     if (!_potentialTargets.Contains(containedEntity))
                     {
                         _potentialTargets.Add(containedEntity);
                     }
                     SetAttackTarget(containedEntity);
-                    return; // Новая цель найдена, выходим
+                    return;
                 }
             }
-
-            // Если это был не контейнер или он был пуст,
-            // то мы просто остаемся без цели. Следующий вызов EvaluateTargets
-            // найдет новую цель из оставшихся в _potentialTargets.
-            // Если их нет, AI вернется в дефолтное состояние через логику состояний.
         }
 
         #region Movement API for States
@@ -588,8 +508,24 @@ namespace Game.Entity.AI
         public void RotateHeadTowards(Vector3 targetPoint, float delta)
         {
             if (_headPivot == null) return;
+
             var localTarget = _headPivot.ToLocal(targetPoint).Normalized();
             var targetRotation = Basis.LookingAt(localTarget).Orthonormalized();
+
+            if (EnableHeadRotationLimits)
+            {
+                var euler = targetRotation.GetEuler(); // Порядок YXZ
+                float yawLimit = Mathf.DegToRad(MaxHeadYawDegrees);
+                float pitchLimit = Mathf.DegToRad(MaxHeadPitchDegrees);
+
+                // Ограничиваем рыскание (Y) и тангаж (X)
+                euler.Y = Mathf.Clamp(euler.Y, -yawLimit, yawLimit);
+                euler.X = Mathf.Clamp(euler.X, -pitchLimit, pitchLimit);
+
+                // Создаем новый базис из ограниченных углов
+                targetRotation = Basis.FromEuler(euler);
+            }
+
             _headPivot.Basis = _headPivot.Basis.Orthonormalized().Slerp(targetRotation, HeadRotationSpeed * delta);
         }
         #endregion
@@ -606,7 +542,6 @@ namespace Game.Entity.AI
                     {
                         GD.Print($"{Name} added {body.Name} to potential targets.");
                         _potentialTargets.Add(physicsBody);
-                        // Немедленно запускаем оценку, чтобы быстрее среагировать на нового врага
                         EvaluateTargets();
                     }
                 }
@@ -622,10 +557,8 @@ namespace Game.Entity.AI
                     GD.Print($"{Name} removed {body.Name} from potential targets.");
                 }
 
-                // Если мы потеряли из виду *текущую* цель
                 if (body == CurrentTarget)
                 {
-                    // Не очищаем цель сразу, а переходим в преследование
                     if (_currentState is AttackState)
                     {
                         LastKnownTargetPosition = CurrentTarget.GlobalPosition;

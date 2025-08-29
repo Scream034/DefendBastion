@@ -37,7 +37,7 @@ public partial class RangedAttackStrategy : Node, IAttackAction
         spawnTransform = spawnTransform.LookingAt(target.GlobalPosition, Vector3.Up);
 
         var projectile = ProjectilePool.Get(_projectileScene);
-        projectile.RayQueryParams.Exclude.Add(attacker.GetRid());
+        projectile.RayQueryParams?.Exclude.Add(attacker.GetRid());
         projectile.GlobalTransform = spawnTransform;
 
         Constants.Root.AddChild(projectile);
