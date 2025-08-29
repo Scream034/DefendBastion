@@ -89,11 +89,32 @@ namespace Game.Entity.AI.Behaviors
             _timeSinceLastAttack = AttackCooldown;
         }
 
+        /// <summary>
+        /// Вызывается при входе в AttackState. Гарантирует, что поведение начинает бой в чистом состоянии.
+        /// </summary>
+        public void EnterCombat(AIEntity context)
+        {
+            GD.Print($"{context.Name} entering combat, combat behavior state is being reset.");
+            // Сбрасываем таймер атаки и состояние маневрирования.
+            _timeSinceLastAttack = AttackCooldown;
+            ResetRepositioningState(context);
+        }
+
+        /// <summary>
+        /// Вызывается при выходе из AttackState. Очищает любые активные действия.
+        /// </summary>
+        public void ExitCombat(AIEntity context)
+        {
+            GD.Print($"{context.Name} exiting combat, cleaning up combat behavior.");
+            // Сбрасываем состояние, чтобы ИИ не продолжал двигаться к старой точке после выхода из боя.
+            ResetRepositioningState(context);
+        }
+
         public void Process(AIEntity context, double delta)
         {
             if (context.CurrentTarget == null || !GodotObject.IsInstanceValid(context.CurrentTarget))
             {
-                ResetRepositioningState(context);
+                // Состояние будет сброшено через ExitCombat, когда AttackState вызовет ReturnToDefaultState
                 context.ReturnToDefaultState();
                 return;
             }
@@ -102,31 +123,27 @@ namespace Game.Entity.AI.Behaviors
             var target = context.CurrentTarget;
             float distanceToTarget = context.GlobalPosition.DistanceTo(target.GlobalPosition);
 
-            // Если ИИ активно меняет позицию, делегируем управление соответствующему методу
             if (_currentRepositionSubState != RepositioningSubState.None)
             {
                 HandleRepositioning(context, target, delta);
                 return;
             }
 
-            // Если цель слишком далеко, сближаемся
             if (distanceToTarget > AttackRange)
             {
                 context.MoveTo(target.GlobalPosition);
                 return;
             }
 
-            // Проверяем, есть ли чистый прострел от дула оружия
-            bool hasClearShot = !_requireMuzzleLoS || _attackAction?.MuzzlePoint == null 
+            bool hasClearShot = !_requireMuzzleLoS || _attackAction?.MuzzlePoint == null
                 || context.HasClearPath(
-                    _attackAction.MuzzlePoint.GlobalPosition, 
-                    target.GlobalPosition, 
+                    _attackAction.MuzzlePoint.GlobalPosition,
+                    target.GlobalPosition,
                     [context.GetRid(), target.GetRid()]
                 );
 
             if (hasClearShot)
             {
-                // Если прострел есть, стоим на месте, целимся и стреляем
                 context.StopMovement();
                 context.RotateBodyTowards(target.GlobalPosition, (float)delta);
                 context.RotateHeadTowards(target.GlobalPosition, (float)delta);
@@ -137,14 +154,13 @@ namespace Game.Entity.AI.Behaviors
                     _timeSinceLastAttack = 0;
                 }
             }
-            else // ЛИНИЯ ВЫСТРЕЛА ЗАБЛОКИРОВАНА
+            else
             {
                 GD.Print($"{context.Name}'s muzzle is blocked. Attempting to find a new firing position.");
                 context.StopMovement();
 
                 bool foundNewPosition = false;
 
-                // 1. Пытаемся рассчитать новую позицию, если разрешено
                 if (_allowReposition && _attackAction?.MuzzlePoint != null)
                 {
                     var weaponLocalOffset = _attackAction.MuzzlePoint.Position;
@@ -163,12 +179,10 @@ namespace Game.Entity.AI.Behaviors
                     }
                 }
 
-                // 2. Если рассчитать не удалось (или запрещено), и разрешен "живой поиск", начинаем его
                 if (!foundNewPosition && _allowLiveSearch)
                 {
                     StartLiveSearch(context, target);
                 }
-                // 3. Если все маневры запрещены, просто стоим и целимся, ожидая возможности
                 else if (!foundNewPosition)
                 {
                     GD.Print($"{context.Name} cannot reposition, holding position and aiming.");
@@ -180,7 +194,6 @@ namespace Game.Entity.AI.Behaviors
 
         private void HandleRepositioning(AIEntity context, PhysicsBody3D target, double delta)
         {
-            // Постоянно проверяем, не появился ли прострел во время движения
             if (_requireMuzzleLoS && _attackAction?.MuzzlePoint != null)
             {
                 if (context.HasClearPath(_attackAction.MuzzlePoint.GlobalPosition, target.GlobalPosition, [context.GetRid(), target.GetRid()]))
@@ -190,8 +203,7 @@ namespace Game.Entity.AI.Behaviors
                     return;
                 }
             }
-            
-            // Во время любого маневра всегда смотрим на цель
+
             context.RotateBodyTowards(target.GlobalPosition, (float)delta);
             context.RotateHeadTowards(target.GlobalPosition, (float)delta);
 
@@ -201,12 +213,11 @@ namespace Game.Entity.AI.Behaviors
                     if (context.NavigationAgent.IsNavigationFinished())
                     {
                         GD.Print($"{context.Name} reached calculated position. Still no clear shot.");
-                        // Если дошли, но выстрела нет, и разрешен живой поиск, начинаем его
                         if (_allowLiveSearch)
                         {
                             StartLiveSearch(context, target);
                         }
-                        else // Иначе сдаемся и сбрасываем состояние
+                        else
                         {
                             ResetRepositioningState(context);
                         }
@@ -260,7 +271,7 @@ namespace Game.Entity.AI.Behaviors
         private void ChooseNextLiveSearchAction(AIEntity context, PhysicsBody3D target)
         {
             _liveSearchSegmentTimer = _liveSearchSegmentDuration;
-            
+
             if (!_availableLiveSearchActions.Any())
             {
                 ResetRepositioningState(context);
@@ -298,7 +309,7 @@ namespace Game.Entity.AI.Behaviors
                 // поэтому здесь ничего дополнительного не требуется.
                 return;
             }
-            
+
             // Для стрейфа и движения вперед/назад задаем цель для навигации
             if (!_liveSearchDirection.IsZeroApprox())
             {

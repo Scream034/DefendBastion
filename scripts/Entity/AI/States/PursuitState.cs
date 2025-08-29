@@ -23,41 +23,35 @@ public sealed class PursuitState(AIEntity context) : State(context)
     {
         _timer -= delta;
 
-        // VITAL CHECK: Убеждаемся, что цель все еще существует в игре.
         if (_context.CurrentTarget == null || !GodotObject.IsInstanceValid(_context.CurrentTarget))
         {
             GD.Print($"{_context.Name} target was destroyed during pursuit. Aborting.");
-            _context.ReturnToDefaultState();
+            _context.DecideNextActionAfterCombat(_context.LastKnownTargetPosition);
             return;
         }
 
-        // Проверяем, жива ли цель
         if (_context.CurrentTarget is ICharacter character && character.Health <= 0)
         {
             var destroyedTarget = _context.CurrentTarget;
             GD.Print($"{_context.Name} target [{destroyedTarget.Name}] was destroyed during pursuit.");
+            var lastPosition = destroyedTarget.GlobalPosition;
 
-            // Проверяем, был ли это контейнер
             if (destroyedTarget is IContainerEntity container)
             {
                 var containedEntity = container.GetContainedEntity();
                 if (GodotObject.IsInstanceValid(containedEntity) && _context.IsHostile(containedEntity))
                 {
                     GD.Print($"{_context.Name}: Switching pursuit to contained entity [{containedEntity.Name}].");
-                    // Устанавливаем пилота как новую цель и немедленно переходим в атаку,
-                    // так как мы, скорее всего, уже близко.
                     _context.SetAttackTarget(containedEntity);
-                    _context.ChangeState(new AttackState(_context));
                     return;
                 }
             }
 
-            // Если это был не контейнер или он пуст, прекращаем преследование.
-            _context.ReturnToDefaultState();
+            // Если это был не контейнер или он пуст, используем центральный метод для решения, что делать дальше.
+            _context.DecideNextActionAfterCombat(lastPosition);
             return;
         }
 
-        // Если цель снова появилась в поле зрения
         if (_context.HasLineOfSightTo(_context.CurrentTarget))
         {
             GD.Print($"{_context.Name} reacquired target during pursuit!");
@@ -65,7 +59,6 @@ public sealed class PursuitState(AIEntity context) : State(context)
             return;
         }
 
-        // Если добежали до места, а цели нет, или вышло время
         if (_context.NavigationAgent.IsNavigationFinished() || _timer <= 0)
         {
             GD.Print($"{_context.Name} pursuit failed. Target not found.");

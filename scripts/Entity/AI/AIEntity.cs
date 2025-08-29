@@ -73,6 +73,12 @@ namespace Game.Entity.AI
         /// </summary>
         [Export(PropertyHint.Range, "0.5, 5.0, 0.1")] public float RepositionSearchStep { get; private set; } = 1.5f;
 
+        [ExportGroup("AI Post-Combat Behavior")]
+        [Export] public bool EnablePostCombatVigilance { get; private set; } = true;
+        [Export(PropertyHint.Range, "3, 15, 1")] public float VigilanceDuration { get; private set; } = 8.0f;
+        [Export] public bool AllowVigilanceStrafe { get; private set; } = true;
+        [Export(PropertyHint.Range, "0.1, 1.0, 0.1")] public float VigilanceRotationSpeedMultiplier { get; private set; } = 0.5f;
+
         [ExportGroup("AI Aiming & Rotation Limits")]
         [Export] public bool EnableHeadRotationLimits { get; private set; } = true;
         [Export(PropertyHint.Range, "0, 180, 1")] public float MaxHeadYawDegrees { get; private set; } = 90f;
@@ -92,6 +98,7 @@ namespace Game.Entity.AI
         public Vector3 SpawnPosition { get; private set; }
         public Vector3 LastKnownTargetPosition { get; set; }
         public Vector3 InvestigationPosition { get; set; }
+        public Vector3 LastEngagementPosition { get; set; }
 
         private State _currentState;
         private State _defaultState; // Состояние, к которому ИИ возвращается после боя/тревоги
@@ -456,6 +463,7 @@ namespace Game.Entity.AI
         private void OnCurrentTargetDestroyed(PhysicsBody3D destroyedTarget)
         {
             GD.Print($"{Name}: My target [{destroyedTarget.Name}] was destroyed.");
+            var lastPosition = destroyedTarget.GlobalPosition;
 
             ClearTarget();
 
@@ -465,13 +473,42 @@ namespace Game.Entity.AI
                 if (containedEntity != null && IsInstanceValid(containedEntity) && IsHostile(containedEntity as IFactionMember))
                 {
                     GD.Print($"{Name}: Target was a container. Now targeting its content: [{containedEntity.Name}].");
-
                     if (!_potentialTargets.Contains(containedEntity))
                     {
                         _potentialTargets.Add(containedEntity);
                     }
                     SetAttackTarget(containedEntity);
                     return;
+                }
+            }
+
+            // После всех проверок решаем, что делать дальше.
+            DecideNextActionAfterCombat(lastPosition);
+        }
+
+        /// <summary>
+        /// Централизованный метод, который решает, перейти ли в состояние бдительности
+        /// или вернуться к стандартным задачам после окончания боя.
+        /// </summary>
+        public void DecideNextActionAfterCombat(Vector3 lastEngagementPosition)
+        {
+            // Убеждаемся, что текущей цели точно нет.
+            ClearTarget();
+
+            // Проверяем, включено ли поведение бдительности и не выполняем ли мы срочную задачу штурма.
+            if (EnablePostCombatVigilance && (MainTask != AIMainTask.Assault || AssaultBehavior != AssaultMode.Rush))
+            {
+                LastEngagementPosition = lastEngagementPosition;
+                ChangeState(new VigilanceState(this));
+            }
+            else
+            {
+                // Если бдительность отключена, сразу ищем новые цели.
+                EvaluateTargets();
+                // Если новых целей нет, возвращаемся к стандартному поведению.
+                if (CurrentTarget == null)
+                {
+                    ReturnToDefaultState();
                 }
             }
         }

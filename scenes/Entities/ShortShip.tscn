@@ -13,7 +13,7 @@ streams_count = 1
 stream_0/stream = ExtResource("4_syiwd")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_etufe"]
-size = Vector3(62.4294, 18.0688, 116.193)
+size = Vector3(62.4294, 18.0688, 60.0946)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_lcrii"]
 size = Vector3(3, 4.52332, 3)
@@ -85,7 +85,7 @@ attenuation_filter_cutoff_hz = 9000.0
 monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0189514, 0.0261226, -60.6742)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0189514, 0.0261226, -32.6249)
 shape = SubResource("BoxShape3D_etufe")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
