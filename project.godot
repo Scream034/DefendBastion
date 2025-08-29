@@ -23,10 +23,6 @@ Constants="*res://scripts/Singletons/Constants.cs"
 GlobalEvents="*res://scripts/Singletons/GlobalEvents.cs"
 PlayerInputManager="*res://scripts/Singletons/PlayerInputManager.cs"
 
-[debug]
-
-settings/stdout/verbose_stdout=true
-
 [display]
 
 window/size/mode=2

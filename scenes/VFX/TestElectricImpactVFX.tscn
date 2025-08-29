@@ -1,0 +1,29 @@
+[gd_scene load_steps=5 format=3 uid="uid://dy0dj3g5d1w5v"]
+
+[ext_resource type="Script" uid="uid://bh1ubuvm1al8d" path="res://scripts/VFX/ShaderVFX3D.cs" id="1_1ow06"]
+[ext_resource type="Shader" uid="uid://bilhp0pl4hr6d" path="res://shaders/ElectricExplosion.gdshader" id="1_3l0on"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1ow06"]
+render_priority = -1
+shader = ExtResource("1_3l0on")
+shader_parameter/lifetime = 1.0
+shader_parameter/flash_color = Color(0.71, 0.85, 1, 1)
+shader_parameter/flash_intensity = 20.0
+shader_parameter/flash_spokes = 10.0
+shader_parameter/flash_focus = 5.0
+shader_parameter/lightning_color = Color(0.3, 0.6, 1, 1)
+shader_parameter/lightning_intensity = 25.0
+shader_parameter/lightning_branches = 8
+shader_parameter/lightning_thickness = 0.015
+shader_parameter/lightning_chaos = 1.0
+shader_parameter/lightning_turbulence_scale = 35.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_1ow06"]
+material = SubResource("ShaderMaterial_1ow06")
+
+[node name="TestElectricImpactVFX" type="Node3D" node_paths=PackedStringArray("meshInstance")]
+script = ExtResource("1_1ow06")
+meshInstance = NodePath("GPUParticles3D")
+
+[node name="GPUParticles3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_1ow06")
