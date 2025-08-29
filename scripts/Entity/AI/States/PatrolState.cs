@@ -43,7 +43,7 @@ public sealed class PatrolState(AIEntity context) : State(context)
                     // ...переключаемся в режим ожидания.
                     _currentSubState = SubState.Waiting;
                     SetWaitTimer();
-                    GD.Print($"{_context.Name} достиг точки патрулирования, ждет {_waitTimer:0.0} сек.");
+                    GD.Print($"{_context.Name} reached patrol point waiting for {_waitTimer:0.0} seconds.");
                 }
                 break;
 

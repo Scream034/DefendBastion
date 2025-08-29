@@ -1,9 +1,9 @@
 [gd_scene load_steps=12 format=3 uid="uid://c0aomjglyx2a7"]
 
-[ext_resource type="Script" uid="uid://bowky2f0mvvey" path="res://scripts/Entity/Kaiju.cs" id="1_hjnk8"]
-[ext_resource type="Script" uid="uid://b04h8f2jx6qgi" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="2_df46c"]
+[ext_resource type="Script" uid="uid://c4g2s3qw2jpfp" path="res://scripts/Entity/Kaiju.cs" id="1_hjnk8"]
+[ext_resource type="Script" uid="uid://bfchrapokbuma" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="2_df46c"]
 [ext_resource type="AudioStream" uid="uid://d1i4b4dxh5s0g" path="res://sounds/electric_impact.wav" id="2_etufe"]
-[ext_resource type="Script" uid="uid://461g3rx1ym3i" path="res://scripts/Entity/AI/AttackStrategies/MeleeAttackStrategy.cs" id="3_arqiy"]
+[ext_resource type="Script" uid="uid://xcyqksnsttoc" path="res://scripts/Entity/AI/AttackStrategies/MeleeAttackStrategy.cs" id="3_arqiy"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_ypjiq"]
 playback_mode = 1
@@ -50,6 +50,7 @@ _targetDetectionArea = NodePath("DetectionArea3D")
 _combatBehaviorNode = NodePath("CombatBehavior")
 _headPivot = NodePath("CollisionShape3D/Head")
 _eyesPosition = NodePath("CollisionShape3D/Head/EyesPoint")
+Faction = 2
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 5.1

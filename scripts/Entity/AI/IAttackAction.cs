@@ -1,3 +1,5 @@
+using Godot;
+
 namespace Game.Entity.AI;
 
 /// <summary>
@@ -6,5 +8,5 @@ namespace Game.Entity.AI;
 /// </summary>
 public interface IAttackAction
 {
-    void Execute(AIEntity attacker, LivingEntity target);
+    void Execute(AIEntity attacker, PhysicsBody3D target);
 }

@@ -20,7 +20,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
     [ExportGroup("Components")]
     [Export] private PlayerHead _head;
-    [Export] private CollisionShape3D _collisionShape; // Ссылка на CollisionShape3D
+    [Export] private CollisionShape3D _collisionShape;
 
     [ExportGroup("Movement")]
     [Export(PropertyHint.Range, "0.0, 1.0, 0.05")] public float AirControl = 0.1f;
@@ -38,6 +38,8 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
     public override void _Ready()
     {
         base._Ready();
+
+        Faction = Entity.AI.Faction.Player;
 
         // Устанавливаем голову игрока как стартовый контроллер камеры
         PlayerInputManager.Instance.SwitchController(_head);
@@ -141,7 +143,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
         CurrentState = PlayerState.InTurret;
         _currentTurret = controllableTurret;
-        _collisionShape.Disabled = true;
+        // _collisionShape.Disabled = true;
         UI.Instance.HideInteractionText();
 
     }
@@ -151,7 +153,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         if (CurrentState != PlayerState.InTurret) return;
 
         GlobalPosition = exitPosition;
-        _collisionShape.Disabled = false;
+        // _collisionShape.Disabled = false;
         _currentTurret = null;
         CurrentState = PlayerState.Normal;
 

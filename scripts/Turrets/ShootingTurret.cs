@@ -135,7 +135,7 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
             {
                 return true;
             }
-            GD.Print($"[{Name}] Cant shoot: State={CurrentState}, HasAmmo={HasAmmo}, IsAlive={IsAlive}");
+            GD.Print($"{Name} Cant shoot: State={CurrentState}, HasAmmo={HasAmmo}, IsAlive={IsAlive}");
             return false;
         }
     }
@@ -264,13 +264,13 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
         // Нельзя перезаряжаться, если мы уже что-то делаем или магазин полон.
         if (CurrentState != TurretState.Idle || HasFullAmmo || HasInfiniteAmmo)
         {
-            GD.Print($"[{Name}] Невозможно начать перезарядку. Состояние: {CurrentState}, Патроны: {CurrentAmmo}/{MaxAmmo} (INF:{HasInfiniteAmmo})");
+            GD.Print($"{Name} Невозможно начать перезарядку. Состояние: {CurrentState}, Патроны: {CurrentAmmo}/{MaxAmmo} (INF:{HasInfiniteAmmo})");
             return false;
         }
 
         SetState(TurretState.Reloading);
         AnimationPlayer.Play(Animations.Reload);
-        GD.Print($"[{Name}] Перезарядка началась...");
+        GD.Print($"{Name} Перезарядка началась...");
         return true;
     }
     #endregion
@@ -334,7 +334,7 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
             // Автоматическая перезарядка, если закончились патроны
             if (AutoReload && !HasAmmo && !HasInfiniteAmmo)
             {
-                GD.Print($"[{Name}] Автоматическая перезарядка началась, т.к. закончились патроны.");
+                GD.Print($"{Name} Автоматическая перезарядка началась, т.к. закончились патроны.");
                 StartReload();
             }
         }
@@ -343,7 +343,7 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     private void OnAnimationChanged(StringName animationName)
     {
 #if DEBUG
-        GD.Print($"[{Name}] Анимация закончилась: {animationName}");
+        GD.Print($"{Name} Анимация закончилась: {animationName}");
 #endif
         if (CurrentState == TurretState.Reloading && animationName == Animations.Reload)
         {
@@ -358,7 +358,7 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     {
         CurrentAmmo = MaxAmmo; // Пополняем патроны В КОНЦЕ
         SetState(TurretState.Idle);
-        GD.Print($"[{Name}] Перезарядка завершена!");
+        GD.Print($"{Name} Перезарядка завершена!");
     }
 
     #endregion

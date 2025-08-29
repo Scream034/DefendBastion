@@ -3,6 +3,7 @@ using Game.Interfaces;
 using System;
 using System.Threading.Tasks;
 using Game.Entity;
+using Game.Entity.AI;
 
 namespace Game.Turrets;
 
@@ -11,16 +12,8 @@ namespace Game.Turrets;
 /// Реализует базовую логику прочности через интерфейс IDamageable
 /// и возможность взаимодействия через IInteractable.
 /// </summary>
-public abstract partial class BaseTurret : StaticBody3D, IDamageable, IInteractable
+public abstract partial class BaseTurret : StaticBody3D, IDamageable, IInteractable, IFactionMember
 {
-    [Export(PropertyHint.Range, "1,10000,1")]
-    public float MaxHealth { get; private set; } = 100f;
-
-    /// <summary>
-    /// Текущее количество очков прочности турели.
-    /// </summary>
-    public float Health { get; private set; }
-
     /// <summary>
     /// Событие, вызываемое при уничтожении турели.
     /// </summary>
@@ -32,9 +25,19 @@ public abstract partial class BaseTurret : StaticBody3D, IDamageable, IInteracta
     /// </summary>
     public event Action<float> OnHealthChanged;
 
+    [ExportGroup("Faction")]
+    [Export]
+    public Faction Faction { get; set; } = Faction.Neutral;
+
+    [ExportGroup("Health")]
+    [Export(PropertyHint.Range, "1,10000,1")]
+    public float MaxHealth { get; private set; } = 100f;
+
     /// <summary>
-    /// Проверяет, жива ли турель.
+    /// Текущее количество очков прочности турели.
     /// </summary>
+    public float Health { get; private set; }
+
     public bool IsAlive => Health > 0;
 
     public override void _Ready()
@@ -87,6 +90,14 @@ public abstract partial class BaseTurret : StaticBody3D, IDamageable, IInteracta
 
     /// <inheritdoc/>
     public abstract string GetInteractionText();
+
+    public bool IsHostile(IFactionMember other)
+    {
+        if (other == null) return false;
+        // Prevent turrets from targeting themselves
+        if (other is PhysicsBody3D otherNode && otherNode.GetRid() == GetRid()) return false;
+        return FactionManager.AreFactionsHostile(Faction, other.Faction);
+    }
 
     protected async Task SetHealthAsync(float health)
     {

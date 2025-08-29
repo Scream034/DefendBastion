@@ -1,9 +1,9 @@
 [gd_scene load_steps=40 format=4 uid="uid://h4e5iifitbua"]
 
-[ext_resource type="Script" uid="uid://cgntm3mej3m3f" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_lbqb5"]
+[ext_resource type="Script" uid="uid://et70qvhe11w" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_lbqb5"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="2_6xwvg"]
-[ext_resource type="Script" uid="uid://bvi6phoj3adou" path="res://scripts/Turrets/TurretCameraController.cs" id="3_ddxjo"]
-[ext_resource type="Script" uid="uid://cx67w2h83h0j7" path="res://scripts/Components/Shaker3D.cs" id="3_s7gp7"]
+[ext_resource type="Script" uid="uid://22hmj3yhajqu" path="res://scripts/Turrets/TurretCameraController.cs" id="3_ddxjo"]
+[ext_resource type="Script" uid="uid://c0hftn5vsaftb" path="res://scripts/Components/Shaker3D.cs" id="3_s7gp7"]
 [ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/turret/RailGun/Base.tres" id="4_lrb7t"]
 [ext_resource type="Material" uid="uid://dgx370rssxhh5" path="res://materials/turret/RailGun/Accent.tres" id="5_qh1gm"]
 [ext_resource type="AudioStream" uid="uid://biph0x4s4cufb" path="res://sounds/railgun_fire.wav" id="6_ca4b8"]
@@ -1924,6 +1924,7 @@ FireRate = 20.0
 BarrelEnd = NodePath("Turret/Barrel/BarrelEnd")
 AutoReload = false
 AnimationPlayer = NodePath("AnimationPlayer")
+Faction = 1
 MaxHealth = 500.0
 
 [node name="Shaker3D" type="Node" parent="." node_paths=PackedStringArray("_target")]
@@ -2243,6 +2244,7 @@ update_scale = false
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.65661e-10, 1.4129, 0.893818)
+current = true
 fov = 71.5487
 
 [node name="CollisionShape3DTurretBarrel" type="CollisionShape3D" parent="."]

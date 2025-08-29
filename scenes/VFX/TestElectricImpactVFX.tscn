@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://dy0dj3g5d1w5v"]
 
-[ext_resource type="Script" uid="uid://bh1ubuvm1al8d" path="res://scripts/VFX/ShaderVFX3D.cs" id="1_1ow06"]
-[ext_resource type="Shader" uid="uid://bilhp0pl4hr6d" path="res://shaders/ElectricExplosion.gdshader" id="1_3l0on"]
+[ext_resource type="Script" uid="uid://2tpcaqu0k336" path="res://scripts/VFX/ShaderVFX3D.cs" id="1_1ow06"]
+[ext_resource type="Shader" uid="uid://vjmo77l0a6xf" path="res://shaders/ElectricExplosion.gdshader" id="1_3l0on"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_1ow06"]
 render_priority = -1

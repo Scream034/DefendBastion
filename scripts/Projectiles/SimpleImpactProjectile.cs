@@ -31,7 +31,7 @@ public partial class SimpleImpactProjectile : BaseProjectile
             _audioPlayer.Finished += () =>
             {
 #if DEBUG
-                GD.Print($"[{this}] Будет возвращен в пул из-за окончания звука!");
+                GD.Print($"{this} Will return to pool because audio is finished!");
 #endif
                 ProjectilePool.Return(this);
             };
@@ -40,17 +40,17 @@ public partial class SimpleImpactProjectile : BaseProjectile
 #if DEBUG
         if (_impactVfx == null)
         {
-            GD.PushError($"Для снаряда '{Name}' не установлен VFX попадания!");
+            GD.PushError($"For projectile '{Name}' no VFX is set!");
         }
 
         if (_impactSfx == null)
         {
-            GD.PushWarning($"Для снаряда '{Name}' не установлен SFX попадания.");
+            GD.PushWarning($"For projectile '{Name}' no SFX is set.");
         }
         else if (_impactVfx != null && _impactVfx.InstantiateOrNull<BaseVfx3D>() == null)
         {
             // Эта проверка может быть полезной, если у вас есть базовый класс для VFX
-            GD.PushError($"Установленный VFX для снаряда '{Name}' не является наследником BaseVfx3D!");
+            GD.PushError($"Current projectile VFX is not BaseVfx3D!");
         }
 #endif
     }

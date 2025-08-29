@@ -12,7 +12,7 @@ public sealed class PursuitState(AIEntity context) : State(context)
 
     public override void Enter()
     {
-        GD.Print($"[{_context.Name}] entering Pursuit state, moving to {_context.LastKnownTargetPosition}");
+        GD.Print($"{_context.Name} entering Pursuit state, moving to {_context.LastKnownTargetPosition}");
         _context.SetMovementSpeed(_context.FastSpeed);
         _context.MoveTo(_context.LastKnownTargetPosition);
         _timer = PursuitTimeout;
@@ -26,7 +26,7 @@ public sealed class PursuitState(AIEntity context) : State(context)
         // Если цель уничтожена, преследование бессмысленно.
         if (_context.CurrentTarget == null || !GodotObject.IsInstanceValid(_context.CurrentTarget))
         {
-            GD.Print($"[{_context.Name}] target was destroyed during pursuit. Aborting.");
+            GD.Print($"{_context.Name} target was destroyed during pursuit. Aborting.");
             _context.ReturnToDefaultState();
             return;
         }
@@ -34,7 +34,7 @@ public sealed class PursuitState(AIEntity context) : State(context)
         // Если цель снова появилась в поле зрения
         if (_context.HasLineOfSightTo(_context.CurrentTarget))
         {
-            GD.Print($"[{_context.Name}] reacquired target during pursuit!");
+            GD.Print($"{_context.Name} reacquired target during pursuit!");
             _context.ChangeState(new AttackState(_context));
             return;
         }
@@ -42,7 +42,7 @@ public sealed class PursuitState(AIEntity context) : State(context)
         // Если добежали до места, а цели нет, или вышло время
         if (_context.NavigationAgent.IsNavigationFinished() || _timer <= 0)
         {
-            GD.Print($"[{_context.Name}] pursuit failed. Target not found.");
+            GD.Print($"{_context.Name} pursuit failed. Target not found.");
             // ИИ "забывает" про цель и возвращается к своим делам
             _context.ReturnToDefaultState();
         }

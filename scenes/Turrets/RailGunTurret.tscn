@@ -1,7 +1,5 @@
-[gd_scene load_steps=23 format=3 uid="uid://daxwujwpv62hb"]
+[gd_scene load_steps=21 format=3 uid="uid://daxwujwpv62hb"]
 
-[ext_resource type="Script" uid="uid://cgntm3mej3m3f" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_ky60h"]
-[ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="2_fyiut"]
 [ext_resource type="AudioStream" uid="uid://biph0x4s4cufb" path="res://sounds/railgun_fire.wav" id="3_rvycd"]
 [ext_resource type="AudioStream" uid="uid://15kjtu6y7ewe" path="res://sounds/railgun_charge.wav" id="4_ouvn5"]
 [ext_resource type="Material" uid="uid://dm323eaj5fjl6" path="res://materials/turret/BarrelLine.tres" id="6_il5lp"]
@@ -321,19 +319,10 @@ disable_receive_shadows = true
 material = SubResource("StandardMaterial3D_owejd")
 size = Vector3(0.01, 0.01, 0.01)
 
-[node name="RailGunTurret" type="StaticBody3D" node_paths=PackedStringArray("_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
+[node name="RailGunTurret" type="StaticBody3D"]
 physics_interpolation_mode = 1
 collision_layer = 3
 collision_mask = 3
-script = ExtResource("1_ky60h")
-_controlPoint = NodePath("CollisionShape3D/PlayerSeat")
-_exitPoint = NodePath("CollisionShape3D/ExitPoint")
-ProjectileScene = ExtResource("2_fyiut")
-MaxAmmo = -1
-FireRate = 20.0
-BarrelEnd = NodePath("CollisionShape3D/BarrelEnd")
-AutoReload = false
-AnimationPlayer = NodePath("AnimationPlayer")
 
 [node name="AAudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.23206)

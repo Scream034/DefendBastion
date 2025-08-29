@@ -2,6 +2,7 @@ using Godot;
 using Game.Entity.AI.Behaviors;
 using Game.Entity.AI.States;
 using System.Threading.Tasks;
+using Game.Interfaces;
 
 namespace Game.Entity.AI
 {
@@ -64,7 +65,8 @@ namespace Game.Entity.AI
         [Export] private Marker3D _eyesPosition; // Точка для проверки линии видимости
 
         public NavigationAgent3D NavigationAgent => _navigationAgent;
-        public LivingEntity CurrentTarget { get; private set; }
+        
+        public PhysicsBody3D CurrentTarget { get; private set; }
         public ICombatBehavior CombatBehavior { get; private set; }
         public Vector3 SpawnPosition { get; private set; }
         public Vector3 LastKnownTargetPosition { get; set; }
@@ -176,7 +178,7 @@ namespace Game.Entity.AI
             // РЕАКЦИЯ НА УРОН
             if (source != null && _currentState is not AttackState)
             {
-                GD.Print($"[{Name}] took damage from {source.Name} direction!");
+                GD.Print($"{Name} took damage from {source.Name} direction!");
                 InvestigationPosition = source.GlobalPosition;
                 // Немедленно переходим в состояние расследования, если мы не в активном бою с другой целью
                 if (CurrentTarget == null)
@@ -191,7 +193,7 @@ namespace Game.Entity.AI
         {
             _currentState?.Exit();
             _currentState = newState;
-            GD.Print($"[{Name}] changing state to -> {newState.GetType().Name}");
+            GD.Print($"{Name} changing state to -> {newState.GetType().Name}");
             _currentState.Enter();
         }
 
@@ -201,9 +203,17 @@ namespace Game.Entity.AI
             ChangeState(_defaultState);
         }
 
-        public void SetAttackTarget(LivingEntity target)
+        public void SetAttackTarget(PhysicsBody3D target)
         {
             if (target == this || target == null) return;
+            
+            // Убедимся, что цель вообще можно атаковать и у нее есть фракция
+            if (target is not IDamageable || target is not IFactionMember)
+            {
+                GD.PrintErr($"Attempted to target {target.Name}, which is not a valid target (IDamageable & IFactionMember).");
+                return;
+            }
+
             CurrentTarget = target;
             ChangeState(new AttackState(this));
         }
@@ -213,7 +223,7 @@ namespace Game.Entity.AI
             CurrentTarget = null;
         }
 
-        public bool HasLineOfSightTo(LivingEntity target)
+        public bool HasLineOfSightTo(PhysicsBody3D target)
         {
             if (target == null) return false;
 
@@ -277,10 +287,16 @@ namespace Game.Entity.AI
         #region Signal Handlers
         private void OnTargetDetected(Node3D body)
         {
-            // Атакуем только если нет текущей цели и это подходящая сущность
-            if (CurrentTarget == null && body is LivingEntity entity && entity.ID != ID)
+#if DEBUG
+            GD.Print($"{Name} detected {body.Name}!");
+#endif
+            // Атакуем только если нет текущей цели, это подходящая сущность и она нам враждебна
+            if (CurrentTarget == null && body is IFactionMember factionMember && body != this)
             {
-                SetAttackTarget(entity);
+                if (IsHostile(factionMember) && body is IDamageable)
+                {
+                    SetAttackTarget((PhysicsBody3D)body);
+                }
             }
         }
 

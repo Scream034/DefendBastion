@@ -4,14 +4,9 @@ namespace Game.Entity.AI.States;
 /// Абстрактный базовый класс для всех состояний ИИ.
 /// Определяет контракт, которому должны следовать все конкретные состояния.
 /// </summary>
-public abstract class State
+public abstract class State(AIEntity context)
 {
-    protected readonly AIEntity _context;
-
-    protected State(AIEntity context)
-    {
-        _context = context;
-    }
+    protected readonly AIEntity _context = context;
 
     /// <summary>
     /// Вызывается при входе в это состояние. Используется для инициализации.

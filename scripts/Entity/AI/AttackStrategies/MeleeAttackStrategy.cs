@@ -1,4 +1,5 @@
 using Godot;
+using Game.Interfaces;
 
 namespace Game.Entity.AI.AttackStrategies
 {
@@ -8,11 +9,13 @@ namespace Game.Entity.AI.AttackStrategies
         [Export(PropertyHint.Range, "1,500,1")]
         private float _damage = 25f;
 
-        public void Execute(AIEntity attacker, LivingEntity target)
+        public void Execute(AIEntity attacker, PhysicsBody3D target)
         {
-            GD.Print($"[{attacker.Name}] melees [{target.Name}] for {_damage} damage.");
+            if (target is not IDamageable damageableTarget) return;
+
+            GD.Print($"{attacker.Name} melees [{target.Name}] for {_damage} damage.");
             // Передаем себя (атакующего) как источник урона
-            _ = target.DamageAsync(_damage, attacker);
+            _ = damageableTarget.DamageAsync(_damage, attacker);
         }
     }
 }

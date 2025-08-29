@@ -1,6 +1,6 @@
 [gd_scene load_steps=22 format=3 uid="uid://q2747brlyw05"]
 
-[ext_resource type="Script" uid="uid://q58hirmnykj5" path="res://scripts/GameManager.cs" id="1_pdh0q"]
+[ext_resource type="Script" uid="uid://croja56fqovs4" path="res://scripts/GameManager.cs" id="1_pdh0q"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_h1bdy"]
 [ext_resource type="AudioStream" uid="uid://qpfbu8qea6qg" path="res://sounds/ambient2.wav" id="3_7c4bj"]
 [ext_resource type="AudioStream" uid="uid://c2qqp6aadfxmn" path="res://sounds/victory.ogg" id="4_nrtoj"]
@@ -92,9 +92,6 @@ shape = SubResource("BoxShape3D_0wfyh")
 
 [node name="Kaiju" parent="." instance=ExtResource("7_o1tcx")]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 9.92485, -139.678)
-
-[node name="Kaiju2" parent="." instance=ExtResource("7_o1tcx")]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 25.5498, 9.92485, -139.678)
 
 [node name="RailGunTurret" parent="." instance=ExtResource("8_rpuxp")]
 process_mode = 4

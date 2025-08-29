@@ -14,7 +14,7 @@ namespace Game.Entity.AI.States
 
         public override void Enter()
         {
-            GD.Print($"[{_context.Name}] entering Investigate state, moving to {_context.InvestigationPosition}");
+            GD.Print($"{_context.Name} entering Investigate state, moving to {_context.InvestigationPosition}");
             _context.SetMovementSpeed(_context.NormalSpeed);
             _context.MoveTo(_context.InvestigationPosition);
             _timer = InvestigationTime;
@@ -35,7 +35,7 @@ namespace Game.Entity.AI.States
                 if (_context.NavigationAgent.IsNavigationFinished())
                 {
                     _isAtLocation = true;
-                    GD.Print($"[{_context.Name}] reached investigation point. Looking around...");
+                    GD.Print($"{_context.Name} reached investigation point. Looking around...");
                 }
             }
             else
@@ -44,7 +44,7 @@ namespace Game.Entity.AI.States
                 _timer -= delta;
                 if (_timer <= 0)
                 {
-                    GD.Print($"[{_context.Name}] investigation complete. Nothing found.");
+                    GD.Print($"{_context.Name} investigation complete. Nothing found.");
                     _context.ReturnToDefaultState();
                 }
             }

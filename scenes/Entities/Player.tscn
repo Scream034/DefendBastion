@@ -1,8 +1,8 @@
 [gd_scene load_steps=5 format=3 uid="uid://c48vh6kflnrnw"]
 
-[ext_resource type="Script" uid="uid://dkijj7ch7me7t" path="res://scripts/Player/Player.cs" id="1_k5qh4"]
-[ext_resource type="Script" uid="uid://ceko2b8r6v2y1" path="res://scripts/Player/PlayerHead.cs" id="2_vm2lv"]
-[ext_resource type="Script" uid="uid://cx67w2h83h0j7" path="res://scripts/Components/Shaker3D.cs" id="3_vm2lv"]
+[ext_resource type="Script" uid="uid://deveiov4od6ni" path="res://scripts/Player/Player.cs" id="1_k5qh4"]
+[ext_resource type="Script" uid="uid://c0vcyf1vey4ap" path="res://scripts/Player/PlayerHead.cs" id="2_vm2lv"]
+[ext_resource type="Script" uid="uid://c0hftn5vsaftb" path="res://scripts/Components/Shaker3D.cs" id="3_vm2lv"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_w7kh3"]
 
@@ -11,6 +11,7 @@ physics_interpolation_mode = 1
 script = ExtResource("1_k5qh4")
 _head = NodePath("Head")
 _collisionShape = NodePath("CollisionShape3D")
+Faction = 1
 
 [node name="Shaker3D" type="Node" parent="." node_paths=PackedStringArray("_target")]
 script = ExtResource("3_vm2lv")

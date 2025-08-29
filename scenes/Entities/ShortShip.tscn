@@ -1,8 +1,8 @@
 [gd_scene load_steps=13 format=3 uid="uid://cnm2m7s2pec0k"]
 
-[ext_resource type="Script" uid="uid://7nkc1mkmph08" path="res://scripts/Entity/ShortShip.cs" id="1_lcrii"]
-[ext_resource type="Script" uid="uid://b04h8f2jx6qgi" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="2_lcrii"]
-[ext_resource type="Script" uid="uid://dx6710e53hdvi" path="res://scripts/Entity/AI/AttackStrategies/RangedAttackStrategy.cs" id="3_cti50"]
+[ext_resource type="Script" uid="uid://djciuniju3xe0" path="res://scripts/Entity/ShortShip.cs" id="1_lcrii"]
+[ext_resource type="Script" uid="uid://bfchrapokbuma" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="2_lcrii"]
+[ext_resource type="Script" uid="uid://diup2b7nl2fv6" path="res://scripts/Entity/AI/AttackStrategies/RangedAttackStrategy.cs" id="3_cti50"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="4_lcrii"]
 [ext_resource type="AudioStream" uid="uid://d1i4b4dxh5s0g" path="res://sounds/electric_impact.wav" id="4_syiwd"]
 
@@ -54,6 +54,7 @@ _targetDetectionArea = NodePath("DetectionArea3D")
 _combatBehaviorNode = NodePath("CombatBehavior")
 _headPivot = NodePath("CollisionShape3D/Head")
 _eyesPosition = NodePath("CollisionShape3D/EyesPoint")
+Faction = 2
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 3.3

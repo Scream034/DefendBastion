@@ -2,10 +2,11 @@ using System;
 using System.Threading.Tasks;
 using Game.Interfaces;
 using Godot;
+using Game.Entity.AI;
 
 namespace Game.Entity;
 
-public abstract partial class LivingEntity : CharacterBody3D, IDamageable
+public abstract partial class LivingEntity : CharacterBody3D, IDamageable, IFactionMember
 {
     public enum IDs
     {
@@ -20,6 +21,12 @@ public abstract partial class LivingEntity : CharacterBody3D, IDamageable
     public float MaxHealth { get; private set; }
 
     public float Health { get; private set; } = 100;
+
+    public bool IsAlive => Health > 0;
+    
+    [ExportGroup("Faction")]
+    [Export]
+    public Faction Faction { get; set; } = Faction.Neutral;
 
     public event Action OnDestroyed;
 
@@ -88,6 +95,12 @@ public abstract partial class LivingEntity : CharacterBody3D, IDamageable
         OnDestroyed?.Invoke();
 
         return Task.FromResult(true);
+    }
+    
+    public bool IsHostile(IFactionMember other)
+    {
+        if (other == null) return false;
+        return FactionManager.AreFactionsHostile(Faction, other.Faction);
     }
 
     protected void SetMaxHealth(float health)

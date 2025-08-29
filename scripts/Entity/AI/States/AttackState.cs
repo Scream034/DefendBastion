@@ -26,7 +26,7 @@ public sealed class AttackState(AIEntity context) : State(context)
         // ПРОВЕРКА ЛИНИИ ВИДИМОСТИ
         if (!_context.HasLineOfSightTo(_context.CurrentTarget))
         {
-            GD.Print($"[{_context.Name}] lost line of sight to {_context.CurrentTarget.Name}. Pursuing...");
+            GD.Print($"{_context.Name} lost line of sight to {_context.CurrentTarget.Name}. Pursuing...");
             // Запоминаем, где последний раз видели цель
             _context.LastKnownTargetPosition = _context.CurrentTarget.GlobalPosition;
             // Переходим в состояние преследования

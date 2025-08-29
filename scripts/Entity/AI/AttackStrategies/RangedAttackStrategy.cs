@@ -29,14 +29,14 @@ public partial class RangedAttackStrategy : Node, IAttackAction
         }
     }
 
-    public void Execute(AIEntity attacker, LivingEntity target)
+    public void Execute(AIEntity attacker, PhysicsBody3D target)
     {
         if (_projectileScene == null) return;
 
         // ДОБАВЛЕНА ПРОВЕРКА ЛИНИИ ВИДИМОСТИ ПЕРЕД ВЫСТРЕЛОМ
         if (!attacker.HasLineOfSightTo(target))
         {
-            GD.Print($"[{attacker.Name}] cannot shoot at [{target.Name}]. No line of sight.");
+            GD.Print($"{attacker.Name} cannot shoot at [{target.Name}]. No line of sight.");
             return;
         }
 
@@ -52,6 +52,6 @@ public partial class RangedAttackStrategy : Node, IAttackAction
         // Передаем атакующего как источник урона
         projectile.Initialize(attacker);
 
-        GD.Print($"[{attacker.Name}] fired at [{target.Name}].");
+        GD.Print($"{attacker.Name} fired at [{target.Name}].");
     }
 }

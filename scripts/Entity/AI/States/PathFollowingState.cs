@@ -16,7 +16,7 @@ namespace Game.Entity.AI.States
         {
             if (_context.MissionPath == null)
             {
-                GD.PushError($"[{_context.Name}] entered PathFollowingState with no MissionPath!");
+                GD.PushError($"{_context.Name} entered PathFollowingState with no MissionPath!");
                 _context.ReturnToDefaultState();
                 return;
             }
@@ -24,7 +24,7 @@ namespace Game.Entity.AI.States
             _pathPoints = _context.MissionPath.Curve.GetBakedPoints();
             if (_pathPoints == null || _pathPoints.Length == 0)
             {
-                GD.PushError($"[{_context.Name}] MissionPath has no points!");
+                GD.PushError($"{_context.Name} MissionPath has no points!");
                 _context.ReturnToDefaultState();
                 return;
             }
@@ -64,7 +64,7 @@ namespace Game.Entity.AI.States
                 _currentPointIndex++;
                 if (_currentPointIndex >= _pathPoints.Length)
                 {
-                    GD.Print($"[{_context.Name}] Assault mission complete!");
+                    GD.Print($"{_context.Name} Assault mission complete!");
                     // Можно добавить логику "удержания точки" или просто патрулирования
                     _context.StopMovement(); 
                     return;
