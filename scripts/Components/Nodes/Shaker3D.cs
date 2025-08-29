@@ -1,5 +1,7 @@
 #nullable enable
 
+namespace Game.Components.Nodes;
+
 using Godot;
 
 /// <summary>
@@ -9,7 +11,7 @@ using Godot;
 /// гибкой настройки и предсказуемого поведения.
 /// </summary>
 [GlobalClass]
-public partial class Shaker3D : Node
+public sealed partial class Shaker3D : Node
 {
     #region Enums
 

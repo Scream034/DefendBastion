@@ -1,13 +1,21 @@
 using System;
 using System.Threading.Tasks;
 using Game.Entity;
-using Godot;
+using Game.Entity.Components.Resources;
 
 namespace Game.Interfaces;
 
 /// <summary>
 /// Интерфейс для всех объектов, которые могут получать урон.
 /// </summary>
+public interface ICharacter : IDamageable
+{
+    /// <summary>
+    /// Статистика объекта.
+    /// </summary>
+    CharacterStats Stats { get; protected set; }
+}
+
 public interface IDamageable
 {
     /// <summary>

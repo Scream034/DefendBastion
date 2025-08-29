@@ -1,10 +1,20 @@
-[gd_scene load_steps=13 format=3 uid="uid://cnm2m7s2pec0k"]
+[gd_scene load_steps=15 format=3 uid="uid://cnm2m7s2pec0k"]
 
 [ext_resource type="Script" uid="uid://djciuniju3xe0" path="res://scripts/Entity/ShortShip.cs" id="1_lcrii"]
+[ext_resource type="Script" uid="uid://b7v8xbyaevj3n" path="res://scripts/Components/Resources/CharacterStats.cs" id="2_7cq20"]
 [ext_resource type="Script" uid="uid://bfchrapokbuma" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="2_lcrii"]
 [ext_resource type="Script" uid="uid://diup2b7nl2fv6" path="res://scripts/Entity/AI/AttackStrategies/RangedAttackStrategy.cs" id="3_cti50"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="4_lcrii"]
 [ext_resource type="AudioStream" uid="uid://d1i4b4dxh5s0g" path="res://sounds/electric_impact.wav" id="4_syiwd"]
+
+[sub_resource type="Resource" id="Resource_syiwd"]
+script = ExtResource("2_7cq20")
+MaxHealth = 100.0
+DamageMultiplier = 1.0
+DamageResistance = 0.0
+Armor = 0.0
+BaseThreatValue = 100.0
+metadata/_custom_type_script = "uid://b7v8xbyaevj3n"
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_ypjiq"]
 playback_mode = 1
@@ -54,6 +64,7 @@ _targetDetectionArea = NodePath("DetectionArea3D")
 _combatBehaviorNode = NodePath("CombatBehavior")
 _headPivot = NodePath("CollisionShape3D/Head")
 _eyesPosition = NodePath("CollisionShape3D/EyesPoint")
+Stats = SubResource("Resource_syiwd")
 Faction = 2
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

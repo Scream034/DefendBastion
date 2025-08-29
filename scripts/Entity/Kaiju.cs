@@ -19,7 +19,7 @@ public sealed partial class Kaiju : AIEntity
         // Если хп в 0, значит Кайдзю нужно создать со случайном хп
         if (Health == 0)
         {
-            SetMaxHealth(GD.RandRange(900, 2222));
+            Stats.MaxHealth = GD.RandRange(900, 2222);
         }
 
         GD.Print($"Kaiju created: {GlobalPosition}! Health: {Health}. AI is active.");

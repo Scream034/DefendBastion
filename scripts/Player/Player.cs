@@ -27,11 +27,15 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
     [Export(PropertyHint.Range, "0, 20, 1")] public float BodyRotationSpeed = 5f;
 
     public PlayerState CurrentState { get; private set; } = PlayerState.Normal;
+
+    /// <summary>
+    /// Публичное свойство для доступа к текущей турели, в которой находится игрок.
+    /// </summary>
+    public ControllableTurret CurrentTurret { get; private set; }
+
     private IInteractable _lastInteractable;
     private Vector3 _inputDir;
     private bool _jumpPressed;
-
-    private ControllableTurret _currentTurret;
 
     public Player() : base(IDs.Player) { }
 
@@ -77,7 +81,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         if (isDestroyed)
         {
             PlayerInputManager.Instance.SwitchController(null);
-            _currentTurret?.ExitTurret();
+            CurrentTurret?.ExitTurret(); // <-- ИЗМЕНЕНО
         }
 
         return isDestroyed;
@@ -142,10 +146,8 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         if (CurrentState != PlayerState.Normal || turret is not ControllableTurret controllableTurret) return;
 
         CurrentState = PlayerState.InTurret;
-        _currentTurret = controllableTurret;
-        // _collisionShape.Disabled = true;
+        CurrentTurret = controllableTurret;
         UI.Instance.HideInteractionText();
-
     }
 
     public void ExitTurret(Vector3 exitPosition)
@@ -153,8 +155,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         if (CurrentState != PlayerState.InTurret) return;
 
         GlobalPosition = exitPosition;
-        // _collisionShape.Disabled = false;
-        _currentTurret = null;
+        CurrentTurret = null;
         CurrentState = PlayerState.Normal;
 
         // Сообщаем менеджеру, что нужно вернуть управление голове игрока

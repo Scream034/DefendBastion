@@ -1,9 +1,10 @@
-[gd_scene load_steps=40 format=4 uid="uid://h4e5iifitbua"]
+[gd_scene load_steps=42 format=4 uid="uid://h4e5iifitbua"]
 
 [ext_resource type="Script" uid="uid://et70qvhe11w" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_lbqb5"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="2_6xwvg"]
+[ext_resource type="Script" uid="uid://b7v8xbyaevj3n" path="res://scripts/Components/Resources/CharacterStats.cs" id="3_2nxjb"]
 [ext_resource type="Script" uid="uid://22hmj3yhajqu" path="res://scripts/Turrets/TurretCameraController.cs" id="3_ddxjo"]
-[ext_resource type="Script" uid="uid://c0hftn5vsaftb" path="res://scripts/Components/Shaker3D.cs" id="3_s7gp7"]
+[ext_resource type="Script" uid="uid://civjue1jr2k80" path="res://scripts/Components/Nodes/Shaker3D.cs" id="3_s7gp7"]
 [ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/turret/RailGun/Base.tres" id="4_lrb7t"]
 [ext_resource type="Material" uid="uid://dgx370rssxhh5" path="res://materials/turret/RailGun/Accent.tres" id="5_qh1gm"]
 [ext_resource type="AudioStream" uid="uid://biph0x4s4cufb" path="res://sounds/railgun_fire.wav" id="6_ca4b8"]
@@ -21,6 +22,15 @@
 [ext_resource type="Texture2D" uid="uid://cf1382xut1avb" path="res://curves/DarkSmokeColorRamp.tres" id="13_ca4b8"]
 [ext_resource type="Curve" uid="uid://bn6xjk18s1ttm" path="res://curves/DarkSmokeScaleCurve.tres" id="13_qh1gm"]
 [ext_resource type="SphereMesh" uid="uid://baho3aaq0v6vh" path="res://mesh/DarkSmoke.tres" id="15_iswaq"]
+
+[sub_resource type="Resource" id="Resource_0s56n"]
+script = ExtResource("3_2nxjb")
+MaxHealth = 100.0
+DamageMultiplier = 1.0
+DamageResistance = 0.0
+Armor = 0.0
+BaseThreatValue = 100.0
+metadata/_custom_type_script = "uid://b7v8xbyaevj3n"
 
 [sub_resource type="Animation" id="Animation_5qgl3"]
 resource_name = "Fire"
@@ -1924,8 +1934,7 @@ FireRate = 20.0
 BarrelEnd = NodePath("Turret/Barrel/BarrelEnd")
 AutoReload = false
 AnimationPlayer = NodePath("AnimationPlayer")
-Faction = 1
-MaxHealth = 500.0
+Stats = SubResource("Resource_0s56n")
 
 [node name="Shaker3D" type="Node" parent="." node_paths=PackedStringArray("_target")]
 script = ExtResource("3_s7gp7")

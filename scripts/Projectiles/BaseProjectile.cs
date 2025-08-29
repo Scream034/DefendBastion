@@ -114,7 +114,7 @@ public partial class BaseProjectile : Area3D
     {
         var collider = hitInfo["collider"].As<Node>();
         GlobalPosition = hitInfo["position"].AsVector3();
-        if (collider is IDamageable damageable)
+        if (collider is ICharacter damageable)
         {
             // <<--- [ИЗМЕНЕНИЕ 2] Передаем инициатора как источник урона!
             await damageable.DamageAsync(Damage, Initiator);

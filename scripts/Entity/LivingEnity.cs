@@ -3,11 +3,24 @@ using System.Threading.Tasks;
 using Game.Interfaces;
 using Godot;
 using Game.Entity.AI;
+using Game.Entity.Components.Resources;
 
 namespace Game.Entity;
 
-public abstract partial class LivingEntity : CharacterBody3D, IDamageable, IFactionMember
+public abstract partial class LivingEntity : CharacterBody3D, ICharacter, IFactionMember
 {
+    public virtual event Action OnDestroyed
+    {
+        add => Stats.OnDestroyed += value;
+        remove => Stats.OnDestroyed -= value;
+    }
+
+    public virtual event Action<float> OnHealthChanged
+    {
+        add => Stats.OnHealthChanged += value;
+        remove => Stats.OnHealthChanged -= value;
+    }
+
     public enum IDs
     {
         Player, // Игрок
@@ -17,20 +30,16 @@ public abstract partial class LivingEntity : CharacterBody3D, IDamageable, IFact
 
     public IDs ID { get; protected set; }
 
-    [Export(PropertyHint.Range, "0,30000")]
-    public float MaxHealth { get; private set; }
+    [Export]
+    public CharacterStats Stats { get; set; }
 
-    public float Health { get; private set; } = 100;
-
-    public bool IsAlive => Health > 0;
-    
     [ExportGroup("Faction")]
     [Export]
     public Faction Faction { get; set; } = Faction.Neutral;
 
-    public event Action OnDestroyed;
+    public float Health => Stats.Health;
 
-    public event Action<float> OnHealthChanged;
+    public float MaxHealth => Stats.MaxHealth;
 
     /// <summary>
     /// Исполузуется для Godot-компилятора
@@ -44,83 +53,34 @@ public abstract partial class LivingEntity : CharacterBody3D, IDamageable, IFact
 
     public override void _EnterTree()
     {
-        base._EnterTree();
-        // Это самое надежное место для регистрации, так как узел точно попадает в сцену.
         LivingEntityManager.Add(this);
     }
 
     public override void _ExitTree()
     {
-        base._ExitTree();
         LivingEntityManager.Remove(this);
     }
 
     public override void _Ready()
     {
-        base._Ready();
-        MaxHealth = Health;
+        Stats.Initialize(this);
 
-        if (Health < 0)
+        if (!Stats.IsAlive)
         {
             SetProcess(false);
             SetPhysicsProcess(false);
         }
     }
 
-    public virtual async Task<bool> DamageAsync(float amount, LivingEntity source = null)
-    {
-        if (Health <= 0) return false;
-        await SetHealthAsync(Health - amount);
-        return true;
-    }
+    public virtual Task<bool> DamageAsync(float amount, LivingEntity source = null) => Stats.DamageAsync(amount, source);
 
-    public virtual async Task<bool> HealAsync(float amount)
-    {
-        if (Health >= MaxHealth) return false;
-        await SetHealthAsync(Health + amount);
-        GD.Print($"Entity {ID} healed {amount} -> {Health}!");
+    public virtual Task<bool> HealAsync(float amount) => Stats.HealAsync(amount);
 
-        return true;
-    }
+    public virtual Task<bool> DestroyAsync() => Stats.DestroyAsync();
 
-    public virtual Task<bool> DestroyAsync()
-    {
-        if (IsQueuedForDeletion()) return Task.FromResult(false);
-
-        SetProcess(false);
-        SetPhysicsProcess(false);
-
-        GD.Print($"Entity {ID} died!");
-        QueueFree();
-        OnDestroyed?.Invoke();
-
-        return Task.FromResult(true);
-    }
-    
     public bool IsHostile(IFactionMember other)
     {
         if (other == null) return false;
         return FactionManager.AreFactionsHostile(Faction, other.Faction);
-    }
-
-    protected void SetMaxHealth(float health)
-    {
-        MaxHealth = health;
-        Health = MaxHealth;
-        OnHealthChanged?.Invoke(Health);
-    }
-
-    protected async Task SetHealthAsync(float health)
-    {
-        Health = health;
-        if (Health <= 0)
-        {
-            Health = 0;
-            await DestroyAsync();
-        }
-        else
-        {
-            OnHealthChanged?.Invoke(Health);
-        }
     }
 }

@@ -11,7 +11,7 @@ namespace Game.Entity.AI.AttackStrategies
 
         public void Execute(AIEntity attacker, PhysicsBody3D target)
         {
-            if (target is not IDamageable damageableTarget) return;
+            if (target is not ICharacter damageableTarget) return;
 
             GD.Print($"{attacker.Name} melees [{target.Name}] for {_damage} damage.");
             // Передаем себя (атакующего) как источник урона

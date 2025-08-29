@@ -3,6 +3,8 @@ using Game.Entity.AI.Behaviors;
 using Game.Entity.AI.States;
 using System.Threading.Tasks;
 using Game.Interfaces;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Game.Entity.AI
 {
@@ -46,7 +48,6 @@ namespace Game.Entity.AI
         [Export] public float NormalSpeed { get; private set; } = 5.0f;
         [Export] public float FastSpeed { get; private set; } = 8.0f;
 
-
         [ExportGroup("AI Patrol Parameters")]
         [Export(PropertyHint.Range, "1, 20, 0.5")] public float BodyRotationSpeed { get; private set; } = 10f;
         [Export(PropertyHint.Range, "1, 20, 0.5")] public float HeadRotationSpeed { get; private set; } = 15f;
@@ -57,6 +58,14 @@ namespace Game.Entity.AI
         [Export(PropertyHint.Range, "0, 10, 0.5")] public float MinPatrolWaitTime { get; private set; } = 1.0f;
         [Export(PropertyHint.Range, "0, 10, 0.5")] public float MaxPatrolWaitTime { get; private set; } = 3.0f;
 
+        [ExportGroup("AI Targetting System")]
+        /// <summary>
+        /// Как часто (в секундах) ИИ будет переоценивать цели в своем списке.
+        /// Более низкие значения делают ИИ более реактивным, но увеличивают нагрузку.
+        /// </summary>
+        [Export(PropertyHint.Range, "0.1, 2.0, 0.1")]
+        public float TargetEvaluationInterval = 0.5f;
+
         [ExportGroup("Dependencies")]
         [Export] private NavigationAgent3D _navigationAgent;
         [Export] private Area3D _targetDetectionArea;
@@ -65,7 +74,7 @@ namespace Game.Entity.AI
         [Export] private Marker3D _eyesPosition; // Точка для проверки линии видимости
 
         public NavigationAgent3D NavigationAgent => _navigationAgent;
-        
+
         public PhysicsBody3D CurrentTarget { get; private set; }
         public ICombatBehavior CombatBehavior { get; private set; }
         public Vector3 SpawnPosition { get; private set; }
@@ -76,6 +85,13 @@ namespace Game.Entity.AI
         private State _defaultState; // Состояние, к которому ИИ возвращается после боя/тревоги
         private bool _isAiActive = false;
 
+        /// <summary>
+        /// Список всех враждебных сущностей, которые в данный момент находятся в зоне обнаружения ИИ.
+        /// </summary>
+        private readonly List<PhysicsBody3D> _potentialTargets = [];
+
+        private float _targetEvaluationTimer;
+
         protected AIEntity(IDs id) : base(id) { }
         public AIEntity() { }
 
@@ -83,6 +99,7 @@ namespace Game.Entity.AI
         {
             base._Ready();
             SpawnPosition = GlobalPosition;
+            _targetEvaluationTimer = TargetEvaluationInterval; // Первый запуск оценки произойдет через interval
 
             if (!ValidateDependencies())
             {
@@ -150,6 +167,14 @@ namespace Game.Entity.AI
 
             _currentState?.Update((float)delta);
 
+            // Периодически запускаем оценку целей
+            _targetEvaluationTimer -= (float)delta;
+            if (_targetEvaluationTimer <= 0f)
+            {
+                EvaluateTargets();
+                _targetEvaluationTimer = TargetEvaluationInterval;
+            }
+
             Vector3 targetVelocity = Vector3.Zero;
 
             if (_isAiActive && !_navigationAgent.IsNavigationFinished())
@@ -165,7 +190,7 @@ namespace Game.Entity.AI
             if (horizontalVelocity.LengthSquared() > 0.1f)
             {
                 var targetRotation = Basis.LookingAt(horizontalVelocity.Normalized()).Orthonormalized();
-                Basis = Basis.Slerp(targetRotation, BodyRotationSpeed * (float)delta);
+                Basis = Basis.Orthonormalized().Slerp(targetRotation, BodyRotationSpeed * (float)delta);
             }
 
             MoveAndSlide();
@@ -189,6 +214,7 @@ namespace Game.Entity.AI
             return true;
         }
 
+
         public void ChangeState(State newState)
         {
             _currentState?.Exit();
@@ -205,17 +231,27 @@ namespace Game.Entity.AI
 
         public void SetAttackTarget(PhysicsBody3D target)
         {
-            if (target == this || target == null) return;
-            
-            // Убедимся, что цель вообще можно атаковать и у нее есть фракция
-            if (target is not IDamageable || target is not IFactionMember)
-            {
-                GD.PrintErr($"Attempted to target {target.Name}, which is not a valid target (IDamageable & IFactionMember).");
-                return;
-            }
+            if (target == this) return;
 
-            CurrentTarget = target;
-            ChangeState(new AttackState(this));
+            // Если новая цель отличается от текущей, или у нас не было цели
+            if (target != CurrentTarget)
+            {
+                // Проверяем, что цель вообще можно атаковать
+                if (target is not ICharacter || target is not IFactionMember)
+                {
+                    GD.PrintErr($"Attempted to target {target.Name}, which is not a valid target.");
+                    return;
+                }
+
+                CurrentTarget = target;
+                GD.Print($"{Name} new best target is: {target.Name}");
+
+                // Если мы не в состоянии атаки/преследования/расследования, переходим в атаку
+                if (_currentState is not (AttackState or PursuitState or InvestigateState))
+                {
+                    ChangeState(new AttackState(this));
+                }
+            }
         }
 
         public void ClearTarget()
@@ -246,6 +282,31 @@ namespace Game.Entity.AI
             return result.Count == 0;
         }
 
+        private void EvaluateTargets()
+        {
+            // 1. Очищаем список от уничтоженных или невалидных целей
+            _potentialTargets.RemoveAll(t => !IsInstanceValid(t) || (t is ICharacter d && d.Health <= 0));
+
+            if (_potentialTargets.Count == 0)
+            {
+                // Если в зоне видимости не осталось врагов, и мы были в бою,
+                // то нужно перейти в состояние преследования последней цели.
+                // Этот переход обрабатывается в AttackState при потере LoS.
+                return;
+            }
+
+            // 2. Получаем лучшую цель от нашего оценщика
+            var bestTarget = AITargetEvaluator.GetBestTarget(this, _potentialTargets);
+
+            // 3. Устанавливаем лучшую цель как текущую
+            if (bestTarget != null)
+            {
+                SetAttackTarget(bestTarget);
+            }
+            // Если bestTarget == null (например, все цели за стеной), мы сохраняем текущую цель
+            // и продолжим ее преследовать, пока не потеряем.
+        }
+
         #region Movement API for States
         public void SetMovementSpeed(float speed)
         {
@@ -270,8 +331,8 @@ namespace Game.Entity.AI
             var direction = GlobalPosition.DirectionTo(targetPoint) with { Y = 0 };
             if (!direction.IsZeroApprox())
             {
-                var targetRotation = Basis.LookingAt(direction.Normalized());
-                Basis = Basis.Slerp(targetRotation, BodyRotationSpeed * delta);
+                var targetRotation = Basis.LookingAt(direction.Normalized()).Orthonormalized();
+                Basis = Basis.Orthonormalized().Slerp(targetRotation, BodyRotationSpeed * delta);
             }
         }
 
@@ -279,37 +340,49 @@ namespace Game.Entity.AI
         {
             if (_headPivot == null) return;
             var localTarget = _headPivot.ToLocal(targetPoint).Normalized();
-            var targetRotation = Basis.LookingAt(localTarget);
-            _headPivot.Basis = _headPivot.Basis.Slerp(targetRotation, HeadRotationSpeed * delta);
+            var targetRotation = Basis.LookingAt(localTarget).Orthonormalized();
+            _headPivot.Basis = _headPivot.Basis.Orthonormalized().Slerp(targetRotation, HeadRotationSpeed * delta);
         }
         #endregion
 
         #region Signal Handlers
         private void OnTargetDetected(Node3D body)
         {
-#if DEBUG
-            GD.Print($"{Name} detected {body.Name}!");
-#endif
-            // Атакуем только если нет текущей цели, это подходящая сущность и она нам враждебна
-            if (CurrentTarget == null && body is IFactionMember factionMember && body != this)
+            GD.Print($"{Name} Dected {body.Name}");
+            if (body is PhysicsBody3D physicsBody && body is IFactionMember factionMember && body != this)
             {
-                if (IsHostile(factionMember) && body is IDamageable)
+                GD.Print($"{Name} finding {body.Name} ({factionMember.Faction}).");
+                if (IsHostile(factionMember) && body is ICharacter)
                 {
-                    SetAttackTarget((PhysicsBody3D)body);
+                    if (!_potentialTargets.Contains(physicsBody))
+                    {
+                        GD.Print($"{Name} added {body.Name} to potential targets.");
+                        _potentialTargets.Add(physicsBody);
+                        // Немедленно запускаем оценку, чтобы быстрее среагировать на нового врага
+                        EvaluateTargets();
+                    }
                 }
             }
         }
 
         private void OnTargetLost(Node3D body)
         {
-            // Если мы потеряли из виду *текущую* цель
-            if (body == CurrentTarget)
+            if (body is PhysicsBody3D physicsBody)
             {
-                // Не очищаем цель сразу, а переходим в преследование
-                if (_currentState is AttackState)
+                if (_potentialTargets.Remove(physicsBody))
                 {
-                    LastKnownTargetPosition = CurrentTarget.GlobalPosition;
-                    ChangeState(new PursuitState(this));
+                    GD.Print($"{Name} removed {body.Name} from potential targets.");
+                }
+
+                // Если мы потеряли из виду *текущую* цель
+                if (body == CurrentTarget)
+                {
+                    // Не очищаем цель сразу, а переходим в преследование
+                    if (_currentState is AttackState)
+                    {
+                        LastKnownTargetPosition = CurrentTarget.GlobalPosition;
+                        ChangeState(new PursuitState(this));
+                    }
                 }
             }
         }

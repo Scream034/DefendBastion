@@ -1,5 +1,6 @@
 #nullable enable
 
+using Game.Components.Nodes;
 using Godot;
 
 namespace Game.Components;
@@ -10,7 +11,7 @@ namespace Game.Components;
 /// и интеграции с Shaker3D для создания эффектов тряски.
 /// Этот компонент предназначен для использования через композицию в других контроллерах (например, PlayerHead, TurretCameraController).
 /// </summary>
-public partial class CameraOperator
+public sealed partial class CameraOperator
 {
     public float SensitivityMultiplier { get; set; } = 1.0f;
 

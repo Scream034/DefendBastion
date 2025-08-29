@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Game.Interfaces;
 using Game.Components;
 using Godot;
+using Game.Components.Nodes;
 
 namespace Game.Player;
 

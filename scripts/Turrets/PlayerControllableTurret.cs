@@ -3,7 +3,6 @@ using Game.Projectiles;
 using Game.Interfaces;
 using Game.Singletons;
 using Game.Entity;
-using Game.Entity.AI;
 
 namespace Game.Turrets;
 
@@ -18,8 +17,6 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
     [Export] private TurretCameraController _cameraController;
 
     public Player.Player PlayerController => CurrentController as Player.Player;
-
-    private Faction _originalFaction;
 
     public override void _PhysicsProcess(double delta)
     {
@@ -45,11 +42,6 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
 
     public override void EnterTurret(ITurretControllable entity)
     {
-        if (entity is not IFactionMember factionController) return;
-
-        _originalFaction = Faction;
-        Faction = factionController.Faction;
-        
         base.EnterTurret(entity);
 
         // Передаем контроллеру все необходимые ему компоненты и параметры
@@ -57,12 +49,6 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
 
         // Сообщаем менеджеру, что нужно переключиться на камеру турели
         PlayerInputManager.Instance.SwitchController(_cameraController);
-    }
-
-    public override void ExitTurret()
-    {
-        base.ExitTurret();
-        Faction = _originalFaction;
     }
 
     public void HandleInput(in InputEvent @event)

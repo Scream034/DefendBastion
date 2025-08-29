@@ -131,11 +131,11 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     {
         get
         {
-            if (CurrentState == TurretState.Idle && HasAmmo && IsAlive)
+            if (CurrentState == TurretState.Idle && HasAmmo && Stats.IsAlive)
             {
                 return true;
             }
-            GD.Print($"{Name} Cant shoot: State={CurrentState}, HasAmmo={HasAmmo}, IsAlive={IsAlive}");
+            GD.Print($"{Name} Cant shoot: State={CurrentState}, HasAmmo={HasAmmo}, IsAlive={Stats.IsAlive}");
             return false;
         }
     }
