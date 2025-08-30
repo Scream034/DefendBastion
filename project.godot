@@ -12,9 +12,9 @@ config_version=5
 
 config/name="Bastion"
 config/description="This is tower defense game with waves in 3D minimal low-poly."
-config/version="0.07"
+config/version="0.08"
 run/main_scene="uid://csly2gql2kjru"
-config/features=PackedStringArray("4.4", "C#", "Forward Plus")
+config/features=PackedStringArray("4.5", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
@@ -22,6 +22,12 @@ config/icon="res://icon.svg"
 Constants="*res://scripts/Singletons/Constants.cs"
 GlobalEvents="*res://scripts/Singletons/GlobalEvents.cs"
 PlayerInputManager="*res://scripts/Singletons/PlayerInputManager.cs"
+
+[debug]
+
+draw_ai_los_rays=false
+draw_ai_los_rays.debug=false
+shapes/collision/draw_ai_los_rays=false
 
 [display]
 

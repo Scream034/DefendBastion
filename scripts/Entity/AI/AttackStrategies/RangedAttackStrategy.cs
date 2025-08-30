@@ -29,12 +29,12 @@ public partial class RangedAttackStrategy : Node, IAttackAction
         }
     }
 
-    public void Execute(AIEntity attacker, PhysicsBody3D target)
+    public void Execute(AIEntity attacker, LivingEntity target, Vector3 aimPosition)
     {
         if (_projectileScene == null) return;
 
         var spawnTransform = MuzzlePoint?.GlobalTransform ?? attacker.GlobalTransform;
-        spawnTransform = spawnTransform.LookingAt(target.GlobalPosition, Vector3.Up);
+        spawnTransform = spawnTransform.LookingAt(aimPosition, Vector3.Up);
 
         var projectile = ProjectilePool.Get(_projectileScene);
         projectile.RayQueryParams?.Exclude.Add(attacker.GetRid());

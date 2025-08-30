@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Game.Interfaces;
 using Godot;
 using Game.Entity.AI;
+using System.Collections.Generic;
 
 namespace Game.Entity;
 
@@ -43,6 +44,9 @@ public abstract partial class LivingEntity : CharacterBody3D, ICharacter, IFacti
     [ExportGroup("AI Threat Evaluation")]
     [Export(PropertyHint.Range, "0, 1000, 10")]
     public float BaseThreatValue { get; private set; } = 100f;
+
+    [ExportGroup("AI Targeting")]
+    [Export] public Marker3D[] SightPoints { get; private set; }
 
     /// <summary>
     /// Исполузуется для Godot-компилятора

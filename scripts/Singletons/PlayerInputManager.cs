@@ -53,14 +53,14 @@ public partial class PlayerInputManager : Node
         ProcessMouseInput(@event);
         ProcessOwnerInput(@event);
     }
-    
+
     public override void _Process(double delta)
     {
         // Передаем delta в контроллер камеры для плавного возврата тряски
         // Только если есть активный контроллер
         _activeController?.HandleMouseInput(Vector2.Zero, (float)delta);
     }
-    
+
     /// <summary>
     /// Обрабатывает ввод мыши
     /// </summary>
@@ -71,7 +71,7 @@ public partial class PlayerInputManager : Node
             _activeController?.HandleMouseInput(mouseMotion.Relative);
         }
     }
-    
+
     /// <summary>
     /// Обрабатывает ввод владельца камеры
     /// </summary>
@@ -96,7 +96,7 @@ public partial class PlayerInputManager : Node
             _activeController.ApplyShake(duration, finalStrength);
         }
     }
-    
+
     /// <summary>
     /// Проверяет, находится ли камера в радиусе действия тряски
     /// </summary>
@@ -104,7 +104,7 @@ public partial class PlayerInputManager : Node
     {
         return cameraPosition.DistanceTo(origin) <= maxRadius;
     }
-    
+
     /// <summary>
     /// Вычисляет финальную силу тряски с учетом расстояния
     /// </summary>

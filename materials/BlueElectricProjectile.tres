@@ -1,6 +1,6 @@
 [gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://q5ycsty2qh2y"]
 
-[ext_resource type="Shader" uid="uid://b2hy1f234kuix" path="res://shaders/ElectricalLine.gdshader" id="1_qvcju"]
+[ext_resource type="Shader" uid="uid://m5svtfv66c20" path="res://shaders/ElectricalLine.gdshader" id="1_qvcju"]
 
 [resource]
 render_priority = 0

@@ -1,3 +1,4 @@
+using Game.Entity.AI.Profiles;
 using Godot;
 
 namespace Game.Entity.AI.States;
@@ -17,18 +18,24 @@ public sealed class PatrolState(AIEntity context) : State(context)
 
     private SubState _currentSubState;
     private float _waitTimer;
+    private readonly AIPatrolProfile _profile = context.Profile.PatrolProfile;
 
     public override void Enter()
     {
-        GD.Print($"{_context.Name} enter Patrol.");
+        _context.SetMovementSpeed(_context.Profile.MovementProfile.NormalSpeed);
         _currentSubState = SubState.Moving;
         FindAndMoveToNewPatrolPoint();
     }
 
+
+    public override void Exit()
+    {
+        _context.MovementController.StopMovement();
+    }
+
     public override void Update(float delta)
     {
-        // Главный приоритет: если появилась цель, немедленно переходим в атаку.
-        if (_context.CurrentTarget != null)
+        if (_context.TargetingSystem.CurrentTarget != null)
         {
             _context.ChangeState(new AttackState(_context));
             return;
@@ -37,22 +44,16 @@ public sealed class PatrolState(AIEntity context) : State(context)
         switch (_currentSubState)
         {
             case SubState.Moving:
-                // Если мы дошли до цели...
-                if (_context.NavigationAgent.IsNavigationFinished())
+                if (_context.MovementController.NavigationAgent.IsNavigationFinished())
                 {
-                    // ...переключаемся в режим ожидания.
                     _currentSubState = SubState.Waiting;
                     SetWaitTimer();
-                    GD.Print($"{_context.Name} reached patrol point waiting for {_waitTimer:0.0} seconds.");
                 }
                 break;
-
             case SubState.Waiting:
                 _waitTimer -= delta;
-                // Если время ожидания вышло...
                 if (_waitTimer <= 0)
                 {
-                    // ...ищем новую точку и начинаем движение.
                     _currentSubState = SubState.Moving;
                     FindAndMoveToNewPatrolPoint();
                 }
@@ -60,28 +61,14 @@ public sealed class PatrolState(AIEntity context) : State(context)
         }
     }
 
-    public override void Exit()
-    {
-        // При выходе из состояния патрулирования (например, для атаки)
-        // мы останавливаем текущее движение, чтобы избежать "скольжения"
-        // к последней патрульной точке.
-        _context.StopMovement();
-        GD.Print($"{_context.Name} exit from Patrol.");
-    }
-
     /// <summary>
     /// Устанавливает таймер ожидания в соответствии с настройками в AIEntity.
     /// </summary>
     private void SetWaitTimer()
     {
-        if (_context.UseRandomWaitTime)
-        {
-            _waitTimer = (float)GD.RandRange(_context.MinPatrolWaitTime, _context.MaxPatrolWaitTime);
-        }
-        else
-        {
-            _waitTimer = _context.MaxPatrolWaitTime; // Используем максимальное значение как фиксированное
-        }
+        _waitTimer = _profile.UseRandomWaitTime
+            ? (float)GD.RandRange(_profile.MinPatrolWaitTime, _profile.MaxPatrolWaitTime)
+            : _profile.MaxPatrolWaitTime;
     }
 
     /// <summary>
@@ -90,27 +77,17 @@ public sealed class PatrolState(AIEntity context) : State(context)
     /// </summary>
     private void FindAndMoveToNewPatrolPoint()
     {
-        float radius;
+        float radius = _profile.UseRandomPatrolRadius
+            ? (float)GD.RandRange(_profile.MinPatrolRadius, _profile.MaxPatrolRadius)
+            : _profile.MaxPatrolRadius;
 
-        // Определяем радиус поиска в зависимости от настроек
-        if (_context.UseRandomPatrolRadius)
-        {
-            radius = (float)GD.RandRange(_context.MinPatrolRadius, _context.MaxPatrolRadius);
-        }
-        else
-        {
-            radius = _context.MaxPatrolRadius;
-        }
-
-        // 1. Генерируем случайную точку внутри 2D-окружности
-        var randomDirection = Vector2.FromAngle((float)GD.RandRange(0, Mathf.Tau)).Normalized();
+        var randomDirection = Vector2.FromAngle((float)GD.RandRange(0, Mathf.Tau));
         var targetPoint = _context.SpawnPosition + new Vector3(randomDirection.X, 0, randomDirection.Y) * radius;
 
-        // 2. Находим ближайшую к этой случайной точке валидную точку на навигационной сетке
         var navMap = _context.GetWorld3D().NavigationMap;
         var reachablePoint = NavigationServer3D.MapGetClosestPoint(navMap, targetPoint);
 
-        GD.Print($"{_context.Name} find new patrol point: {reachablePoint}");
-        _context.MoveTo(reachablePoint);
+        _context.MovementController.MoveTo(reachablePoint);
+        _context.LookController.SetInterestPoint(reachablePoint);
     }
 }

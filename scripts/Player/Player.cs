@@ -141,12 +141,12 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         _lastInteractable = currentInteractable;
     }
 
-    public void EnterTurret(BaseTurret turret)
+    public void EnterTurret(ControllableTurret turret)
     {
-        if (CurrentState != PlayerState.Normal || turret is not ControllableTurret controllableTurret) return;
+        if (CurrentState != PlayerState.Normal) return;
 
         CurrentState = PlayerState.InTurret;
-        CurrentTurret = controllableTurret;
+        CurrentTurret = turret;
         UI.Instance.HideInteractionText();
     }
 

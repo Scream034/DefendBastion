@@ -1,128 +1,65 @@
+// --- ИЗМЕНЕНИЯ ---
+// 1. Добавлено новое свойство-обертка `HasLineOfSightToCurrentTarget` для удобного и чистого доступа к результату кэшированной проверки LoS.
+// 2. Добавлен новый публичный метод `GetVisibleTargetPointFrom(LivingEntity target, Vector3 fromPosition)`, который позволяет делать
+//    проверку LoS из произвольной точки (например, от дула оружия), но все равно использует общую логику кэширования.
+// 3. Улучшена обработка уничтожения цели. `OnTargetEliminated` теперь без параметров. Класс сам отслеживает последнюю цель
+//    и ее позицию через новое приватное поле `_lastTrackedTarget`. Это упрощает код в состояниях (AttackState, PursuitState).
+// 4. Централизовано обновление `LastKnownTargetPosition`. Оно теперь происходит автоматически при наличии валидной цели.
+// -----------------
+
 using Godot;
 using Game.Entity.AI.Behaviors;
 using Game.Entity.AI.States;
 using System.Threading.Tasks;
 using Game.Interfaces;
-using System.Collections.Generic;
-using System.Linq;
-using System;
+using Game.Entity.AI.Profiles;
+using Game.Entity.AI.Components;
+using Game.Turrets;
+using Game.Entity.AI.Utils;
 
 namespace Game.Entity.AI
 {
-    /// <summary>
-    /// Главная задача, которую выполняет ИИ, когда не находится в бою.
-    /// </summary>
-    public enum AIMainTask
-    {
-        /// <summary>Патрулирование в случайных точках в радиусе от спавна.</summary>
-        FreePatrol,
-        /// <summary>Патрулирование по заданному пути (Path3D).</summary>
-        PathPatrol,
-        /// <summary>Движение по пути к конечной цели.</summary>
-        Assault
-    }
+    public enum AIMainTask { FreePatrol, PathPatrol, Assault }
+    public enum AssaultMode { Destroy, Rush }
 
-    /// <summary>
-    /// Режим поведения при выполнении задачи "Штурм".
-    /// </summary>
-    public enum AssaultMode
-    {
-        /// <summary>Атаковать всех врагов на пути к цели.</summary>
-        Destroy,
-        /// <summary>Игнорировать врагов и как можно быстрее добраться до цели.</summary>
-        Rush
-    }
-
-    /// <summary>
-    /// Базовый класс для всех сущностей, управляемых ИИ.
-    /// Инкапсулирует логику навигации, машину состояний и базовое поведение.
-    /// </summary>
     public abstract partial class AIEntity : MoveableEntity
     {
-        [ExportGroup("AI Mission Settings")]
-        [Export] public AIMainTask MainTask { get; private set; } = AIMainTask.FreePatrol;
-        [Export] public AssaultMode AssaultBehavior { get; private set; } = AssaultMode.Destroy;
-        [Export] public Path3D MissionPath { get; private set; }
-
-        [ExportGroup("AI Movement Profiles")]
-        [Export] public float SlowSpeed { get; private set; } = 3.0f;
-        [Export] public float NormalSpeed { get; private set; } = 5.0f;
-        [Export] public float FastSpeed { get; private set; } = 8.0f;
-
-        [ExportGroup("AI Patrol Parameters")]
-        [Export(PropertyHint.Range, "1, 20, 0.5")] public float BodyRotationSpeed { get; private set; } = 10f;
-        [Export(PropertyHint.Range, "1, 20, 0.5")] public float HeadRotationSpeed { get; private set; } = 15f;
-        [Export] public bool UseRandomPatrolRadius { get; private set; } = true;
-        [Export] public float MinPatrolRadius { get; private set; } = 5f;
-        [Export] public float MaxPatrolRadius { get; private set; } = 20f;
-        [Export] public bool UseRandomWaitTime { get; private set; } = true;
-        [Export(PropertyHint.Range, "0, 10, 0.5")] public float MinPatrolWaitTime { get; private set; } = 1.0f;
-        [Export(PropertyHint.Range, "0, 10, 0.5")] public float MaxPatrolWaitTime { get; private set; } = 3.0f;
-
-        [ExportGroup("AI Targetting System")]
-        /// <summary>
-        /// Как часто (в секундах) ИИ будет переоценивать цели в своем списке.
-        /// Более низкие значения делают ИИ более реактивным, но увеличивают нагрузку.
-        /// </summary>
-        [Export(PropertyHint.Range, "0.1, 2.0, 0.1")]
-        public float TargetEvaluationInterval = 0.5f;
-
-        [ExportGroup("AI Combat Parameters")]
-        /// <summary>
-        /// Шаг в метрах для поиска новой огневой позиции. Меньшие значения - точнее, но больше проверок.
-        /// </summary>
-        [Export(PropertyHint.Range, "0.5, 5.0, 0.1")] public float RepositionSearchStep { get; private set; } = 1.5f;
-
-        [ExportGroup("AI Post-Combat Behavior")]
-        [Export] public bool EnablePostCombatVigilance { get; private set; } = true;
-        [Export(PropertyHint.Range, "3, 15, 1")] public float VigilanceDuration { get; private set; } = 8.0f;
-        [Export] public bool AllowVigilanceStrafe { get; private set; } = true;
-        [Export(PropertyHint.Range, "0.1, 1.0, 0.1")] public float VigilanceRotationSpeedMultiplier { get; private set; } = 0.5f;
-
-        [ExportGroup("AI Look Behavior")]
-        [Export] public bool LookAtInterestPointWhileMoving { get; private set; } = true;
-        [Export(PropertyHint.Range, "0.5, 3.0, 0.1")] public float MinGlanceDuration { get; private set; } = 1.0f;
-        [Export(PropertyHint.Range, "1.0, 4.0, 0.1")] public float MaxGlanceDuration { get; private set; } = 2.5f;
-        [Export(PropertyHint.Range, "0.5, 3.0, 0.1")] public float MinLookForwardDuration { get; private set; } = 0.8f;
-        [Export(PropertyHint.Range, "1.0, 4.0, 0.1")] public float MaxLookForwardDuration { get; private set; } = 2.0f;
-
-        [ExportGroup("AI Aiming & Rotation Limits")]
-        [Export] public bool EnableHeadRotationLimits { get; private set; } = true;
-        [Export(PropertyHint.Range, "0, 180, 1")] public float MaxHeadYawDegrees { get; private set; } = 90f;
-        [Export(PropertyHint.Range, "0, 90, 1")] public float MaxHeadPitchDegrees { get; private set; } = 60f;
+        [ExportGroup("AI Configuration")]
+        [Export] public AIProfile Profile { get; private set; }
 
         [ExportGroup("Dependencies")]
-        [Export] private NavigationAgent3D _navigationAgent;
-        [Export] private Area3D _targetDetectionArea;
+        [Export] private AITargetingSystem _targetingSystem;
+        [Export] private AIMovementController _movementController;
+        [Export] private AILookController _lookController;
         [Export] private Node _combatBehaviorNode;
-        [Export] private Node3D _headPivot;
-        [Export] private Marker3D _eyesPosition; // Точка для проверки линии видимости
+        [Export] private Marker3D _eyesPosition;
 
-        public NavigationAgent3D NavigationAgent => _navigationAgent;
-
-        public PhysicsBody3D CurrentTarget { get; private set; }
+        public AITargetingSystem TargetingSystem => _targetingSystem;
+        public AIMovementController MovementController => _movementController;
+        public AILookController LookController => _lookController;
         public ICombatBehavior CombatBehavior { get; private set; }
+        public Marker3D EyesPosition => _eyesPosition;
+
         public Vector3 SpawnPosition { get; private set; }
-        public Vector3 LastKnownTargetPosition { get; set; }
+        public Vector3 LastKnownTargetPosition { get; private set; }
         public Vector3 InvestigationPosition { get; set; }
         public Vector3 LastEngagementPosition { get; set; }
 
-        public bool IsMoving => Velocity.LengthSquared() > 0.1f;
+        public bool IsMoving => Velocity.LengthSquared() > 0.01f;
+        public bool HasLineOfSightToCurrentTarget => GetVisibleTargetPoint(TargetingSystem.CurrentTarget).HasValue;
+        
+        private LivingEntity _lastTrackedTarget;
 
-        private Vector3? _currentLookTarget; // Точка, на которую ИИ должен поглядывать
-        private float _glanceTimer;
-        private bool _isGlancingAtTarget; // True - смотрим на цель, False - смотрим вперед
+        private Vector3? _cachedVisiblePoint = null;
+        private bool _isLoSCacheValidThisFrame = false;
+        private ulong _cacheFrame = ulong.MaxValue;
+        private Vector3 _cachedLoS_SelfPosition;
+        private Vector3 _cachedLoS_TargetPosition;
+        private const float LoSCacheInvalidationDistanceSqr = 0.0625f; // 0.25 * 0.25
 
         private State _currentState;
-        private State _defaultState; // Состояние, к которому ИИ возвращается после боя/тревоги
+        private State _defaultState;
         private bool _isAiActive = false;
-
-        /// <summary>
-        /// Список всех враждебных сущностей, которые в данный момент находятся в зоне обнаружения ИИ.
-        /// </summary>
-        private readonly List<PhysicsBody3D> _potentialTargets = [];
-
-        private float _targetEvaluationTimer;
 
         protected AIEntity(IDs id) : base(id) { }
         public AIEntity() { }
@@ -131,24 +68,20 @@ namespace Game.Entity.AI
         {
             base._Ready();
             SpawnPosition = GlobalPosition;
-            _targetEvaluationTimer = TargetEvaluationInterval; // Первый запуск оценки произойдет через interval
 
+#if DEBUG
             if (!ValidateDependencies())
             {
                 SetPhysicsProcess(false);
-                return;
+                throw new System.Exception($"Произошла ошибка инициализации AI: {Name}");
             }
+#endif
+            _targetingSystem.Initialize(this);
+            _movementController.Initialize(this);
+            _lookController.Initialize(this);
+            Profile.Initialize(this);
 
-            if (_targetDetectionArea != null)
-            {
-                _targetDetectionArea.BodyEntered += OnTargetDetected;
-                _targetDetectionArea.BodyExited += OnTargetLost;
-            }
-
-            if (GameManager.Instance.IsNavigationReady)
-            {
-                InitializeAI();
-            }
+            if (GameManager.Instance.IsNavigationReady) InitializeAI();
             else
             {
                 GD.Print($"{Name} waiting for navigation map...");
@@ -160,14 +93,9 @@ namespace Game.Entity.AI
         private void InitializeAI()
         {
             if (_isAiActive) return;
-
-            // GlobalPosition = NavigationServer3D.MapGetClosestPoint(GetWorld3D().NavigationMap, GlobalPosition);
-
             GD.Print($"{Name} initializing AI, navigation map is ready.");
             _isAiActive = true;
-
-            // Определяем "домашнее" состояние на основе настроек
-            _defaultState = MainTask switch
+            _defaultState = Profile.MainTask switch
             {
                 AIMainTask.PathPatrol or AIMainTask.Assault => new PathFollowingState(this),
                 _ => new PatrolState(this),
@@ -177,131 +105,81 @@ namespace Game.Entity.AI
 
         private bool ValidateDependencies()
         {
-            if (_navigationAgent == null) { GD.PushError($"NavigationAgent3D not assigned to {Name}!"); return false; }
+            if (Profile == null) { GD.PushError($"AIProfile not assigned to {Name}!"); return false; }
+            if (_targetingSystem == null) { GD.PushError($"AITargetingSystem not assigned to {Name}!"); return false; }
+            if (_movementController == null) { GD.PushError($"AIMovementController not assigned to {Name}!"); return false; }
+            if (_lookController == null) { GD.PushError($"AILookController not assigned to {Name}!"); return false; }
             if (_combatBehaviorNode is ICombatBehavior behavior) { CombatBehavior = behavior; }
             else { GD.PushError($"CombatBehavior for {Name} is not assigned or invalid!"); return false; }
-
-            if (_headPivot == null) { GD.PushWarning($"HeadPivot not assigned to {Name}. Head rotation will not work."); }
             if (_eyesPosition == null) { GD.PushWarning($"EyesPosition not assigned to {Name}. Line-of-sight checks will originate from the entity's center."); }
-
-            if ((MainTask == AIMainTask.PathPatrol || MainTask == AIMainTask.Assault) && MissionPath == null)
+            if ((Profile.MainTask == AIMainTask.PathPatrol || Profile.MainTask == AIMainTask.Assault) && Profile.MissionNodePath == null)
             {
-                GD.PushError($"AI {Name} is set to PathPatrol or Assault but has no MissionPath assigned!");
+                GD.PushError($"AI {Name} is set to PathPatrol or Assault but has no MissionPath assigned in its profile!");
                 return false;
             }
-
             return true;
         }
 
         public override void _PhysicsProcess(double delta)
         {
             base._PhysicsProcess(delta);
+            if (!_isAiActive) return;
 
+            var currentTarget = TargetingSystem.CurrentTarget;
+            if (IsInstanceValid(currentTarget))
+            {
+                _lastTrackedTarget = currentTarget;
+                LastKnownTargetPosition = currentTarget.GlobalPosition;
+            }
+            
             _currentState?.Update((float)delta);
-
-            _targetEvaluationTimer -= (float)delta;
-            if (_targetEvaluationTimer <= 0f)
-            {
-                EvaluateTargets();
-                _targetEvaluationTimer = TargetEvaluationInterval;
-            }
-
-            // --- ОБНОВЛЕННАЯ ЛОГИКА ДВИЖЕНИЯ И ВРАЩЕНИЯ ---
-
-            // 1. Управление движением (как и раньше)
-            Vector3 targetVelocity = Vector3.Zero;
-            if (_isAiActive && !_navigationAgent.IsNavigationFinished())
-            {
-                var nextPoint = _navigationAgent.GetNextPathPosition();
-                var direction = GlobalPosition.DirectionTo(nextPoint);
-                targetVelocity = direction * Speed;
-            }
-            Velocity = Velocity.Lerp(targetVelocity, Acceleration * (float)delta);
-
-            // 2. Вращение тела (всегда по направлению движения)
-            var horizontalVelocity = Velocity with { Y = 0 };
-            if (horizontalVelocity.LengthSquared() > 0.1f)
-            {
-                var targetRotation = Basis.LookingAt(horizontalVelocity.Normalized()).Orthonormalized();
-                Basis = Basis.Orthonormalized().Slerp(targetRotation, BodyRotationSpeed * (float)delta);
-            }
-
-            // 3. Вращение головы (сложная логика)
-            HandleHeadRotation((float)delta);
-
-            MoveAndSlide();
         }
 
         public override async Task<bool> DamageAsync(float amount, LivingEntity source = null)
         {
             if (!await base.DamageAsync(amount, source)) return false;
-
-            // РЕАКЦИЯ НА УРОН
-            if (source != null && _currentState is not AttackState)
+            if (source != null && _currentState is not AttackState && TargetingSystem.CurrentTarget == null)
             {
-                GD.Print($"{Name} took damage from {source.Name} direction!");
                 InvestigationPosition = source.GlobalPosition;
-                // Немедленно переходим в состояние расследования, если мы не в активном бою с другой целью
-                if (CurrentTarget == null)
-                {
-                    ChangeState(new InvestigateState(this));
-                }
+                ChangeState(new InvestigateState(this));
             }
             return true;
         }
 
-        private void HandleHeadRotation(float delta)
+        #region Line-of-Sight Methods
+        
+        public Vector3? GetVisibleTargetPoint(LivingEntity target)
         {
-            Vector3 finalLookPosition;
+            var fromPosition = EyesPosition?.GlobalPosition ?? GlobalPosition;
+            return GetVisibleTargetPointFrom(target, fromPosition);
+        }
+        
+        public Vector3? GetVisibleTargetPointFrom(LivingEntity target, Vector3 fromPosition)
+        {
+            if (!IsInstanceValid(target)) return null;
 
-            // Приоритет №1: Если есть враг, всегда смотрим на него.
-            if (CurrentTarget != null)
+            var currentFrame = (ulong)GetTree().GetFrame();
+            if (_cacheFrame == currentFrame &&
+                _cachedLoS_SelfPosition.DistanceSquaredTo(GlobalPosition) < LoSCacheInvalidationDistanceSqr &&
+                _cachedLoS_TargetPosition.DistanceSquaredTo(target.GlobalPosition) < LoSCacheInvalidationDistanceSqr)
             {
-                finalLookPosition = CurrentTarget.GlobalPosition;
-            }
-            // Приоритет №2: Если разрешено, используем механику "поглядывания" на точку интереса.
-            else if (LookAtInterestPointWhileMoving && _currentLookTarget.HasValue && IsMoving)
-            {
-                _glanceTimer -= delta;
-                if (_glanceTimer <= 0f)
-                {
-                    // Переключаем состояние взгляда
-                    _isGlancingAtTarget = !_isGlancingAtTarget;
-                    // Устанавливаем новый таймер для следующего действия
-                    _glanceTimer = _isGlancingAtTarget
-                        ? (float)GD.RandRange(MinGlanceDuration, MaxGlanceDuration)
-                        : (float)GD.RandRange(MinLookForwardDuration, MaxLookForwardDuration);
-                }
-
-                finalLookPosition = _isGlancingAtTarget
-                    ? _currentLookTarget.Value
-                    : GlobalPosition + Velocity.Normalized() * 10f; // Смотрим вперед
-            }
-            // Приоритет №3 (по умолчанию): Если нет врага и нет точки интереса, смотрим туда, куда идем.
-            else
-            {
-                finalLookPosition = GlobalPosition + Velocity.Normalized() * 10f;
+                return _cachedVisiblePoint;
             }
 
-            // Предотвращаем взгляд в самого себя, если скорость нулевая
-            if (finalLookPosition.IsEqualApprox(GlobalPosition)) return;
+            var exclude = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
+            var resultPoint = AITacticalAnalysis.GetFirstVisiblePoint(this, fromPosition, target, exclude);
 
-            RotateHeadTowards(finalLookPosition, delta);
+            _cachedVisiblePoint = resultPoint;
+            _cacheFrame = currentFrame;
+            _cachedLoS_SelfPosition = GlobalPosition;
+            _cachedLoS_TargetPosition = target.GlobalPosition;
+
+            return resultPoint;
         }
 
-        /// <summary>
-        /// Устанавливает или сбрасывает точку интереса для взгляда ИИ.
-        /// </summary>
-        /// <param name="targetPosition">Позиция для наблюдения или null для сброса.</param>
-        public void SetLookTarget(Vector3? targetPosition)
-        {
-            _currentLookTarget = targetPosition;
-            // Сбрасываем таймер, чтобы ИИ сразу принял решение, куда смотреть.
-            _glanceTimer = 0;
-            _isGlancingAtTarget = true; // Начинаем со взгляда на цель
-            GD.Print($"{Name} setting look target to: {targetPosition?.ToString() ?? "None"}");
-        }
+        #endregion
 
+        #region State Machine and Event Handling
         public void ChangeState(State newState)
         {
             _currentState?.Exit();
@@ -312,371 +190,72 @@ namespace Game.Entity.AI
 
         public void ReturnToDefaultState()
         {
-            ClearTarget();
+            TargetingSystem.ClearTarget();
             ChangeState(_defaultState);
         }
 
-        public void SetAttackTarget(PhysicsBody3D target)
+        public bool NeedsToReevaluateTarget()
         {
-            if (target == this) return;
-
-            // Если новая цель отличается от текущей, или у нас не было цели
-            if (target != CurrentTarget)
+            var currentTarget = TargetingSystem.CurrentTarget;
+            if (currentTarget == null || !IsInstanceValid(currentTarget)) return true;
+            if (currentTarget is ControllableTurret turret && turret.CurrentController == null)
             {
-                // Проверяем, что цель вообще можно атаковать
-                if (target is not ICharacter || target is not IFactionMember)
-                {
-                    GD.PrintErr($"Attempted to target {target.Name}, which is not a valid target.");
-                    return;
-                }
+                return true;
+            }
+            return false;
+        }
 
-                CurrentTarget = target;
-                GD.Print($"{Name} new best target is: {target.Name}");
-
-                // Если мы сейчас не в состоянии атаки, мы должны немедленно в него перейти,
-                // чтобы атаковать новую цель. Это позволяет прервать состояния Pursuit и Investigate,
-                // если появилась более актуальная угроза.
-                if (_currentState is not AttackState)
-                {
-                    ChangeState(new AttackState(this));
-                }
+        public void OnNewTargetAcquired(PhysicsBody3D newTarget)
+        {
+            if (_currentState is not AttackState && _currentState is not PursuitState)
+            {
+                ChangeState(new AttackState(this));
             }
         }
 
-        public void ClearTarget()
+        public void OnTargetLostLineOfSight(PhysicsBody3D lostTarget)
         {
-            CurrentTarget = null;
-        }
-
-        /// <summary>
-        /// Проверяет прямую видимость от "глаз" ИИ до центра цели.
-        /// Это основной метод для обнаружения и преследования.
-        /// </summary>
-        public bool HasLineOfSightTo(PhysicsBody3D target)
-        {
-            if (target == null || !IsInstanceValid(target)) return false;
-
-            var fromPosition = _eyesPosition?.GlobalPosition ?? GlobalPosition;
-            return HasClearPath(fromPosition, target.GlobalPosition, [GetRid(), target.GetRid()]);
-        }
-
-        /// <summary>
-        /// Универсальный метод проверки прямой видимости между двумя точками.
-        /// </summary>
-        /// <param name="from">Начальная точка луча.</param>
-        /// <param name="to">Конечная точка луча.</param>
-        /// <param name="exclude">Список объектов, которые луч должен игнорировать.</param>
-        /// <param name="collisionMask">Маска физики для проверки.</param>
-        /// <returns>True, если между точками нет препятствий.</returns>
-        public bool HasClearPath(Vector3 from, Vector3 to, Godot.Collections.Array<Rid> exclude = null, uint collisionMask = 1)
-        {
-            var spaceState = GetWorld3D().DirectSpaceState;
-            var query = PhysicsRayQueryParameters3D.Create(from, to, collisionMask, exclude);
-            var result = spaceState.IntersectRay(query);
-            return result.Count == 0;
-        }
-
-        /// <summary>
-        /// [МЕТОД 1: СТАНДАРТНОЕ ЗОНДИРОВАНИЕ] Ищет позицию, "прощупывая" пространство вокруг себя 
-        /// в приоритетных направлениях (фланги, отступление).
-        /// </summary>
-        public Vector3? FindOptimalFiringPosition_Probing(PhysicsBody3D target, Vector3 weaponLocalOffset, float searchRadius)
-        {
-            if (target == null || !IsInstanceValid(target)) return null;
-
-            var targetPosition = target.GlobalPosition;
-            var navMap = GetWorld3D().NavigationMap;
-            var exclusionList = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
-
-            var directionToTarget = GlobalPosition.DirectionTo(targetPosition).Normalized();
-            var flankDirection = directionToTarget.Cross(Vector3.Up).Normalized();
-
-            var searchVectors = new Vector3[]
+            if (lostTarget == TargetingSystem.CurrentTarget && _currentState is AttackState)
             {
-                flankDirection, -flankDirection, -directionToTarget, directionToTarget,
-                (flankDirection - directionToTarget).Normalized(), (-flankDirection - directionToTarget).Normalized(),
-            };
-
-            var bestPosition = ProbeDirections(searchVectors, targetPosition, weaponLocalOffset, searchRadius, navMap, exclusionList);
-            if (bestPosition.HasValue)
-            {
-                GD.Print($"{Name} found position via standard probing at {bestPosition.Value}");
-                return bestPosition;
-            }
-
-            GD.PushWarning($"{Name} could not find any optimal firing position via standard probing.");
-            return null;
-        }
-
-        /// <summary>
-        /// [МЕТОД 2: ГИБРИДНЫЙ АНАЛИЗ] Продвинутый алгоритм. Сначала определяет препятствие,
-        /// затем вычисляет оптимальные векторы для его обхода (вдоль поверхности) и использует
-        /// их для приоритетного зондирования. Если анализ не удался, откатывается к стандартному методу.
-        /// </summary>
-        public Vector3? FindOptimalFiringPosition_Hybrid(PhysicsBody3D target, Vector3 weaponLocalOffset, float searchRadius)
-        {
-            if (target == null || !IsInstanceValid(target)) return null;
-
-            var targetPosition = target.GlobalPosition;
-            var navMap = GetWorld3D().NavigationMap;
-            var exclusionList = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
-
-            // 1. Анализ препятствия
-            var weaponPosition = GlobalPosition + (Basis * weaponLocalOffset);
-            var spaceState = GetWorld3D().DirectSpaceState;
-            var query = PhysicsRayQueryParameters3D.Create(weaponPosition, targetPosition, 1, [GetRid(), target.GetRid()]);
-            var result = spaceState.IntersectRay(query);
-
-            List<Vector3> searchVectors = new List<Vector3>();
-
-            if (result.Count > 0)
-            {
-                var hitNormal = (Vector3)result["normal"];
-                GD.Print($"{Name} obstacle detected. Surface normal: {hitNormal.Normalized()}");
-
-                // 2. Вычисление векторов обхода (вдоль поверхности препятствия)
-                var surfaceTangent = hitNormal.Cross(Vector3.Up).Normalized();
-
-                // Если тангенс нулевой (например, смотрим ровно вверх или вниз на плоскую поверхность),
-                // используем альтернативный расчет.
-                if (surfaceTangent.IsZeroApprox())
-                {
-                    var directionToTarget = GlobalPosition.DirectionTo(targetPosition).Normalized();
-                    surfaceTangent = directionToTarget.Cross(hitNormal).Normalized();
-                }
-
-                // 3. Формирование приоритетного списка векторов
-                searchVectors.Add(surfaceTangent);      // Двигаться вдоль стены в одну сторону
-                searchVectors.Add(-surfaceTangent);     // Двигаться вдоль стены в другую сторону
-            }
-
-            // 4. Добавляем стандартные векторы в качестве запасного варианта (fallback)
-            var dirToTarget = GlobalPosition.DirectionTo(targetPosition).Normalized();
-            var flankDir = dirToTarget.Cross(Vector3.Up).Normalized();
-            searchVectors.Add(flankDir);
-            searchVectors.Add(-flankDir);
-            searchVectors.Add(-dirToTarget);
-
-            // 5. Выполняем зондирование по вычисленным векторам
-            var bestPosition = ProbeDirections(searchVectors.ToArray(), targetPosition, weaponLocalOffset, searchRadius, navMap, exclusionList);
-            if (bestPosition.HasValue)
-            {
-                GD.Print($"{Name} found position via hybrid analysis at {bestPosition.Value}");
-                return bestPosition;
-            }
-
-            GD.PushWarning($"{Name} could not find any optimal firing position via hybrid analysis.");
-            return null;
-        }
-
-        private Vector3? ProbeDirections(Vector3[] directions, Vector3 targetPosition, Vector3 weaponLocalOffset, float searchRadius, Rid navMap, Godot.Collections.Array<Rid> exclusionList)
-        {
-            foreach (var vector in directions.Where(v => !v.IsZeroApprox()))
-            {
-                for (float offset = RepositionSearchStep; offset <= searchRadius; offset += RepositionSearchStep)
-                {
-                    var candidatePoint = GlobalPosition + vector * offset;
-                    var navMeshPoint = NavigationServer3D.MapGetClosestPoint(navMap, candidatePoint);
-
-                    if (navMeshPoint.DistanceSquaredTo(candidatePoint) > RepositionSearchStep * RepositionSearchStep)
-                    {
-                        continue;
-                    }
-
-                    var weaponPositionAtCandidate = navMeshPoint + (Basis * weaponLocalOffset);
-
-                    if (HasClearPath(weaponPositionAtCandidate, targetPosition, exclusionList))
-                    {
-                        return navMeshPoint;
-                    }
-                }
-            }
-            return null;
-        }
-
-        private void EvaluateTargets()
-        {
-            // 1. Очищаем список от уничтоженных или невалидных целей
-            for (int i = _potentialTargets.Count - 1; i >= 0; i--)
-            {
-                var target = _potentialTargets[i];
-                if (!IsInstanceValid(target) || (target is ICharacter character && character.Health <= 0))
-                {
-                    _potentialTargets.RemoveAt(i);
-                    // ВАЖНО: Если уничтожена наша ТЕКУЩАЯ цель, обрабатываем это событие.
-                    if (target == CurrentTarget)
-                    {
-                        OnCurrentTargetDestroyed(target);
-                    }
-                }
-            }
-
-            if (_potentialTargets.Count == 0 && CurrentTarget == null)
-            {
-                // Если в зоне видимости нет врагов, и текущей цели тоже нет, то ничего не делаем.
-                // Переход в PursuitState обрабатывается в AttackState при потере LoS.
-                return;
-            }
-
-            // 2. Получаем лучшую цель от нашего оценщика
-            var bestTarget = AITargetEvaluator.GetBestTarget(this, _potentialTargets);
-
-            // 3. Устанавливаем лучшую цель как текущую
-            if (bestTarget != null)
-            {
-                SetAttackTarget(bestTarget);
+                ChangeState(new PursuitState(this));
             }
         }
-
-        private void OnCurrentTargetDestroyed(PhysicsBody3D destroyedTarget)
+        
+        public void OnTargetEliminated()
         {
-            GD.Print($"{Name}: My target [{destroyedTarget.Name}] was destroyed.");
-            var lastPosition = destroyedTarget.GlobalPosition;
+            var eliminatedEntity = _lastTrackedTarget; // Используем сохраненную ссылку
+            TargetingSystem.OnTargetEliminated(eliminatedEntity);
 
-            ClearTarget();
-
-            if (destroyedTarget is IContainerEntity container)
+            if (IsInstanceValid(eliminatedEntity) && eliminatedEntity is IContainerEntity container)
             {
                 var containedEntity = container.GetContainedEntity();
-                if (containedEntity != null && IsInstanceValid(containedEntity) && IsHostile(containedEntity as IFactionMember))
+                if (IsInstanceValid(containedEntity) && IsHostile(containedEntity))
                 {
-                    GD.Print($"{Name}: Target was a container. Now targeting its content: [{containedEntity.Name}].");
-                    if (!_potentialTargets.Contains(containedEntity))
-                    {
-                        _potentialTargets.Add(containedEntity);
-                    }
-                    SetAttackTarget(containedEntity);
                     return;
                 }
             }
 
-            // После всех проверок решаем, что делать дальше.
-            DecideNextActionAfterCombat(lastPosition);
+            DecideNextActionAfterCombat(LastKnownTargetPosition);
         }
 
-        /// <summary>
-        /// Централизованный метод, который решает, перейти ли в состояние бдительности
-        /// или вернуться к стандартным задачам после окончания боя.
-        /// </summary>
         public void DecideNextActionAfterCombat(Vector3 lastEngagementPosition)
         {
-            // Убеждаемся, что текущей цели точно нет.
-            ClearTarget();
-
-            // Проверяем, включено ли поведение бдительности и не выполняем ли мы срочную задачу штурма.
-            if (EnablePostCombatVigilance && (MainTask != AIMainTask.Assault || AssaultBehavior != AssaultMode.Rush))
+            if (Profile.CombatProfile.EnablePostCombatVigilance && (Profile.MainTask != AIMainTask.Assault || Profile.AssaultBehavior != AssaultMode.Rush))
             {
                 LastEngagementPosition = lastEngagementPosition;
                 ChangeState(new VigilanceState(this));
             }
-            else
+            else if (TargetingSystem.CurrentTarget == null)
             {
-                // Если бдительность отключена, сразу ищем новые цели.
-                EvaluateTargets();
-                // Если новых целей нет, возвращаемся к стандартному поведению.
-                if (CurrentTarget == null)
-                {
-                    ReturnToDefaultState();
-                }
+                ReturnToDefaultState();
             }
         }
+        #endregion
 
-        #region Movement API for States
+        #region API for States
         public void SetMovementSpeed(float speed)
         {
             Speed = speed;
-        }
-
-        public void MoveTo(Vector3 targetPosition)
-        {
-            if (_navigationAgent.TargetPosition == targetPosition) return;
-            _navigationAgent.TargetPosition = targetPosition;
-        }
-
-        public void StopMovement()
-        {
-            _navigationAgent.TargetPosition = GlobalPosition;
-        }
-        #endregion
-
-        #region Rotation API
-        public void RotateBodyTowards(Vector3 targetPoint, float delta)
-        {
-            var direction = GlobalPosition.DirectionTo(targetPoint) with { Y = 0 };
-            if (!direction.IsZeroApprox())
-            {
-                var targetRotation = Basis.LookingAt(direction.Normalized()).Orthonormalized();
-                Basis = Basis.Orthonormalized().Slerp(targetRotation, BodyRotationSpeed * delta);
-            }
-        }
-
-        public void RotateHeadTowards(Vector3 targetPoint, float delta)
-        {
-            if (_headPivot == null) return;
-
-            var localTarget = _headPivot.ToLocal(targetPoint).Normalized();
-
-            // Проверяем, не является ли вектор взгляда почти вертикальным.
-            // Скалярное произведение с вектором "вверх" будет близко к 1 (вверх) или -1 (вниз), если они параллельны.
-            const float verticalThreshold = 0.999f;
-            if (Mathf.Abs(localTarget.Dot(Vector3.Up)) > verticalThreshold)
-            {
-                // Пропускаем вращение в этом кадре, чтобы избежать ошибки.
-                return;
-            }
-
-            var targetRotation = Basis.LookingAt(localTarget).Orthonormalized();
-
-            if (EnableHeadRotationLimits)
-            {
-                var euler = targetRotation.GetEuler();
-                float yawLimit = Mathf.DegToRad(MaxHeadYawDegrees);
-                float pitchLimit = Mathf.DegToRad(MaxHeadPitchDegrees);
-                euler.Y = Mathf.Clamp(euler.Y, -yawLimit, yawLimit);
-                euler.X = Mathf.Clamp(euler.X, -pitchLimit, pitchLimit);
-                targetRotation = Basis.FromEuler(euler);
-            }
-
-            _headPivot.Basis = _headPivot.Basis.Orthonormalized().Slerp(targetRotation, HeadRotationSpeed * delta);
-        }
-        #endregion
-
-        #region Signal Handlers
-        private void OnTargetDetected(Node3D body)
-        {
-            if (body is PhysicsBody3D physicsBody && body is IFactionMember factionMember && body != this)
-            {
-                GD.Print($"{Name} finding {body.Name} ({factionMember.Faction}).");
-                if (IsHostile(factionMember) && body is ICharacter)
-                {
-                    if (!_potentialTargets.Contains(physicsBody))
-                    {
-                        GD.Print($"{Name} added {body.Name} to potential targets.");
-                        _potentialTargets.Add(physicsBody);
-                        EvaluateTargets();
-                    }
-                }
-            }
-        }
-
-        private void OnTargetLost(Node3D body)
-        {
-            if (body is PhysicsBody3D physicsBody)
-            {
-                if (_potentialTargets.Remove(physicsBody))
-                {
-                    GD.Print($"{Name} removed {body.Name} from potential targets.");
-                }
-
-                if (body == CurrentTarget)
-                {
-                    if (_currentState is AttackState)
-                    {
-                        LastKnownTargetPosition = CurrentTarget.GlobalPosition;
-                        ChangeState(new PursuitState(this));
-                    }
-                }
-            }
         }
         #endregion
     }

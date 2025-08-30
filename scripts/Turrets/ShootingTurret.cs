@@ -219,7 +219,9 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
 
         // NOTE: Используем GlobalTransform точки вылета, если она есть, иначе - самой турели.
         var spawnPoint = BarrelEnd != null ? BarrelEnd.GlobalTransform : GlobalTransform;
-        var projectile = CreateProjectile(spawnPoint);
+
+        // Передаем себя (this) как инициатора выстрела.
+        var projectile = CreateProjectile(spawnPoint, this);
         GD.Print($"{Name} Shooting with {projectile.Name} at: {BarrelEnd.Position}");
     }
 
@@ -236,8 +238,11 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
         // Добавляем снаряд в корень сцены, чтобы он не зависел от турели.
         Constants.Root.AddChild(projectile);
 
+        // Если инициатор не был передан явно, назначаем им эту турель.
+        var finalInitiator = initiator ?? this;
+
         // Инициализируем снаряд после того, как он добавлен в сцену и его позиция установлена
-        projectile.Initialize(initiator);
+        projectile.Initialize(finalInitiator);
         return projectile;
     }
 

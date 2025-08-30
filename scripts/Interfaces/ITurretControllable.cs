@@ -5,6 +5,6 @@ namespace Game.Interfaces;
 
 public interface ITurretControllable
 {
-    void EnterTurret(BaseTurret turret);
+    void EnterTurret(ControllableTurret turret);
     void ExitTurret(Vector3 exitPosition);
 }

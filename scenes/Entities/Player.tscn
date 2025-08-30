@@ -1,8 +1,8 @@
 [gd_scene load_steps=5 format=3 uid="uid://c48vh6kflnrnw"]
 
-[ext_resource type="Script" uid="uid://deveiov4od6ni" path="res://scripts/Player/Player.cs" id="1_k5qh4"]
-[ext_resource type="Script" uid="uid://c0vcyf1vey4ap" path="res://scripts/Player/PlayerHead.cs" id="2_vm2lv"]
-[ext_resource type="Script" uid="uid://civjue1jr2k80" path="res://scripts/Components/Nodes/Shaker3D.cs" id="3_dnc2b"]
+[ext_resource type="Script" uid="uid://pmveimvnm0l" path="res://scripts/Player/Player.cs" id="1_k5qh4"]
+[ext_resource type="Script" uid="uid://b33hvq88td6f1" path="res://scripts/Player/PlayerHead.cs" id="2_vm2lv"]
+[ext_resource type="Script" uid="uid://dx6u4adsk5r58" path="res://scripts/Components/Nodes/Shaker3D.cs" id="3_dnc2b"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_w7kh3"]
 
@@ -17,7 +17,6 @@ Faction = 1
 script = ExtResource("3_dnc2b")
 _target = NodePath("../Head")
 Type = 2
-metadata/_custom_type_script = "uid://cx67w2h83h0j7"
 
 [node name="InteractionTimer" type="Timer" parent="."]
 process_priority = -1
@@ -34,7 +33,6 @@ script = ExtResource("2_vm2lv")
 Camera = NodePath("Camera3D")
 _interactionRay = NodePath("InteractionRayCast3D")
 _shaker = NodePath("../Shaker3D")
-metadata/_custom_type_script = "uid://ceko2b8r6v2y1"
 
 [node name="InteractionRayCast3D" type="RayCast3D" parent="Head"]
 target_position = Vector3(0, 0, -2.3)

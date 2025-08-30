@@ -1,10 +1,44 @@
-[gd_scene load_steps=13 format=3 uid="uid://cnm2m7s2pec0k"]
+[gd_scene load_steps=26 format=3 uid="uid://cnm2m7s2pec0k"]
 
-[ext_resource type="Script" uid="uid://djciuniju3xe0" path="res://scripts/Entity/ShortShip.cs" id="1_lcrii"]
-[ext_resource type="Script" uid="uid://bfchrapokbuma" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="2_lcrii"]
-[ext_resource type="Script" uid="uid://diup2b7nl2fv6" path="res://scripts/Entity/AI/AttackStrategies/RangedAttackStrategy.cs" id="3_cti50"]
+[ext_resource type="Script" uid="uid://badjb3rcfs5lo" path="res://scripts/Entity/ShortShip.cs" id="1_lcrii"]
+[ext_resource type="Script" uid="uid://ccueoke03fjsg" path="res://scripts/Entity/AI/Profilies/AIProfile.cs" id="2_7cq20"]
+[ext_resource type="Script" uid="uid://rtgp7soq6y7y" path="res://scripts/Entity/AI/Profilies/AICombatProfile.cs" id="2_ax7fu"]
+[ext_resource type="Script" uid="uid://testxfxhq2j" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="2_lcrii"]
+[ext_resource type="Script" uid="uid://dmsgx3x4266d6" path="res://scripts/Entity/AI/AttackStrategies/RangedAttackStrategy.cs" id="3_cti50"]
+[ext_resource type="Script" uid="uid://na4nrs3prgm4" path="res://scripts/Entity/AI/Profilies/AILookProfile.cs" id="3_oyrvu"]
+[ext_resource type="Script" uid="uid://d0rbe32jfbfpx" path="res://scripts/Entity/AI/Components/AILookController.cs" id="3_syiwd"]
+[ext_resource type="Script" uid="uid://j16ladt4481x" path="res://scripts/Entity/AI/Components/AIMovementController.cs" id="4_88h4u"]
+[ext_resource type="Script" uid="uid://c7hnkuof7yfqy" path="res://scripts/Entity/AI/Profilies/AIMovementProfile.cs" id="4_a6sgv"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="4_lcrii"]
 [ext_resource type="AudioStream" uid="uid://d1i4b4dxh5s0g" path="res://sounds/electric_impact.wav" id="4_syiwd"]
+[ext_resource type="Script" uid="uid://crghqd81eht0b" path="res://scripts/Entity/AI/Profilies/AIPatrolProfile.cs" id="5_afqxp"]
+[ext_resource type="Script" uid="uid://bpj0yj5s7c2sn" path="res://scripts/Entity/AI/Components/AITargetingSystem.cs" id="6_v2rnk"]
+
+[sub_resource type="Resource" id="Resource_pmaxb"]
+script = ExtResource("2_ax7fu")
+metadata/_custom_type_script = "uid://8ocvhoc155cc"
+
+[sub_resource type="Resource" id="Resource_i3yv7"]
+script = ExtResource("3_oyrvu")
+MinLookForwardDuration = 0.8
+metadata/_custom_type_script = "uid://mfi5lttimbhk"
+
+[sub_resource type="Resource" id="Resource_w7ywg"]
+script = ExtResource("4_a6sgv")
+metadata/_custom_type_script = "uid://djqrbt2cu6u0v"
+
+[sub_resource type="Resource" id="Resource_5snbc"]
+script = ExtResource("5_afqxp")
+metadata/_custom_type_script = "uid://daxgpbpdyprux"
+
+[sub_resource type="Resource" id="Resource_syiwd"]
+script = ExtResource("2_7cq20")
+MissionNodePath = null
+MovementProfile = SubResource("Resource_w7ywg")
+PatrolProfile = SubResource("Resource_5snbc")
+CombatProfile = SubResource("Resource_pmaxb")
+LookProfile = SubResource("Resource_i3yv7")
+metadata/_custom_type_script = "uid://dpbm06i1nam65"
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_ypjiq"]
 playback_mode = 1
@@ -13,7 +47,7 @@ streams_count = 1
 stream_0/stream = ExtResource("4_syiwd")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_etufe"]
-size = Vector3(62.4294, 18.0688, 60.0946)
+size = Vector3(62.4294, 18.0688, 121.343)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_lcrii"]
 size = Vector3(3, 4.52332, 3)
@@ -41,30 +75,42 @@ albedo_color = Color(0.0745098, 0, 0.0235294, 1)
 material = SubResource("ORMMaterial3D_ypjiq")
 size = Vector3(3, 4, 3)
 
-[node name="ShortShip" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "_navigationAgent", "_targetDetectionArea", "_combatBehaviorNode", "_headPivot", "_eyesPosition")]
+[node name="ShortShip" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "_targetingSystem", "_movementController", "_lookController", "_combatBehaviorNode", "_eyesPosition", "SightPoints")]
 collision_layer = 5
 collision_mask = 5
 script = ExtResource("1_lcrii")
 _audio = NodePath("AudioStreamPlayer3D")
-SlowSpeed = 5.0
-NormalSpeed = 7.0
-FastSpeed = 10.0
-_navigationAgent = NodePath("NavigationAgent3D")
-_targetDetectionArea = NodePath("DetectionArea3D")
+Profile = SubResource("Resource_syiwd")
+_targetingSystem = NodePath("AITargetingSystem")
+_movementController = NodePath("AIMovementController")
+_lookController = NodePath("AILookController")
 _combatBehaviorNode = NodePath("CombatBehavior")
-_headPivot = NodePath("CollisionShape3D/Head")
 _eyesPosition = NodePath("CollisionShape3D/EyesPoint")
 Faction = 2
+SightPoints = []
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 3.3
 target_desired_distance = 3.3
 height = 6.6
 radius = 3.3
+debug_enabled = true
+
+[node name="AILookController" type="Node" parent="."]
+script = ExtResource("3_syiwd")
+
+[node name="AIMovementController" type="Node" parent="." node_paths=PackedStringArray("_navigationAgent", "_headPivot")]
+script = ExtResource("4_88h4u")
+_navigationAgent = NodePath("../NavigationAgent3D")
+_headPivot = NodePath("../CollisionShape3D/Head")
+
+[node name="AITargetingSystem" type="Node" parent="." node_paths=PackedStringArray("_targetDetectionArea")]
+script = ExtResource("6_v2rnk")
+_targetDetectionArea = NodePath("../DetectionArea3D")
 
 [node name="CombatBehavior" type="Node" parent="." node_paths=PackedStringArray("_attackActionNode")]
 script = ExtResource("2_lcrii")
-AttackRange = 120.0
+AttackRange = 451.0
 _attackActionNode = NodePath("../AttackStrategy")
 
 [node name="AttackStrategy" type="Node" parent="." node_paths=PackedStringArray("MuzzlePoint")]
@@ -85,7 +131,7 @@ attenuation_filter_cutoff_hz = 9000.0
 monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0189514, 0.0261226, -32.6249)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0431061, 0.159683, -63.2983)
 shape = SubResource("BoxShape3D_etufe")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]

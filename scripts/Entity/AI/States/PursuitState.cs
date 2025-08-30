@@ -1,77 +1,48 @@
-using Game.Interfaces;
 using Godot;
 
-namespace Game.Entity.AI.States;
-
-/// <summary>
-/// Состояние преследования. ИИ движется к последней известной позиции цели.
-/// </summary>
-public sealed class PursuitState(AIEntity context) : State(context)
+namespace Game.Entity.AI.States
 {
-    private const float PursuitTimeout = 10.0f; // Макс. время преследования в секундах
-    private float _timer;
-
-    public override void Enter()
+    public sealed class PursuitState(AIEntity context) : State(context)
     {
-        GD.Print($"{_context.Name} entering Pursuit state, moving to {_context.LastKnownTargetPosition}");
-        _context.SetMovementSpeed(_context.FastSpeed);
-        _context.MoveTo(_context.LastKnownTargetPosition);
-        _timer = PursuitTimeout;
+        private const float PursuitTimeout = 10.0f;
+        private float _timer;
 
-        // Говорим ИИ следить за последней позицией врага во время движения.
-        _context.SetLookTarget(_context.LastKnownTargetPosition);
-    }
-
-    public override void Exit()
-    {
-        // При выходе из состояния сбрасываем точку интереса.
-        _context.SetLookTarget(null);
-    }
-
-    public override void Update(float delta)
-    {
-        _timer -= delta;
-
-        if (_context.CurrentTarget == null || !GodotObject.IsInstanceValid(_context.CurrentTarget))
+        public override void Enter()
         {
-            GD.Print($"{_context.Name} target was destroyed during pursuit. Aborting.");
-            _context.DecideNextActionAfterCombat(_context.LastKnownTargetPosition);
-            return;
+            _context.SetMovementSpeed(_context.Profile.MovementProfile.FastSpeed);
+            _context.MovementController.MoveTo(_context.LastKnownTargetPosition);
+            _context.LookController.SetInterestPoint(_context.LastKnownTargetPosition);
+            _timer = PursuitTimeout;
         }
 
-        if (_context.CurrentTarget is ICharacter character && character.Health <= 0)
+        public override void Exit()
         {
-            var destroyedTarget = _context.CurrentTarget;
-            GD.Print($"{_context.Name} target [{destroyedTarget.Name}] was destroyed during pursuit.");
-            var lastPosition = destroyedTarget.GlobalPosition;
+            _context.LookController.SetInterestPoint(null);
+        }
 
-            if (destroyedTarget is IContainerEntity container)
+        public override void Update(float delta)
+        {
+            _timer -= delta;
+
+            if (!GodotObject.IsInstanceValid(_context.TargetingSystem.CurrentTarget))
             {
-                var containedEntity = container.GetContainedEntity();
-                if (GodotObject.IsInstanceValid(containedEntity) && _context.IsHostile(containedEntity))
-                {
-                    GD.Print($"{_context.Name}: Switching pursuit to contained entity [{containedEntity.Name}].");
-                    _context.SetAttackTarget(containedEntity);
-                    return;
-                }
+                _context.OnTargetEliminated();
+                return;
+            }
+            
+            // Если мы снова увидели цель - возвращаемся в атаку.
+            if (_context.HasLineOfSightToCurrentTarget)
+            {
+                _context.ChangeState(new AttackState(_context));
+                return;
             }
 
-            // Если это был не контейнер или он пуст, используем центральный метод для решения, что делать дальше.
-            _context.DecideNextActionAfterCombat(lastPosition);
-            return;
-        }
-
-        if (_context.HasLineOfSightTo(_context.CurrentTarget))
-        {
-            GD.Print($"{_context.Name} reacquired target during pursuit!");
-            _context.ChangeState(new AttackState(_context));
-            return;
-        }
-
-        if (_context.NavigationAgent.IsNavigationFinished() || _timer <= 0)
-        {
-            GD.Print($"{_context.Name} pursuit failed. Target not found.");
-            _context.ReturnToDefaultState();
+            // Если дошли до точки или время вышло - преследование провалено.
+            if (_context.MovementController.NavigationAgent.IsNavigationFinished() || _timer <= 0)
+            {
+                GD.Print($"{_context.Name} pursuit failed. Target not found.");
+                _context.ReturnToDefaultState();
+            }
         }
     }
 }

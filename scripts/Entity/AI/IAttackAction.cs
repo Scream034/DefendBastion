@@ -19,5 +19,5 @@ public interface IAttackAction
     /// <summary>
     /// Выполнить действие атаки.
     /// </summary>
-    void Execute(AIEntity attacker, PhysicsBody3D target);
+    void Execute(AIEntity context, LivingEntity target, Vector3 aimPosition);
 }

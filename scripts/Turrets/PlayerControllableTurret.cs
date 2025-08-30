@@ -32,9 +32,13 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
 
     public override BaseProjectile CreateProjectile(Transform3D spawnPoint, LivingEntity initiator = null)
     {
-        var projectile = base.CreateProjectile(spawnPoint, PlayerController);
+        // Инициатором снаряда теперь является сама турель (this),
+        // а не игрок внутри нее. Таким образом, ИИ будет корректно реагировать на турель.
+        var projectile = base.CreateProjectile(spawnPoint, this);
+
         if (PlayerController != null)
         {
+            // Мы по-прежнему исключаем игрока из raycast'а снаряда, чтобы он не взорвался на нем.
             projectile.RayQueryParams.Exclude.Add(PlayerController.GetRid());
         }
         return projectile;

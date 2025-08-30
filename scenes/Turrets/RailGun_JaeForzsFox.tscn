@@ -1,9 +1,9 @@
 [gd_scene load_steps=41 format=4 uid="uid://h4e5iifitbua"]
 
-[ext_resource type="Script" uid="uid://et70qvhe11w" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_lbqb5"]
+[ext_resource type="Script" uid="uid://bj2x3gpu5h051" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_lbqb5"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="2_6xwvg"]
-[ext_resource type="Script" uid="uid://22hmj3yhajqu" path="res://scripts/Turrets/TurretCameraController.cs" id="3_ddxjo"]
-[ext_resource type="Script" uid="uid://civjue1jr2k80" path="res://scripts/Components/Nodes/Shaker3D.cs" id="3_s7gp7"]
+[ext_resource type="Script" uid="uid://cvnninnh5e4tb" path="res://scripts/Turrets/TurretCameraController.cs" id="3_ddxjo"]
+[ext_resource type="Script" uid="uid://dx6u4adsk5r58" path="res://scripts/Components/Nodes/Shaker3D.cs" id="3_s7gp7"]
 [ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/turret/RailGun/Base.tres" id="4_lrb7t"]
 [ext_resource type="Material" uid="uid://dgx370rssxhh5" path="res://materials/turret/RailGun/Accent.tres" id="5_qh1gm"]
 [ext_resource type="AudioStream" uid="uid://biph0x4s4cufb" path="res://sounds/railgun_fire.wav" id="6_ca4b8"]
@@ -21,6 +21,45 @@
 [ext_resource type="Texture2D" uid="uid://cf1382xut1avb" path="res://curves/DarkSmokeColorRamp.tres" id="13_ca4b8"]
 [ext_resource type="Curve" uid="uid://bn6xjk18s1ttm" path="res://curves/DarkSmokeScaleCurve.tres" id="13_qh1gm"]
 [ext_resource type="SphereMesh" uid="uid://baho3aaq0v6vh" path="res://mesh/DarkSmoke.tres" id="15_iswaq"]
+
+[sub_resource type="Animation" id="Animation_s7gp7"]
+resource_name = "Broken"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Turret/Barrel:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Turret/FakeLight:visible")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Turret/Base:visible")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
 
 [sub_resource type="Animation" id="Animation_5qgl3"]
 resource_name = "Fire"
@@ -1578,45 +1617,6 @@ tracks/63/keys = {
 "values": [true]
 }
 
-[sub_resource type="Animation" id="Animation_s7gp7"]
-resource_name = "Broken"
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Turret/Barrel:visible")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 1),
-"transitions": PackedFloat32Array(1, 1),
-"update": 1,
-"values": [true, false]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("Turret/FakeLight:visible")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0, 1),
-"transitions": PackedFloat32Array(1, 1),
-"update": 1,
-"values": [true, false]
-}
-tracks/2/type = "value"
-tracks/2/imported = false
-tracks/2/enabled = true
-tracks/2/path = NodePath("Turret/Base:visible")
-tracks/2/interp = 1
-tracks/2/loop_wrap = true
-tracks/2/keys = {
-"times": PackedFloat32Array(0, 1),
-"transitions": PackedFloat32Array(1, 1),
-"update": 1,
-"values": [true, false]
-}
-
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_78vft"]
 _data = {
 &"Break": SubResource("Animation_s7gp7"),
@@ -1937,7 +1937,7 @@ points = PackedVector3Array(0.516593, 0, 0.627405, -0.516596, 0, 0.627405, 0.341
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_0s56n"]
 points = PackedVector3Array(1.66893e-06, -0.580433, 0.60823, 1.66893e-06, 0.580219, 0.60823, 0.516393, -0.569162, 0.627222, -0.000394344, -0.758541, 2.17947, -0.516786, -0.569162, 0.627222, 1.66893e-06, 0.580219, 4.64929, 0.516393, 0.569079, 0.627222, -0.516786, 0.569079, 0.627222, 1.56779, -0.000107229, 1.64926, 2.0228, -0.241123, 4.55908, 0.17068, -0.753168, 2.17947, -0.171073, -0.753168, 2.17947, -0.000394344, -0.758541, 2.97003, -2.0228, -0.241123, 4.55908, -1.56818, -0.000107229, 1.64926, 0.516789, 0.567375, 4.65009, 0.516393, 0.569079, 2.8727, -0.516786, 0.569079, 2.8727, -0.517182, 0.567375, 4.65009, 2.0228, 0.240909, 4.55908, -2.0228, 0.240909, 4.55908, 2.02161, -0.241123, 4.65009, 0.17068, -0.753168, 2.97003, -0.171073, -0.753168, 2.97003, 0.516789, -0.567589, 4.65009, 1.66893e-06, -0.580433, 4.64929, -0.517182, -0.567589, 4.65009, -2.022, -0.241123, 4.65009, 1.48621, 0.357158, 4.65009, 1.48621, 0.357289, 4.55908, -1.4866, 0.357289, 4.55908, -1.4866, 0.357158, 4.65009, 2.02161, 0.240909, 4.65009, -2.022, 0.240909, 4.65009)
 
-[node name="RailGun_Jaeforzs" type="CharacterBody3D" node_paths=PackedStringArray("_cameraController", "TurretYaw", "TurretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer")]
+[node name="RailGun_Jaeforzs" type="CharacterBody3D" node_paths=PackedStringArray("_cameraController", "TurretYaw", "TurretPitch", "_controlPoint", "_exitPoint", "BarrelEnd", "AnimationPlayer", "SightPoints")]
 collision_layer = 3
 collision_mask = 3
 script = ExtResource("1_lbqb5")
@@ -1955,12 +1955,12 @@ BarrelEnd = NodePath("Turret/Barrel/BarrelEnd")
 AutoReload = false
 AnimationPlayer = NodePath("AnimationPlayer")
 Faction = 1
+SightPoints = [NodePath("LOSPoint1")]
 
 [node name="Shaker3D" type="Node" parent="." node_paths=PackedStringArray("_target")]
 script = ExtResource("3_s7gp7")
 _target = NodePath("../Camera3D")
 Type = 2
-metadata/_custom_type_script = "uid://cx67w2h83h0j7"
 
 [node name="TurretCameraController" type="Node" parent="." node_paths=PackedStringArray("_camera", "_shaker")]
 script = ExtResource("3_ddxjo")
@@ -2283,3 +2283,6 @@ shape = SubResource("ConvexPolygonShape3D_s7gp7")
 [node name="CollisionShape3D3TurretBase" type="CollisionShape3D" parent="."]
 transform = Transform3D(0.5, 3.99946e-05, -9.32205e-05, -4.00041e-05, 0.5, -5.0783e-05, 9.32164e-05, 5.07905e-05, 0.5, 0, 0.750383, -1.2849)
 shape = SubResource("ConvexPolygonShape3D_0s56n")
+
+[node name="LOSPoint1" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.899168, -0.998767)

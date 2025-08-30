@@ -11,7 +11,7 @@ namespace Game.Entity.AI.AttackStrategies
         [Export(PropertyHint.Range, "1,500,1")]
         private float _damage = 25f;
 
-        public void Execute(AIEntity attacker, PhysicsBody3D target)
+        public void Execute(AIEntity attacker, LivingEntity target, Vector3 aimPosition)
         {
             if (target is not ICharacter damageableTarget) return;
 

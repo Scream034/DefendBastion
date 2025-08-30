@@ -15,7 +15,6 @@ namespace Game.Entity.AI.States
             Strafing
         }
 
-        private SubState _currentSubState;
         private float _totalVigilanceTimer;
         private float _currentActionTimer;
         private Vector3 _strafeDirection;
@@ -23,26 +22,22 @@ namespace Game.Entity.AI.States
         public override void Enter()
         {
             GD.Print($"{_context.Name} entering Vigilance state. Securing area around {_context.LastEngagementPosition}.");
-            _context.StopMovement();
-            _context.SetMovementSpeed(_context.SlowSpeed);
-            _totalVigilanceTimer = _context.VigilanceDuration;
-
-            // В этом состоянии мы всегда хотим смотреть на опасную зону.
-            _context.SetLookTarget(_context.LastEngagementPosition);
-
+            _context.MovementController.StopMovement();
+            _context.SetMovementSpeed(_context.Profile.MovementProfile.SlowSpeed);
+            _totalVigilanceTimer = _context.Profile.CombatProfile.VigilanceDuration;
+            _context.LookController.SetInterestPoint(_context.LastEngagementPosition);
             ChooseNextAction();
         }
 
         public override void Exit()
         {
-            // При выходе из состояния сбрасываем точку интереса.
-            _context.SetLookTarget(null);
+            _context.LookController.SetInterestPoint(null);
         }
 
         public override void Update(float delta)
         {
             // Главный приоритет: если появилась новая цель, немедленно атакуем.
-            if (_context.CurrentTarget != null)
+            if (_context.TargetingSystem.CurrentTarget != null)
             {
                 _context.ChangeState(new AttackState(_context));
                 return;
@@ -64,49 +59,30 @@ namespace Game.Entity.AI.States
             {
                 ChooseNextAction();
             }
-
-            // Выполняем текущее действие.
-            ExecuteCurrentAction(delta);
         }
 
         private void ChooseNextAction()
         {
             // Сбрасываем таймер для следующего действия (например, 2-3 секунды на одно действие).
             _currentActionTimer = (float)GD.RandRange(2.0, 3.5);
+            bool canStrafe = _context.Profile.CombatProfile.AllowVigilanceStrafe;
 
-            bool canStrafe = _context.AllowVigilanceStrafe;
             // Если стрейф запрещен или выпадает шанс, просто сканируем местность.
             if (!canStrafe || GD.Randf() > 0.6)
             {
-                _currentSubState = SubState.Scanning;
-                _context.StopMovement();
+                _context.MovementController.StopMovement();
                 GD.Print($"{_context.Name} vigilance: Scanning.");
             }
             else // Иначе выбираем направление для стрейфа.
             {
-                _currentSubState = SubState.Strafing;
                 var directionToLastEnemy = _context.GlobalPosition.DirectionTo(_context.LastEngagementPosition);
                 // Получаем вектор, перпендикулярный направлению на врага (для стрейфа влево/вправо).
                 var perpendicular = directionToLastEnemy.Cross(Vector3.Up).Normalized();
                 _strafeDirection = Random.Shared.Next(0, 2) == 0 ? perpendicular : -perpendicular;
 
-                var targetPos = _context.GlobalPosition + _strafeDirection * 2f; // Двигаемся на пару метров
-                _context.MoveTo(NavigationServer3D.MapGetClosestPoint(_context.GetWorld3D().NavigationMap, targetPos));
+                var targetPos = _context.GlobalPosition + _strafeDirection * 2f;
+                _context.MovementController.MoveTo(NavigationServer3D.MapGetClosestPoint(_context.GetWorld3D().NavigationMap, targetPos));
                 GD.Print($"{_context.Name} vigilance: Strafing towards {_strafeDirection}.");
-            }
-        }
-
-        private void ExecuteCurrentAction(float delta)
-        {
-            // --- УПРОЩЕННЫЙ МЕТОД ---
-            // Теперь нам не нужно вручную вращать голову и тело,
-            // AIEntity сделает это сам, так как у него установлен _currentLookTarget.
-            // Нам нужно лишь управлять движением для стрейфа.
-
-            if (_currentSubState == SubState.Scanning)
-            {
-                // Убеждаемся, что ИИ стоит на месте, пока сканирует.
-                _context.StopMovement();
             }
         }
     }

@@ -1,9 +1,9 @@
 [gd_scene load_steps=12 format=3 uid="uid://c0aomjglyx2a7"]
 
-[ext_resource type="Script" uid="uid://c4g2s3qw2jpfp" path="res://scripts/Entity/Kaiju.cs" id="1_hjnk8"]
-[ext_resource type="Script" uid="uid://bfchrapokbuma" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="2_df46c"]
+[ext_resource type="Script" uid="uid://3usc202qrd4o" path="res://scripts/Entity/Kaiju.cs" id="1_hjnk8"]
+[ext_resource type="Script" uid="uid://cownqggt0mr2h" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="2_df46c"]
 [ext_resource type="AudioStream" uid="uid://d1i4b4dxh5s0g" path="res://sounds/electric_impact.wav" id="2_etufe"]
-[ext_resource type="Script" uid="uid://xcyqksnsttoc" path="res://scripts/Entity/AI/AttackStrategies/MeleeAttackStrategy.cs" id="3_arqiy"]
+[ext_resource type="Script" uid="uid://d4nd5ql3xu14q" path="res://scripts/Entity/AI/AttackStrategies/MeleeAttackStrategy.cs" id="3_arqiy"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_ypjiq"]
 playback_mode = 1
@@ -40,15 +40,12 @@ albedo_color = Color(0.0745098, 0, 0.0235294, 1)
 material = SubResource("ORMMaterial3D_ypjiq")
 size = Vector3(5, 8, 5)
 
-[node name="Kaiju" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "_navigationAgent", "_targetDetectionArea", "_combatBehaviorNode", "_headPivot", "_eyesPosition")]
+[node name="Kaiju" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "_combatBehaviorNode", "_eyesPosition")]
 collision_layer = 5
 collision_mask = 5
 script = ExtResource("1_hjnk8")
 _audio = NodePath("AudioStreamPlayer3D")
-_navigationAgent = NodePath("NavigationAgent3D")
-_targetDetectionArea = NodePath("DetectionArea3D")
 _combatBehaviorNode = NodePath("CombatBehavior")
-_headPivot = NodePath("CollisionShape3D/Head")
 _eyesPosition = NodePath("CollisionShape3D/Head/EyesPoint")
 Faction = 2
 

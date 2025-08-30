@@ -1,6 +1,6 @@
 [gd_scene load_steps=22 format=3 uid="uid://dgo3h3uf35i4r"]
 
-[ext_resource type="Script" uid="uid://5ycbbpd5yavt" path="res://scripts/VFX/AnimationVFX3D.cs" id="1_e2bf0"]
+[ext_resource type="Script" uid="uid://u0ny3pw2sx0t" path="res://scripts/VFX/AnimationVFX3D.cs" id="1_e2bf0"]
 [ext_resource type="Texture2D" uid="uid://dxx0yjvwv6m04" path="res://curves/LightEMIColorRamp.tres" id="2_82fve"]
 [ext_resource type="Texture2D" uid="uid://c1aonuv6vsmeb" path="res://curves/EMIColorRamp.tres" id="3_3k43t"]
 [ext_resource type="Material" uid="uid://bjc7h7uqx5o0q" path="res://materials/LightEMI.tres" id="3_konhu"]

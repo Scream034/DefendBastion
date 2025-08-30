@@ -6,6 +6,9 @@ namespace Game.Entity.AI.Behaviors
     /// </summary>
     public interface ICombatBehavior
     {
+        public float AttackRange { get; }
+        public float AttackCooldown { get; }
+
         /// <summary>
         /// Вызывается каждый кадр из AttackState. Содержит всю логику боя.
         /// </summary>
