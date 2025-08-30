@@ -20,6 +20,7 @@ public partial class World : Node3D
     [Export] private AudioStreamPlayer _audioDefeat;
 
     private Rid _navigationMapRid; // Сохраняем RID карты здесь
+    private readonly static PhysicsRayQueryParameters3D _rayQueryParams = PhysicsRayQueryParameters3D.Create(Vector3.Zero, Vector3.Zero, 1, []);
 
     public bool IsNavigationReady { get; private set; } = false;
 
@@ -74,6 +75,16 @@ public partial class World : Node3D
 
         DirectSpaceState = world.DirectSpaceState;
         Real = world;
+    }
+
+    public static Godot.Collections.Dictionary IntersectRay(Vector3 from, Vector3 to, uint collisionMask = 1, Godot.Collections.Array<Rid> exclude = default)
+    {
+        _rayQueryParams.From = from;
+        _rayQueryParams.To = to;
+        _rayQueryParams.CollisionMask = collisionMask;
+        _rayQueryParams.Exclude = exclude;
+
+        return DirectSpaceState.IntersectRay(_rayQueryParams);
     }
 
     /// <summary>

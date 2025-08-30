@@ -553,7 +553,6 @@ MainTask = 1
 MissionPath = NodePath("../RPath")
 
 [node name="CubePawn4" parent="." node_paths=PackedStringArray("MissionPath") instance=ExtResource("12_7c4bj")]
-process_mode = 4
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 129.32608, 9.02048, -178.25294)
 MainTask = 2
 AssaultBehavior = 1

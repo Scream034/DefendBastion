@@ -16,7 +16,7 @@ namespace Game.Entity.AI.Components
         private AIEntity _context;
         private AIMovementProfile _movementProfile;
         private AILookProfile _lookProfile;
-        
+
         public NavigationAgent3D NavigationAgent => _navigationAgent;
         public Vector3 TargetVelocity { get; set; }
 
@@ -32,9 +32,9 @@ namespace Game.Entity.AI.Components
                 SetPhysicsProcess(false);
                 return;
             }
-            if (_navigationAgent == null) 
+            if (_navigationAgent == null)
             {
-                GD.PushError($"NavigationAgent3D not assigned to {Name}!"); 
+                GD.PushError($"NavigationAgent3D not assigned to {Name}!");
                 SetPhysicsProcess(false);
             }
         }
@@ -56,7 +56,7 @@ namespace Game.Entity.AI.Components
 
             // 2. Вращение тела
             RotateBody((float)delta);
-            
+
             // 3. Вращение головы
             RotateHead((float)delta);
 
@@ -65,25 +65,39 @@ namespace Game.Entity.AI.Components
 
         private void RotateBody(float delta)
         {
-            var horizontalVelocity = _context.Velocity with { Y = 0 };
-            if (horizontalVelocity.LengthSquared() > 0.01f)
+            // Приоритет №1: Если мы в бою и стоим на месте, поворачиваем тело к врагу.
+            if (_context.IsInCombat && IsInstanceValid(_context.TargetingSystem.CurrentTarget) && TargetVelocity.IsZeroApprox())
             {
-                var targetRotation = Basis.LookingAt(horizontalVelocity.Normalized()).Orthonormalized();
-                _context.Basis = _context.Basis.Orthonormalized().Slerp(targetRotation, _movementProfile.BodyRotationSpeed * delta);
+                var directionToTarget = _context.GlobalPosition.DirectionTo(_context.TargetingSystem.CurrentTarget.GlobalPosition) with { Y = 0 };
+                if (!directionToTarget.IsZeroApprox())
+                {
+                    var targetRotation = Basis.LookingAt(directionToTarget.Normalized()).Orthonormalized();
+                    _context.Basis = _context.Basis.Orthonormalized().Slerp(targetRotation, _movementProfile.BodyRotationSpeed * delta);
+                }
+            }
+            // Стандартное поведение: Поворачиваем тело по направлению движения.
+            else
+            {
+                var horizontalVelocity = _context.Velocity with { Y = 0 };
+                if (horizontalVelocity.LengthSquared() > 0.01f)
+                {
+                    var targetRotation = Basis.LookingAt(horizontalVelocity.Normalized()).Orthonormalized();
+                    _context.Basis = _context.Basis.Orthonormalized().Slerp(targetRotation, _movementProfile.BodyRotationSpeed * delta);
+                }
             }
         }
-        
+
         private void RotateHead(float delta)
         {
             if (_headPivot == null) return;
-            
+
             // Получаем цель для взгляда от LookController
             Vector3 lookTargetPosition = _context.LookController.CurrentLookTarget;
-            
+
             if (lookTargetPosition.IsEqualApprox(_context.GlobalPosition)) return;
 
             var localTarget = _headPivot.ToLocal(lookTargetPosition).Normalized();
-            
+
             const float verticalThreshold = 0.999f;
             if (Mathf.Abs(localTarget.Dot(Vector3.Up)) > verticalThreshold) return;
 
@@ -101,7 +115,7 @@ namespace Game.Entity.AI.Components
 
             _headPivot.Basis = _headPivot.Basis.Orthonormalized().Slerp(targetRotation, _movementProfile.HeadRotationSpeed * delta);
         }
-        
+
         public void MoveTo(Vector3 targetPosition)
         {
             if (_navigationAgent.TargetPosition == targetPosition) return;

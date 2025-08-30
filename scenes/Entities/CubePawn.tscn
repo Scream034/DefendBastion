@@ -19,7 +19,6 @@ script = ExtResource("2_p06bi")
 RepositionSearchStep = 0.5
 AimSpreadRadius = 0.0
 PredictionAccuracy = 1.0
-LineOfSightMask = 3
 metadata/_custom_type_script = "uid://bh6xlp0n5roe6"
 
 [sub_resource type="Resource" id="Resource_ax7fu"]
@@ -151,7 +150,7 @@ mesh = SubResource("BoxMesh_lcrii")
 skeleton = NodePath("../CollisionShape3D")
 
 [node name="EyesPoint" type="Marker3D" parent="Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.1692746)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.057192445, -1.1692746)
 
 [node name="DetectionArea3D" type="Area3D" parent="Head"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.13199335, 0)
@@ -169,4 +168,4 @@ mesh = SubResource("BoxMesh_ypjiq")
 skeleton = NodePath("../CollisionShape3D")
 
 [node name="MazzlePoint" type="Marker3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15637797, 1.4844975, -1.045194)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15637797, 1.2380412, -1.045194)

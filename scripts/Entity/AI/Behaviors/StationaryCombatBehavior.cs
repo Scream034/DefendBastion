@@ -26,8 +26,10 @@ namespace Game.Entity.AI.Behaviors
         [Export(PropertyHint.Range, "0.1, 1.0, 0.1")] private float _liveSearchMovementMultiplier = 0.7f;
         [Export] private Node _attackActionNode;
 
-        private IAttackAction _attackAction;
+        public IAttackAction Action { get; private set; }
+
         private double _timeSinceLastAttack = 0;
+        private double _effectiveAttackCooldown;
         private RepositioningSubState _currentRepositionSubState = RepositioningSubState.None;
         private Vector3 _repositionTargetPosition;
         private double _liveSearchSegmentTimer = 0;
@@ -39,14 +41,19 @@ namespace Game.Entity.AI.Behaviors
 
         public override void _Ready()
         {
-            if (_attackActionNode is IAttackAction action) _attackAction = action;
+            if (_attackActionNode is IAttackAction action) Action = action;
             else { GD.PushError($"Для {GetPath()} не назначен узел с IAttackAction!"); SetProcess(false); }
+
+            var variance = (float)GD.RandRange(-0.1, 0.1); // -10% to +10%
+            _effectiveAttackCooldown = AttackCooldown * (1.0f + variance);
+
             _timeSinceLastAttack = AttackCooldown;
         }
 
         public void EnterCombat(AIEntity context)
         {
             _timeSinceLastAttack = AttackCooldown;
+            _allyRepositionCooldown = 0; // Сбрасываем кулдаун при входе в бой
             ResetRepositioningState(context);
         }
 
@@ -59,52 +66,67 @@ namespace Game.Entity.AI.Behaviors
         {
             if (context.TargetingSystem.CurrentTarget is not LivingEntity target || !IsInstanceValid(target))
             {
-                // Если цель стала невалидной, сообщаем об этом, но это не тактическая неудача
                 context.ReturnToDefaultState();
                 return true;
             }
 
             _timeSinceLastAttack += delta;
-            _allyRepositionCooldown -= delta;
+            if (_allyRepositionCooldown > 0) _allyRepositionCooldown -= delta;
 
             if (_currentRepositionSubState != RepositioningSubState.None)
             {
                 return HandleRepositioning(context, target, delta);
             }
 
-            var fromPosition = _attackAction?.MuzzlePoint?.GlobalPosition ?? context.GlobalPosition;
+            var fromPosition = Action?.MuzzlePoint?.GlobalPosition ?? context.GlobalPosition;
             uint losMask = context.Profile?.CombatProfile?.LineOfSightMask ?? 1;
 
-            var losResult = AITacticalAnalysis.AnalyzeLineOfSight(context, fromPosition, target, losMask, out _);
+            var losResult = AITacticalAnalysis.AnalyzeLineOfSight(context, fromPosition, target, losMask, out AIEntity blockingAlly);
 
             switch (losResult)
             {
                 case LoSAnalysisResult.Clear:
                     context.MovementController.StopMovement();
-                    if (_timeSinceLastAttack >= AttackCooldown)
+                    if (_timeSinceLastAttack >= _effectiveAttackCooldown) // Используем новую переменную
                     {
-                        _attackAction?.Execute(context, target, target.GlobalPosition);
+                        Action?.Execute(context, target, target.GlobalPosition);
                         _timeSinceLastAttack = 0;
                     }
                     break;
 
                 case LoSAnalysisResult.BlockedByAlly:
+                    // Логика "сортировки"
+                    if (blockingAlly != null)
+                    {
+                        float myDistSqr = context.GlobalPosition.DistanceSquaredTo(target.GlobalPosition);
+                        float allyDistSqr = blockingAlly.GlobalPosition.DistanceSquaredTo(target.GlobalPosition);
+
+                        // Если я нахожусь дальше от цели, чем союзник, который меня блокирует, я жду.
+                        if (myDistSqr > allyDistSqr + 0.25f) // Буфер 0.5м (0.25 в квадрате)
+                        {
+                            context.MovementController.StopMovement(); // Просто стоим и ждем
+                            break;
+                        }
+                    }
+
+                    // Если я в первом ряду, пытаюсь сделать шаг в сторону
                     if (_allyRepositionCooldown <= 0)
                     {
                         var sidestepPos = AITacticalAnalysis.FindSidestepPosition(context, target);
                         if (sidestepPos.HasValue)
                         {
+                            GD.Print($"{context.Name} is sidestepping to avoid ally.");
                             context.MovementController.MoveTo(sidestepPos.Value);
                             _allyRepositionCooldown = ALLY_REPOSITION_COOLDOWN_TIME;
                         }
                     }
                     break;
 
+
                 case LoSAnalysisResult.BlockedByObstacle:
                     if (!AttemptReposition(context, target))
                     {
-                        GD.Print($"{context.Name} failed to find a repositioning point and cannot engage.");
-                        return false; // Сигнализируем о тактической неудаче
+                        return false;
                     }
                     break;
             }
@@ -116,9 +138,9 @@ namespace Game.Entity.AI.Behaviors
             context.MovementController.StopMovement();
             bool foundNewPosition = false;
 
-            if (_allowReposition && _attackAction?.MuzzlePoint != null)
+            if (_allowReposition && Action?.MuzzlePoint != null)
             {
-                var weaponLocalOffset = _attackAction.MuzzlePoint.Position;
+                var weaponLocalOffset = Action.MuzzlePoint.Position;
                 Vector3? newPos = _repositionStrategy switch
                 {
                     RepositionStrategy.HybridAnalysis => AITacticalAnalysis.FindOptimalFiringPosition_Hybrid(context, target, weaponLocalOffset, _repositionSearchRadius),
@@ -137,10 +159,10 @@ namespace Game.Entity.AI.Behaviors
             if (!foundNewPosition && _allowLiveSearch)
             {
                 StartLiveSearch(context, target);
-                return true; // Мы начали поиск, так что это еще не провал
+                return true;
             }
 
-            return foundNewPosition; // Возвращаем, удалось ли нам хоть что-то предпринять
+            return foundNewPosition;
         }
 
         private bool HandleRepositioning(AIEntity context, PhysicsBody3D target, double delta)
@@ -151,14 +173,14 @@ namespace Game.Entity.AI.Behaviors
                 return true;
             }
 
-            var muzzlePoint = _attackAction?.MuzzlePoint;
+            var muzzlePoint = Action?.MuzzlePoint;
             if (_requireMuzzleLoS && muzzlePoint != null)
             {
                 uint losMask = context.Profile?.CombatProfile?.LineOfSightMask ?? 1;
                 if (AITacticalAnalysis.AnalyzeLineOfSight(context, muzzlePoint.GlobalPosition, livingTarget, losMask, out _) == LoSAnalysisResult.Clear)
                 {
                     ResetRepositioningState(context);
-                    return true; // Нашли цель, возвращаемся к обычной атаке
+                    return true;
                 }
             }
 
@@ -180,16 +202,15 @@ namespace Game.Entity.AI.Behaviors
                     {
                         GD.Print($"{context.Name} live search timed out. Target not found.");
                         ResetRepositioningState(context);
-                        return false; // Поиск провалился, сигнализируем о неудаче
+                        return false;
                     }
                     if (_liveSearchSegmentTimer <= 0) ChooseNextLiveSearchAction(context, target);
                     PerformLiveSearchMovement(context);
                     break;
             }
-            return true; // Процесс репозиционирования продолжается
+            return true;
         }
 
-        // ... (остальные методы без изменений: StartLiveSearch, ChooseNextLiveSearchAction, PerformLiveSearchMovement, ResetRepositioningState) ...
         private void StartLiveSearch(AIEntity context, PhysicsBody3D target)
         {
             _availableLiveSearchActions.Clear();

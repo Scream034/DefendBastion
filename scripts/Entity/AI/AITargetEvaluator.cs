@@ -1,10 +1,3 @@
-// --- ИЗМЕНЕНИЯ ---
-// 1. Оптимизация `CalculateThreatScore`: вместо вызова `GetVisibleTargetPoint`, который может
-//    делать несколько рейкастов по разным точкам, теперь используется один быстрый рейкаст
-//    в центр цели с помощью AITacticalAnalysis.HasClearPath. Это ускоряет процесс
-//    переоценки целей, особенно когда их много.
-// -----------------
-
 using System.Collections.Generic;
 using Godot;
 using Game.Interfaces;
@@ -63,10 +56,9 @@ namespace Game.Entity.AI
             var fromPos = evaluator.EyesPosition?.GlobalPosition ?? evaluator.GlobalPosition;
             var toPos = target.GlobalPosition; // Для оценки достаточно центра цели
             uint mask = evaluator.Profile?.CombatProfile?.LineOfSightMask ?? 1;
-            var exclude = new Godot.Collections.Array<Rid> { evaluator.GetRid(), target.GetRid() };
 
             // Оптимизация: используем один быстрый рейкаст вместо GetFirstVisiblePoint
-            if (!AITacticalAnalysis.HasClearPath(spaceState, fromPos, toPos, exclude, mask))
+            if (!AITacticalAnalysis.HasClearPath(fromPos, toPos, [ evaluator.GetRid(), target.GetRid() ], mask))
             {
                 return -1f; // Цель не видна
             }

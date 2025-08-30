@@ -22,7 +22,7 @@ namespace Game.Entity.AI.Profiles
 
         [ExportGroup("Line of Sight")]
         [Export(PropertyHint.Layers3DPhysics)]
-        public uint LineOfSightMask { get; private set; } = 2;
+        public uint LineOfSightMask { get; private set; } = 3; // Layer 1 (World) + Layer 2 (Entity)
 
         [ExportGroup("Post-Combat Behavior")]
         [Export] public bool EnablePostCombatVigilance { get; private set; } = true;

@@ -3,10 +3,6 @@ using Game.Entity.AI.Profiles;
 
 namespace Game.Entity.AI.Components
 {
-    /// <summary>
-    /// Компонент, управляющий тем, куда смотрит ИИ.
-    /// Реализует логику "поглядывания" на точки интереса во время движения.
-    /// </summary>
     public partial class AILookController : Node
     {
         private AIEntity _context;
@@ -31,19 +27,15 @@ namespace Game.Entity.AI.Components
 
         public override void _Process(double delta)
         {
-            // По умолчанию, смотрим вперед по направлению движения
             Vector3 lookDirection = _context.Velocity.IsZeroApprox() ? _context.Basis.Z : _context.Velocity.Normalized();
             Vector3 finalLookPosition = _context.GlobalPosition + lookDirection * 10f;
 
             var currentTarget = _context.TargetingSystem.CurrentTarget;
 
-            // Приоритет №1: Если есть враг, всегда смотрим на него.
-            // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Добавляем GodotObject.IsInstanceValid(), чтобы избежать обращения к удаленному объекту.
             if (GodotObject.IsInstanceValid(currentTarget))
             {
                 finalLookPosition = currentTarget.GlobalPosition;
             }
-            // Приоритет №2: Если есть точка интереса и мы движемся, используем механику "поглядывания".
             else if (_profile.LookAtInterestPointWhileMoving && _interestPoint.HasValue && _context.IsMoving)
             {
                 _glanceTimer -= (float)delta;
@@ -64,14 +56,11 @@ namespace Game.Entity.AI.Components
             CurrentLookTarget = finalLookPosition;
         }
 
-        /// <summary>
-        /// Устанавливает или сбрасывает точку интереса для взгляда ИИ.
-        /// </summary>
         public void SetInterestPoint(Vector3? targetPosition)
         {
             _interestPoint = targetPosition;
-            _glanceTimer = 0; // Сбрасываем таймер для немедленной реакции
-            _isGlancingAtInterestPoint = true; // Начинаем со взгляда на цель
+            _glanceTimer = 0;
+            _isGlancingAtInterestPoint = true;
             GD.Print($"{_context.Name} setting look interest point to: {targetPosition?.ToString() ?? "None"}");
         }
     }

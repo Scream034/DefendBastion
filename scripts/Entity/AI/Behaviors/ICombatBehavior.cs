@@ -8,6 +8,7 @@ namespace Game.Entity.AI.Behaviors
     {
         public float AttackRange { get; }
         public float AttackCooldown { get; }
+        public IAttackAction Action { get; }
 
         /// <summary>
         /// Вызывается каждый кадр из AttackState. Содержит всю логику боя.

@@ -44,6 +44,7 @@ namespace Game.Entity.AI
         public bool IsMoving => Velocity.LengthSquared() > 0.01f;
         public bool IsTargetValid => GodotObject.IsInstanceValid(TargetingSystem.CurrentTarget);
         public bool HasLineOfSightToCurrentTarget => GetVisibleTargetPoint(TargetingSystem.CurrentTarget).HasValue;
+        public bool IsInCombat { get; private set; } // Новое свойство
 
         public Vector3 SpawnPosition { get; private set; }
         public Vector3 LastKnownTargetPosition { get; private set; }
@@ -166,7 +167,7 @@ namespace Game.Entity.AI
 
             uint mask = Profile?.CombatProfile?.LineOfSightMask ?? 1;
             var exclude = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
-            var resultPoint = AITacticalAnalysis.GetFirstVisiblePoint(this, fromPosition, target, exclude, mask);
+            var resultPoint = AITacticalAnalysis.GetFirstVisiblePoint(fromPosition, target, exclude, mask);
 
             // Обновляем кэш
             _cachedVisiblePoint = resultPoint;
@@ -185,6 +186,10 @@ namespace Game.Entity.AI
 
             _currentState?.Exit();
             _currentState = newState;
+
+            // Устанавливаем флаг IsInCombat в зависимости от нового состояния
+            IsInCombat = newState is AttackState;
+
             GD.Print($"{Name} changing state to -> {newState.GetType().Name}");
             _currentState.Enter();
         }
