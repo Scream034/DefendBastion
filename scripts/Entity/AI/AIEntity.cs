@@ -1,12 +1,3 @@
-// --- ИЗМЕНЕНИЯ ---
-// 1. Добавлено новое свойство-обертка `HasLineOfSightToCurrentTarget` для удобного и чистого доступа к результату кэшированной проверки LoS.
-// 2. Добавлен новый публичный метод `GetVisibleTargetPointFrom(LivingEntity target, Vector3 fromPosition)`, который позволяет делать
-//    проверку LoS из произвольной точки (например, от дула оружия), но все равно использует общую логику кэширования.
-// 3. Улучшена обработка уничтожения цели. `OnTargetEliminated` теперь без параметров. Класс сам отслеживает последнюю цель
-//    и ее позицию через новое приватное поле `_lastTrackedTarget`. Это упрощает код в состояниях (AttackState, PursuitState).
-// 4. Централизовано обновление `LastKnownTargetPosition`. Оно теперь происходит автоматически при наличии валидной цели.
-// -----------------
-
 using Godot;
 using Game.Entity.AI.Behaviors;
 using Game.Entity.AI.States;
@@ -14,9 +5,6 @@ using System.Threading.Tasks;
 using Game.Interfaces;
 using Game.Entity.AI.Profiles;
 using Game.Entity.AI.Components;
-using Game.Turrets;
-using Game.Entity.AI.Utils;
-using System.Linq;
 
 namespace Game.Entity.AI
 {
@@ -63,9 +51,6 @@ namespace Game.Entity.AI
         private State _currentState;
         private State _defaultState;
         private bool _isAiActive = false;
-
-        protected AIEntity(IDs id) : base(id) { }
-        public AIEntity() { }
 
         public override async void _Ready()
         {

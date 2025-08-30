@@ -1,8 +1,8 @@
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
-using Game.Entity.AI.Utils;
 using System;
+using Game.Entity.AI.Components;
 
 namespace Game.Entity.AI.Behaviors
 {

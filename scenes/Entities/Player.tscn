@@ -1,17 +1,23 @@
 [gd_scene load_steps=5 format=3 uid="uid://c48vh6kflnrnw"]
 
-[ext_resource type="Script" uid="uid://bd2uqlyw8wafr" path="res://scripts/Player/Player.cs" id="1_k5qh4"]
+[ext_resource type="Script" uid="uid://xlyoq1orwtj1" path="res://scripts/Player/Player.cs" id="1_k5qh4"]
 [ext_resource type="Script" uid="uid://c40qjkqff56m2" path="res://scripts/Player/PlayerHead.cs" id="2_vm2lv"]
 [ext_resource type="Script" uid="uid://d0ov3vqxcnfxx" path="res://scripts/Components/Nodes/Shaker3D.cs" id="3_dnc2b"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_w7kh3"]
 
 [node name="Player" type="CharacterBody3D" node_paths=PackedStringArray("_head", "_collisionShape", "SightPoints")]
+process_priority = 1
+process_physics_priority = 1
 physics_interpolation_mode = 1
+collision_layer = 7
+collision_mask = 3
 script = ExtResource("1_k5qh4")
 _head = NodePath("Head")
 _collisionShape = NodePath("CollisionShape3D")
 Faction = 1
+MaxHealth = 200.0
+Armor = 3.0
 SightPoints = [NodePath("Head/LOSPoint1")]
 
 [node name="Shaker3D" type="Node" parent="." node_paths=PackedStringArray("_target")]
@@ -29,6 +35,8 @@ autostart = true
 shape = SubResource("CapsuleShape3D_w7kh3")
 
 [node name="Head" type="Node3D" parent="." node_paths=PackedStringArray("Camera", "_interactionRay", "_shaker")]
+process_priority = 1
+process_physics_priority = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 script = ExtResource("2_vm2lv")
 Camera = NodePath("Camera3D")
@@ -36,11 +44,15 @@ _interactionRay = NodePath("InteractionRayCast3D")
 _shaker = NodePath("../Shaker3D")
 
 [node name="InteractionRayCast3D" type="RayCast3D" parent="Head"]
+process_priority = -1
+process_physics_priority = -1
 target_position = Vector3(0, 0, -2.3)
-collision_mask = 2
+collision_mask = 4
 debug_shape_custom_color = Color(0.615886, 0.665092, 0.8914, 1)
 
 [node name="Camera3D" type="Camera3D" parent="Head"]
+process_priority = 1
+process_physics_priority = 1
 current = true
 
 [node name="LOSPoint1" type="Marker3D" parent="Head"]

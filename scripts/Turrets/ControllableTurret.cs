@@ -5,7 +5,7 @@ using Game.Entity;
 
 namespace Game.Turrets;
 
-public abstract partial class ControllableTurret : ShootingTurret, IContainerEntity
+public partial class ControllableTurret : ShootingTurret, IContainerEntity
 {
     [ExportGroup("Nodes")]
     [Export] public Node3D TurretYaw { get; private set; }

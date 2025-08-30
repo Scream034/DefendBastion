@@ -78,7 +78,7 @@ public partial class RangedAttackStrategy : Node, IAttackAction
         var spawnTransform = MuzzlePoint?.GlobalTransform ?? attacker.GlobalTransform;
         spawnTransform = spawnTransform.LookingAt(finalAimPosition, Vector3.Up);
 
-        var projectile = ProjectilePool.Get(_projectileScene);
+        var projectile = ProjectilePool.Instance.Get(_projectileScene);
         projectile.RayQueryParams?.Exclude.Add(attacker.GetRid());
         projectile.GlobalTransform = spawnTransform;
 

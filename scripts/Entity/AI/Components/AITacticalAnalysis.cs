@@ -3,7 +3,7 @@ using Game.Singletons;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Game.Entity.AI.Utils
+namespace Game.Entity.AI.Components
 {
     /// <summary>
     /// Статический класс, содержащий "чистые" функции для тактического анализа,

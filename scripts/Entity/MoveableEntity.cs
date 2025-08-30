@@ -15,9 +15,6 @@ public abstract partial class MoveableEntity : LivingEntity
     [Export] public float Deceleration { get; protected set; } = 4.0f;
     [Export] public float JumpVelocity { get; protected set; } = 4.5f;
 
-    protected MoveableEntity(IDs id) : base(id) { }
-    public MoveableEntity() { } // Для Godot-компилятора
-
     public override void _Ready()
     {
         base._Ready();

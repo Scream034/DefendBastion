@@ -14,7 +14,7 @@ namespace Game.Turrets;
 /// Определяет, *как* турель стреляет, но не *когда*.
 /// Поддерживает несколько режимов стрельбы и автоматическую перезарядку.
 /// </summary>
-public abstract partial class ShootingTurret : BaseTurret, IShooter
+public partial class ShootingTurret : BaseTurret, IShooter
 {
     #region Classes
 
@@ -231,7 +231,7 @@ public abstract partial class ShootingTurret : BaseTurret, IShooter
     public virtual BaseProjectile CreateProjectile(Transform3D spawnPoint, LivingEntity initiator = null)
     {
         // Вместо Instantiate используем наш пул!
-        var projectile = ProjectilePool.Get(ProjectileScene);
+        var projectile = ProjectilePool.Instance.Get(ProjectileScene);
 
         projectile.GlobalTransform = spawnPoint;
 

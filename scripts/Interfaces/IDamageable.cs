@@ -41,13 +41,13 @@ public interface IDamageable
     /// </summary>
     Task<bool> DestroyAsync();
 
-    /// <summary>
-    /// Событие, вызываемое при уничтожении объекта.
-    /// </summary>
+    // /// <summary>
+    // /// Событие, вызываемое при уничтожении объекта.
+    // /// </summary>
     event Action OnDestroyed;
 
-    /// <summary>
-    /// Событие, вызываемое при изменении здоровья объекта.
-    /// </summary>
+    // /// <summary>
+    // /// Событие, вызываемое при изменении здоровья объекта.
+    // /// </summary>
     event Action<float> OnHealthChanged;
 }

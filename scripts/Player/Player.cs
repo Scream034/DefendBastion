@@ -24,7 +24,6 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
     [ExportGroup("Movement")]
     [Export(PropertyHint.Range, "0.0, 1.0, 0.05")] public float AirControl = 0.1f;
-    [Export(PropertyHint.Range, "0, 20, 1")] public float BodyRotationSpeed = 5f;
 
     public PlayerState CurrentState { get; private set; } = PlayerState.Normal;
 
@@ -37,13 +36,9 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
     private Vector3 _inputDir;
     private bool _jumpPressed;
 
-    public Player() : base(IDs.Player) { }
-
     public override void _Ready()
     {
         base._Ready();
-
-        Faction = Entity.AI.Faction.Player;
 
         // Устанавливаем голову игрока как стартовый контроллер камеры
         PlayerInputManager.Instance.SwitchController(_head);

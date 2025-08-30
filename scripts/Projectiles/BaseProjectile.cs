@@ -98,7 +98,7 @@ public partial class BaseProjectile : Area3D
     protected virtual async Task OnHit(Godot.Collections.Dictionary hitInfo)
     {
         await HandleHitAndDamage(hitInfo);
-        ProjectilePool.Return(this);
+        ProjectilePool.Instance.Return(this);
     }
 
     public virtual void ResetState()
@@ -135,6 +135,6 @@ public partial class BaseProjectile : Area3D
 
     private void OnLifetimeTimeout()
     {
-        ProjectilePool.Return(this);
+        ProjectilePool.Instance.Return(this);
     }
 }

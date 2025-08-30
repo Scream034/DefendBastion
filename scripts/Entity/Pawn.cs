@@ -4,13 +4,10 @@ using Godot;
 
 namespace Game.Entity;
 
-// Изменяем наследование с LinearMoveableEntity на AIEntity
-public sealed partial class ShortShip : AIEntity
+public sealed partial class Pawn : AIEntity
 {
     [Export]
     private AudioStreamPlayer3D _audio;
-
-    public ShortShip() : base(IDs.ShortShip) { }
 
     public override async Task<bool> DamageAsync(float amount, LivingEntity source = null)
     {

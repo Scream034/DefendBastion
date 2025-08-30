@@ -6,11 +6,11 @@ namespace Game.Turrets;
 /// <summary>
 /// Абстрактный базовый класс для всех сущностей типа "турель".
 /// </summary>
-public abstract partial class BaseTurret : LivingEntity, IInteractable
+public partial class BaseTurret : LivingEntity, IInteractable
 {
     /// <inheritdoc/>
-    public abstract void Interact(ITurretControllable entity);
+    public virtual void Interact(ITurretControllable entity) { }
 
     /// <inheritdoc/>
-    public abstract string GetInteractionText();
+    public virtual string GetInteractionText() { return string.Empty; }
 }

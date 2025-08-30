@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Game.Interfaces;
 using Godot;
 using Game.Entity.AI;
-using System.Collections.Generic;
 
 namespace Game.Entity;
 
@@ -15,10 +14,10 @@ public abstract partial class LivingEntity : CharacterBody3D, ICharacter, IFacti
     public enum IDs
     {
         Player, // Игрок
-        Kaiju, // Кайдзю
-        ShortShip // Маленький корабль
+        Pawn // Простая пешка
     }
 
+    [Export]
     public IDs ID { get; protected set; }
 
     [ExportGroup("Faction")]
@@ -46,27 +45,7 @@ public abstract partial class LivingEntity : CharacterBody3D, ICharacter, IFacti
     public float BaseThreatValue { get; private set; } = 100f;
 
     [ExportGroup("AI Targeting")]
-    [Export] public Marker3D[] SightPoints { get; private set; }
-
-    /// <summary>
-    /// Исполузуется для Godot-компилятора
-    /// </summary>
-    public LivingEntity() { }
-
-    protected LivingEntity(IDs id)
-    {
-        ID = id;
-    }
-
-    public override void _EnterTree()
-    {
-        LivingEntityManager.Add(this);
-    }
-
-    public override void _ExitTree()
-    {
-        LivingEntityManager.Remove(this);
-    }
+    [Export] public Marker3D[] SightPoints;
 
     public override void _Ready()
     {
@@ -76,6 +55,7 @@ public abstract partial class LivingEntity : CharacterBody3D, ICharacter, IFacti
         {
             SetProcess(false);
             SetPhysicsProcess(false);
+            GD.PushWarning($"{Name} is dead when it was created 21 23!");
         }
     }
 

@@ -169,8 +169,10 @@ public sealed partial class CameraOperator
     /// </summary>
     private Vector3 CalculateFinalPosition()
     {
-        if (_shaker == null || _targetCamera == null)
+        if (!GodotObject.IsInstanceValid(_shaker) || !GodotObject.IsInstanceValid(_targetCamera))
         {
+            _shaker = null;
+            _targetCamera = null;
             return _targetCamera?.Position ?? Vector3.Zero;
         }
 

@@ -36,7 +36,7 @@ public partial class SimpleImpactProjectile : BaseProjectile
 #if DEBUG
                 GD.Print($"{Name} Will return to pool because audio is finished!");
 #endif
-                ProjectilePool.Return(this);
+                ProjectilePool.Instance.Return(this);
             };
         }
 
@@ -113,7 +113,7 @@ public partial class SimpleImpactProjectile : BaseProjectile
         else
         {
             // Если звука нет, возвращаем снаряд в пул немедленно.
-            ProjectilePool.Return(this);
+            ProjectilePool.Instance.Return(this);
         }
     }
 

@@ -18,10 +18,7 @@ public partial class ShaderVFX3D : BaseVfx3D
 
     public override void _Ready()
     {
-        if (meshInstance == null)
-        {
-            meshInstance = GetNode<MeshInstance3D>("MeshInstance3D");
-        }
+        meshInstance ??= GetNode<MeshInstance3D>("MeshInstance3D");
 
         if (meshInstance?.Mesh?.GetSurfaceCount() > 0)
         {

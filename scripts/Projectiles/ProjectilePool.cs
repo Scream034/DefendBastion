@@ -1,63 +1,84 @@
-using Game.Singletons;
 using Godot;
 using System.Collections.Generic;
 
-namespace Game.Projectiles;
-
-public static class ProjectilePool
+namespace Game.Projectiles
 {
-    private static readonly Dictionary<PackedScene, Queue<BaseProjectile>> _pools = [];
-    private static Node _poolContainer;
-
-    public static BaseProjectile Get(PackedScene projectileScene)
+    /// <summary>
+    /// Пул для переиспользования объектов снарядов (BaseProjectile).
+    /// Реализован как Autoload (Singleton) для корректной интеграции с жизненным циклом Godot.
+    /// </summary>
+    public partial class ProjectilePool : Node
     {
-        if (!GodotObject.IsInstanceValid(_poolContainer))
+        /// <summary>
+        /// Глобальная точка доступа к экземпляру пула.
+        /// </summary>
+        public static ProjectilePool Instance { get; private set; }
+
+        private readonly Dictionary<PackedScene, Queue<BaseProjectile>> _pools = [];
+
+        public override void _EnterTree()
         {
-            _poolContainer = new Node { Name = "ProjectilePoolContainer" };
-            Constants.Root.AddChild(_poolContainer);
+            if (Instance != null)
+            {
+                GD.PushWarning($"Duplicate instance of {nameof(ProjectilePool)} detected. Overwriting...");
+            }
+            Instance = this;
         }
 
-        if (!_pools.TryGetValue(projectileScene, out var queue))
+        public override void _ExitTree()
         {
-            queue = new Queue<BaseProjectile>();
-            _pools[projectileScene] = queue;
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
-        BaseProjectile projectile;
-        if (queue.Count > 0)
+        public BaseProjectile Get(PackedScene projectileScene)
         {
-            projectile = queue.Dequeue();
-            // Отсоединяем от контейнера пула
-            projectile.GetParent()?.RemoveChild(projectile); 
-        }
-        else
-        {
-            projectile = projectileScene.Instantiate<BaseProjectile>();
-            projectile.SourceScene = projectileScene;
-        }
+            if (!_pools.TryGetValue(projectileScene, out var queue))
+            {
+                queue = new Queue<BaseProjectile>();
+                _pools[projectileScene] = queue;
+            }
 
-        // ResetState вызывается здесь, когда узел еще не в сцене
-        projectile.ResetState(); 
-        return projectile;
-    }
+            BaseProjectile projectile;
+            if (queue.Count > 0)
+            {
+                projectile = queue.Dequeue();
+                // Отсоединяем от контейнера пула. Reparent(null) не сработает, если узел уже в сцене.
+                projectile.GetParent()?.RemoveChild(projectile);
+            }
+            else
+            {
+                projectile = projectileScene.Instantiate<BaseProjectile>();
+                projectile.SourceScene = projectileScene;
+            }
 
-    public static void Return(BaseProjectile projectile)
-    {
-        if (!GodotObject.IsInstanceValid(projectile) || projectile.SourceScene == null)
-        {
-            return;
-        }
-
-        if (!_pools.TryGetValue(projectile.SourceScene, out var queue))
-        {
-            queue = new Queue<BaseProjectile>();
-            _pools[projectile.SourceScene] = queue;
+            // ResetState вызывается здесь, когда узел еще не в сцене
+            projectile.ResetState();
+            return projectile;
         }
 
-        projectile.Reparent(_poolContainer);
+        public void Return(BaseProjectile projectile)
+        {
+            // Дополнительная проверка, чтобы убедиться, что _poolContainer еще валиден
+            if (!IsInstanceValid(projectile) || projectile.SourceScene == null)
+            {
+                // Если пул уже уничтожается, просто удаляем снаряд
+                if (IsInstanceValid(projectile)) projectile.QueueFree();
+                return;
+            }
 
-        projectile.Disable();
-        
-        queue.Enqueue(projectile);
+            if (!_pools.TryGetValue(projectile.SourceScene, out var queue))
+            {
+                queue = new Queue<BaseProjectile>();
+                _pools[projectile.SourceScene] = queue;
+            }
+
+            // Вместо GetParent().RemoveChild(this) используем Reparent, это безопаснее
+            projectile.Reparent(this);
+            projectile.Disable();
+            queue.Enqueue(projectile);
+        }
     }
 }
