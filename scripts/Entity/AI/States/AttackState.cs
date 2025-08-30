@@ -23,54 +23,32 @@ namespace Game.Entity.AI.States
         {
             if (!_context.IsTargetValid)
             {
+                // Если цель стала невалидной (умерла, исчезла), выходим из боя.
                 _context.OnCurrentTargetInvalidated();
                 return;
             }
 
             var currentTarget = _context.TargetingSystem.CurrentTarget;
-
-            if (!_context.HasLineOfSightToCurrentTarget)
-            {
-                HandleLostLineOfSight(currentTarget);
-                return;
-            }
-
             float distanceToTarget = _context.GlobalPosition.DistanceTo(currentTarget.GlobalPosition);
             float attackRange = _combatBehavior?.AttackRange ?? 15f;
 
+            // Если мы за пределами максимальной дальности атаки, подходим ближе.
             if (distanceToTarget > attackRange)
             {
                 _context.MovementController.MoveTo(currentTarget.GlobalPosition);
-                return;
+                return; // Двигаемся, остальная логика на следующий кадр.
             }
 
-            _combatBehavior?.Process(_context, delta);
-        }
+            // Если мы в радиусе атаки, передаем управление боевому поведению.
+            bool canContinueCombat = _combatBehavior?.Process(_context, delta) ?? false;
 
-        /// <summary>
-        /// Обрабатывает ситуацию, когда линия видимости до текущей цели потеряна.
-        /// Реализует тактическое решение: сначала найти другую цель, и только потом преследовать.
-        /// </summary>
-        private void HandleLostLineOfSight(LivingEntity lostTarget)
-        {
-            GD.Print($"{_context.Name} lost line of sight to {lostTarget.Name}. Re-evaluating targets...");
-
-            // Сохраняем позицию цели, которую мы потеряли, на случай если придется ее преследовать.
-            _context.SetPursuitTargetPosition(lostTarget.GlobalPosition);
-
-            // Форсируем немедленную переоценку, чтобы найти другую видимую цель.
-            _context.TargetingSystem.ForceReevaluation();
-
-            // Проверяем результат переоценки.
-            if (_context.IsTargetValid)
+            // Если поведение сигнализирует, что оно больше не может вести бой
+            // (например, потеряло цель за углом и не смогло найти новую позицию),
+            // тогда переходим в преследование.
+            if (!canContinueCombat)
             {
-                // Нашлась новая цель! Остаемся в AttackState и на следующем кадре начнем атаковать ее.
-                GD.Print($"{_context.Name} found new immediate target: {_context.TargetingSystem.CurrentTarget.Name}. Engaging.");
-            }
-            else
-            {
-                // Других видимых целей нет. Теперь самое время начать преследование.
-                GD.Print($"{_context.Name} no other visible targets. Pursuing last known position of {lostTarget.Name}.");
+                GD.Print($"{_context.Name} combat behavior failed to engage {currentTarget.Name}. Pursuing last known position.");
+                _context.SetPursuitTargetPosition(currentTarget.GlobalPosition);
                 _context.ChangeState(new PursuitState(_context));
             }
         }

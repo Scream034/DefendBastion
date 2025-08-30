@@ -16,26 +16,32 @@
 
 [sub_resource type="Resource" id="Resource_4aidf"]
 script = ExtResource("2_p06bi")
-TargetEvaluationInterval = 1.0
-AimSpreadRadius = 3.0
-PredictionAccuracy = 0.4
+RepositionSearchStep = 0.5
+AimSpreadRadius = 0.0
+PredictionAccuracy = 1.0
+LineOfSightMask = 3
 metadata/_custom_type_script = "uid://bh6xlp0n5roe6"
 
 [sub_resource type="Resource" id="Resource_ax7fu"]
 script = ExtResource("3_p3j4k")
+MaxHeadYawDegrees = 75.0
+MaxHeadPitchDegrees = 15.0
 metadata/_custom_type_script = "uid://na4nrs3prgm4"
 
 [sub_resource type="Resource" id="Resource_oyrvu"]
 script = ExtResource("4_ijh48")
+SlowSpeed = 12.0
+NormalSpeed = 10.0
+FastSpeed = 15.0
 metadata/_custom_type_script = "uid://c7hnkuof7yfqy"
 
 [sub_resource type="Resource" id="Resource_a6sgv"]
 script = ExtResource("5_deh70")
+PathWaypointAccuracyRadius = 5.0
 metadata/_custom_type_script = "uid://crghqd81eht0b"
 
 [sub_resource type="Resource" id="Resource_afqxp"]
 script = ExtResource("6_sohst")
-MissionNodePath = null
 MovementProfile = SubResource("Resource_oyrvu")
 PatrolProfile = SubResource("Resource_a6sgv")
 CombatProfile = SubResource("Resource_4aidf")
@@ -49,7 +55,7 @@ streams_count = 1
 stream_0/stream = ExtResource("7_yoe7r")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_lcrii"]
-size = Vector3(3, 4.52332, 3)
+size = Vector3(2, 3, 2)
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_cti50"]
 transparency = 1
@@ -65,7 +71,7 @@ emission = Color(0.733333, 0, 0.317647, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_lcrii"]
 material = SubResource("ORMMaterial3D_cti50")
-size = Vector3(3.01, 1.5, 3.01)
+size = Vector3(0.125, 0.115, 2.465)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_etufe"]
 size = Vector3(100.8, 16, 500.6)
@@ -75,7 +81,7 @@ albedo_color = Color(0.0745098, 0, 0.0235294, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ypjiq"]
 material = SubResource("ORMMaterial3D_ypjiq")
-size = Vector3(3, 4, 3)
+size = Vector3(2, 3, 2)
 
 [node name="CubePawn" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "_targetingSystem", "_movementController", "_lookController", "_combatBehaviorNode", "_eyesPosition", "SightPoints")]
 collision_layer = 3
@@ -87,8 +93,8 @@ _targetingSystem = NodePath("AITargetingSystem")
 _movementController = NodePath("AIMovementController")
 _lookController = NodePath("AILookController")
 _combatBehaviorNode = NodePath("CombatBehavior")
-_eyesPosition = NodePath("CollisionShape3D/EyesPoint")
-Speed = 6.0
+_eyesPosition = NodePath("Head/EyesPoint")
+Speed = 10.0
 ID = 1
 Faction = 2
 MaxHealth = 225.0
@@ -105,10 +111,13 @@ max_polyphony = 2
 attenuation_filter_cutoff_hz = 9000.0
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
-path_desired_distance = 3.3
-target_desired_distance = 3.3
-height = 6.6
-radius = 3.3
+path_desired_distance = 4.0
+target_desired_distance = 4.0
+avoidance_enabled = true
+height = 4.6
+radius = 5.0
+neighbor_distance = 15.0
+debug_enabled = true
 
 [node name="AILookController" type="Node" parent="."]
 script = ExtResource("8_8f78k")
@@ -116,11 +125,11 @@ script = ExtResource("8_8f78k")
 [node name="AIMovementController" type="Node" parent="." node_paths=PackedStringArray("_navigationAgent", "_headPivot")]
 script = ExtResource("9_b51h5")
 _navigationAgent = NodePath("../NavigationAgent3D")
-_headPivot = NodePath("../CollisionShape3D/Head")
+_headPivot = NodePath("../Head")
 
 [node name="AITargetingSystem" type="Node" parent="." node_paths=PackedStringArray("_targetDetectionArea")]
 script = ExtResource("10_ngrf4")
-_targetDetectionArea = NodePath("../CollisionShape3D/Head/DetectionArea3D")
+_targetDetectionArea = NodePath("../Head/DetectionArea3D")
 
 [node name="CombatBehavior" type="Node" parent="." node_paths=PackedStringArray("_attackActionNode")]
 script = ExtResource("11_edsyf")
@@ -130,32 +139,34 @@ _attackActionNode = NodePath("../AttackStrategy")
 [node name="AttackStrategy" type="Node" parent="." node_paths=PackedStringArray("MuzzlePoint")]
 script = ExtResource("12_cwmnl")
 _projectileScene = ExtResource("13_wtu6w")
-MuzzlePoint = NodePath("../MazzlePoint")
+MuzzlePoint = NodePath("../Body/MazzlePoint")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.738342, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.91708463, 0)
 shape = SubResource("BoxShape3D_lcrii")
 
-[node name="Head" type="MeshInstance3D" parent="CollisionShape3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.51729, 0)
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5631242, -1.120723)
 mesh = SubResource("BoxMesh_lcrii")
+skeleton = NodePath("../CollisionShape3D")
 
-[node name="DetectionArea3D" type="Area3D" parent="CollisionShape3D/Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.778948, 0)
+[node name="EyesPoint" type="Marker3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.1692746)
+
+[node name="DetectionArea3D" type="Area3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.13199335, 0)
 collision_layer = 0
 collision_mask = 2
 monitorable = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CollisionShape3D/Head/DetectionArea3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Head/DetectionArea3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.043, -0.8744, -251.8775)
 shape = SubResource("BoxShape3D_etufe")
 
-[node name="Body" type="MeshInstance3D" parent="CollisionShape3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.261658, 0)
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 mesh = SubResource("BoxMesh_ypjiq")
+skeleton = NodePath("../CollisionShape3D")
 
-[node name="EyesPoint" type="Marker3D" parent="CollisionShape3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.99017, -1.5604)
-
-[node name="MazzlePoint" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.806455, -1.69736)
+[node name="MazzlePoint" type="Marker3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15637797, 1.4844975, -1.045194)

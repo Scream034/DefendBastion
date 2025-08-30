@@ -4,9 +4,13 @@ using Godot;
 
 namespace Game;
 
-public partial class GameManager : Node3D
+public partial class World : Node3D
 {
-    public static GameManager Instance { get; private set; }
+    public static World Instance { get; private set; }
+    public static float DefaultGravity { get; private set; }
+    public static Vector3 DefaultGravityVector { get; private set; }
+    public static PhysicsDirectSpaceState3D DirectSpaceState { get; private set; }
+    public static World3D Real { get; private set; }
 
     [Signal]
     public delegate void NavigationReadyEventHandler();
@@ -31,12 +35,17 @@ public partial class GameManager : Node3D
             GD.PushWarning("GameManager instance already exists. Overwriting.");
             Instance = this;
         }
+
+        DefaultGravity = ProjectSettings.GetSetting("physics/3d/default_gravity").AsSingle();
+        DefaultGravityVector = ProjectSettings.GetSetting("physics/3d/default_gravity_vector").AsVector3();
     }
 
     public override async void _Ready()
     {
+        await UpdateStateAsync(GetWorld3D());
+
         // Получаем и сохраняем RID карты
-        _navigationMapRid = GetWorld3D().NavigationMap;
+        _navigationMapRid = Real.NavigationMap;
 
         // Подписываемся, используя ИМЯ метода, а не лямбду
         NavigationServer3D.Singleton.MapChanged += OnMapChanged;
@@ -47,6 +56,24 @@ public partial class GameManager : Node3D
         }
 
         AudioServer.SetBusVolumeDb(0, -16f);
+    }
+
+    public static async Task<PhysicsDirectSpaceState3D> GetRealDirectSpaceStateAsync()
+    {
+        await Constants.Tree.ToSignal(Constants.Tree, SceneTree.SignalName.PhysicsFrame);
+        return Real.DirectSpaceState;
+    }
+
+    /// <summary>
+    /// Должен ожидать перед этим PhysicsFrame для корректной работы.
+    /// </summary>
+    /// <param name="world"></param>
+    public static async Task UpdateStateAsync(World3D world)
+    {
+        await Constants.Tree.ToSignal(Constants.Tree, SceneTree.SignalName.PhysicsFrame);
+
+        DirectSpaceState = world.DirectSpaceState;
+        Real = world;
     }
 
     /// <summary>
@@ -67,8 +94,6 @@ public partial class GameManager : Node3D
 
         // Теперь отписка работает, потому что мы используем ту же самую ссылку на метод
         NavigationServer3D.Singleton.MapChanged -= OnMapChanged;
-
-        Constants.UpdateWorldConstants(GetWorld3D());
 
         IsNavigationReady = true;
         GD.Print("-> Navigation map is ready! Emitting NavigationReady signal.");

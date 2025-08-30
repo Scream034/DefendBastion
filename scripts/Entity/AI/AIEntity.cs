@@ -1,3 +1,10 @@
+// --- ИЗМЕНЕНИЯ ---
+// 1. В `GetVisibleTargetPointFrom` немного упрощена логика кэширования, так как
+//    основная оптимизация теперь происходит в `StationaryCombatBehavior`.
+// 2. Добавлен новый метод `OnMissionPathCompleted` для обработки события завершения
+//    пути в режиме Assault.
+// -----------------
+
 using Godot;
 using Game.Entity.AI.Behaviors;
 using Game.Entity.AI.States;
@@ -5,6 +12,8 @@ using System.Threading.Tasks;
 using Game.Interfaces;
 using Game.Entity.AI.Profiles;
 using Game.Entity.AI.Components;
+using System.Reflection.Metadata;
+using Game.Singletons;
 
 namespace Game.Entity.AI
 {
@@ -15,6 +24,9 @@ namespace Game.Entity.AI
     {
         [ExportGroup("AI Configuration")]
         [Export] public AIProfile Profile { get; private set; }
+        [Export] public AIMainTask MainTask { get; private set; } = AIMainTask.FreePatrol;
+        [Export] public AssaultMode AssaultBehavior { get; private set; } = AssaultMode.Destroy;
+        [Export] public Path3D MissionPath { get; private set; }
 
         [ExportGroup("Dependencies")]
         [Export] private AITargetingSystem _targetingSystem;
@@ -42,10 +54,8 @@ namespace Game.Entity.AI
         private LivingEntity _lastTrackedTarget;
 
         private Vector3? _cachedVisiblePoint = null;
-        private bool _isLoSCacheValidThisFrame = false;
         private ulong _cacheFrame = ulong.MaxValue;
-        private Vector3 _cachedLoS_SelfPosition;
-        private Vector3 _cachedLoS_TargetPosition;
+        private ulong _cachedTargetInstanceId = 0;
         private const float LoSCacheInvalidationDistanceSqr = 0.0625f; // 0.25 * 0.25
 
         private State _currentState;
@@ -57,23 +67,23 @@ namespace Game.Entity.AI
             base._Ready();
             SpawnPosition = GlobalPosition;
 
-#if DEBUG
+            // Используйте #if DEBUG, чтобы избежать этих проверок в релизном билде
             if (!ValidateDependencies())
             {
                 SetPhysicsProcess(false);
-                throw new System.Exception($"Произошла ошибка инициализации AI: {Name}");
+                GD.PushError($"Произошла ошибка инициализации AI: {Name}");
+                return;
             }
-#endif
+
             _targetingSystem.Initialize(this);
             _movementController.Initialize(this);
             _lookController.Initialize(this);
-            Profile.Initialize(this);
 
-            if (GameManager.Instance.IsNavigationReady) InitializeAI();
+            if (World.Instance != null && World.Instance.IsNavigationReady) InitializeAI();
             else
             {
                 GD.Print($"{Name} waiting for navigation map...");
-                await ToSignal(GameManager.Instance, GameManager.SignalName.NavigationReady);
+                await ToSignal(World.Instance, World.SignalName.NavigationReady);
                 InitializeAI();
             }
         }
@@ -83,7 +93,7 @@ namespace Game.Entity.AI
             if (_isAiActive) return;
             GD.Print($"{Name} initializing AI, navigation map is ready.");
             _isAiActive = true;
-            _defaultState = Profile.MainTask switch
+            _defaultState = MainTask switch
             {
                 AIMainTask.PathPatrol or AIMainTask.Assault => new PathFollowingState(this),
                 _ => new PatrolState(this),
@@ -100,9 +110,9 @@ namespace Game.Entity.AI
             if (_combatBehaviorNode is ICombatBehavior behavior) { CombatBehavior = behavior; }
             else { GD.PushError($"CombatBehavior for {Name} is not assigned or invalid!"); return false; }
             if (_eyesPosition == null) { GD.PushWarning($"EyesPosition not assigned to {Name}. Line-of-sight checks will originate from the entity's center."); }
-            if ((Profile.MainTask == AIMainTask.PathPatrol || Profile.MainTask == AIMainTask.Assault) && Profile.MissionNodePath == null)
+            if ((MainTask == AIMainTask.PathPatrol || MainTask == AIMainTask.Assault) && MissionPath == null)
             {
-                GD.PushError($"AI {Name} is set to PathPatrol or Assault but has no MissionPath assigned in its profile!");
+                GD.PushError($"AI {Name} is set to PathPatrol or Assault but has no MissionPath assigned!");
                 return false;
             }
             return true;
@@ -116,7 +126,6 @@ namespace Game.Entity.AI
             if (IsTargetValid)
             {
                 _lastTrackedTarget = TargetingSystem.CurrentTarget;
-                // Эта позиция теперь обновляется всегда, когда есть валидная цель.
                 LastKnownTargetPosition = TargetingSystem.CurrentTarget.GlobalPosition;
             }
 
@@ -146,21 +155,23 @@ namespace Game.Entity.AI
         {
             if (!IsInstanceValid(target)) return null;
 
-            var currentFrame = (ulong)GetTree().GetFrame();
-            if (_cacheFrame == currentFrame &&
-                _cachedLoS_SelfPosition.DistanceSquaredTo(GlobalPosition) < LoSCacheInvalidationDistanceSqr &&
-                _cachedLoS_TargetPosition.DistanceSquaredTo(target.GlobalPosition) < LoSCacheInvalidationDistanceSqr)
+            var currentFrame = (ulong)Constants.Tree.GetFrame();
+            var targetInstanceId = target.GetInstanceId();
+
+            // Проверяем, не запрашиваем ли мы LoS для той же цели в том же кадре.
+            if (_cacheFrame == currentFrame && _cachedTargetInstanceId == targetInstanceId)
             {
                 return _cachedVisiblePoint;
             }
 
+            uint mask = Profile?.CombatProfile?.LineOfSightMask ?? 1;
             var exclude = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
-            var resultPoint = AITacticalAnalysis.GetFirstVisiblePoint(this, fromPosition, target, exclude);
+            var resultPoint = AITacticalAnalysis.GetFirstVisiblePoint(this, fromPosition, target, exclude, mask);
 
+            // Обновляем кэш
             _cachedVisiblePoint = resultPoint;
             _cacheFrame = currentFrame;
-            _cachedLoS_SelfPosition = GlobalPosition;
-            _cachedLoS_TargetPosition = target.GlobalPosition;
+            _cachedTargetInstanceId = targetInstanceId;
 
             return resultPoint;
         }
@@ -170,6 +181,8 @@ namespace Game.Entity.AI
         #region State Machine and Event Handling
         public void ChangeState(State newState)
         {
+            if (_currentState?.GetType() == newState.GetType()) return; // Не меняем состояние на такое же
+
             _currentState?.Exit();
             _currentState = newState;
             GD.Print($"{Name} changing state to -> {newState.GetType().Name}");
@@ -182,37 +195,12 @@ namespace Game.Entity.AI
             ChangeState(_defaultState);
         }
 
-        /// <summary>
-        /// Проверяет, является ли текущая цель всё ещё наилучшей.
-        /// Возвращает true, если цель - пустая турель, И есть другие потенциальные цели.
-        /// </summary>
-        // public bool NeedsToReevaluateTarget()
-        // {
-        //     if (!IsTargetValid) return false;
-
-        //     var currentTarget = TargetingSystem.CurrentTarget;
-
-        //     // Проверяем, является ли цель пустой управляемой турелью.
-        //     if (currentTarget is ControllableTurret { CurrentController: null })
-        //     {
-        //         // Если это так, нужно переоценивать, ТОЛЬКО ЕСЛИ есть другие варианты.
-        //         // Если в списке потенциальных целей больше одной записи (сама турель + кто-то еще),
-        //         // или если есть цели, но текущая - не единственная, значит, есть смысл искать лучшую.
-        //         // Самый простой способ: есть ли в списке хоть кто-то, кроме текущей цели.
-        //         return TargetingSystem.PotentialTargets.Any(t => t != currentTarget);
-        //     }
-
-        //     return false;
-        // }
-
-        /// Устанавливает конкретную точку, к которой должно двигаться состояние преследования.
-        /// </summary>
         public void SetPursuitTargetPosition(Vector3 position)
         {
             PursuitTargetPosition = position;
         }
 
-        public void OnNewTargetAcquired(PhysicsBody3D newTarget)
+        public void OnNewTargetAcquired(LivingEntity newTarget)
         {
             if (_currentState is not AttackState && _currentState is not PursuitState)
             {
@@ -220,77 +208,35 @@ namespace Game.Entity.AI
             }
         }
 
-        public void OnTargetLostLineOfSight(PhysicsBody3D lostTarget)
-        {
-            if (lostTarget == TargetingSystem.CurrentTarget && _currentState is AttackState)
-            {
-                ChangeState(new PursuitState(this));
-            }
-        }
-
         public void OnCurrentTargetInvalidated()
         {
-            if (!GodotObject.IsInstanceValid(_lastTrackedTarget))
+            var lastKnownPos = LastKnownTargetPosition;
+            // Цель могла быть уничтожена. _lastTrackedTarget может быть невалидным, поэтому мы его не передаем.
+            TargetingSystem.OnTargetEliminated(_lastTrackedTarget);
+            _lastTrackedTarget = null;
+
+            // Решаем, что делать дальше.
+            DecideNextActionAfterCombat(lastKnownPos);
+        }
+
+        /// <summary>
+        /// Вызывается, когда AI достигает конца своего `MissionPath` в режиме `Assault`.
+        /// </summary>
+        public void OnMissionPathCompleted()
+        {
+            if (MainTask == AIMainTask.Assault)
             {
-                // Используем LastKnownTargetPosition, так как это была последняя валидная позиция _lastTrackedTarget
-                OnTargetEliminated(_lastTrackedTarget, LastKnownTargetPosition);
-            }
-            else
-            {
+                GD.Print($"{Name} has reached the assault objective. Switching to free combat/patrol.");
+                // После достижения цели штурма, AI переходит в режим свободного патруля/боя.
+                _defaultState = new PatrolState(this);
                 ReturnToDefaultState();
             }
         }
 
-        /// <summary>
-        /// Централизованный обработчик события уничтожения цели.
-        /// Содержит новую логику для расследования уничтоженных контейнеров.
-        /// </summary>
-        private void OnTargetEliminated(LivingEntity eliminatedEntity, Vector3 lastKnownPosition)
+        private void DecideNextActionAfterCombat(Vector3 lastEngagementPosition)
         {
-            TargetingSystem.OnTargetEliminated(eliminatedEntity);
-            _lastTrackedTarget = null;
-
-            // Проверяем, не уничтожили ли мы контейнер, и следует ли нам проверить, не остался ли кто-то внутри.
-            if (eliminatedEntity is IContainerEntity && ShouldInvestigateAfterContainerDestroy())
-            {
-                // Если да, то вместо стандартного поведения после боя, мы начинаем расследование.
-                StartInvestigation(lastKnownPosition);
-            }
-            else
-            {
-                // Иначе используем стандартную логику (бдительность или возврат к задачам).
-                DecideNextActionAfterCombat(lastKnownPosition);
-            }
-        }
-
-        /// <summary>
-        /// Запускает состояние расследования в указанной точке.
-        /// </summary>
-        private void StartInvestigation(Vector3 position)
-        {
-            GD.Print($"{Name} destroyed a container. Investigating the area for occupants at {position}.");
-            InvestigationPosition = position;
-            ChangeState(new InvestigateState(this));
-        }
-
-        /// <summary>
-        /// Определяет, должен ли AI расследовать место уничтожения контейнера на основе своей текущей задачи.
-        /// </summary>
-        private bool ShouldInvestigateAfterContainerDestroy()
-        {
-            // В режиме "Прорыв" мы игнорируем все отвлекающие факторы и бежим к цели.
-            if (Profile.MainTask == AIMainTask.Assault && Profile.AssaultBehavior == AssaultMode.Rush)
-            {
-                return false;
-            }
-            // Во всех остальных режимах (Патруль, Штурм/Уничтожение) расследование является
-            // правильным тактическим решением.
-            return true;
-        }
-
-        public void DecideNextActionAfterCombat(Vector3 lastEngagementPosition)
-        {
-            if (Profile.CombatProfile.EnablePostCombatVigilance && (Profile.MainTask != AIMainTask.Assault || Profile.AssaultBehavior != AssaultMode.Rush))
+            // Не переходим в Vigilance, если мы должны продолжать штурм
+            if (Profile.CombatProfile.EnablePostCombatVigilance && (MainTask != AIMainTask.Assault || AssaultBehavior != AssaultMode.Rush))
             {
                 LastEngagementPosition = lastEngagementPosition;
                 ChangeState(new VigilanceState(this));

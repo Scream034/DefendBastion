@@ -20,6 +20,10 @@ namespace Game.Entity.AI.Profiles
         [Export(PropertyHint.Range, "0.0, 1.0, 0.05")]
         public float PredictionAccuracy { get; private set; } = 0.7f;
 
+        [ExportGroup("Line of Sight")]
+        [Export(PropertyHint.Layers3DPhysics)]
+        public uint LineOfSightMask { get; private set; } = 2;
+
         [ExportGroup("Post-Combat Behavior")]
         [Export] public bool EnablePostCombatVigilance { get; private set; } = true;
         [Export(PropertyHint.Range, "3, 15, 1")] public float VigilanceDuration { get; private set; } = 8.0f;

@@ -34,6 +34,8 @@ namespace Game.Entity.AI.Behaviors
         private double _liveSearchTotalTimer = 0;
         private Vector3 _liveSearchDirection = Vector3.Zero;
         private readonly List<RepositioningSubState> _availableLiveSearchActions = new();
+        private double _allyRepositionCooldown = 0;
+        private const double ALLY_REPOSITION_COOLDOWN_TIME = 1.5;
 
         public override void _Ready()
         {
@@ -53,56 +55,63 @@ namespace Game.Entity.AI.Behaviors
             ResetRepositioningState(context);
         }
 
-        public void Process(AIEntity context, double delta)
+        public bool Process(AIEntity context, double delta)
         {
-            var target = context.TargetingSystem.CurrentTarget;
-            if (!IsInstanceValid(target))
+            if (context.TargetingSystem.CurrentTarget is not LivingEntity target || !IsInstanceValid(target))
             {
+                // Если цель стала невалидной, сообщаем об этом, но это не тактическая неудача
                 context.ReturnToDefaultState();
-                return;
+                return true;
             }
 
             _timeSinceLastAttack += delta;
+            _allyRepositionCooldown -= delta;
 
-            // Если мы находимся в процессе смены позиции, делегируем управление соответствующему методу.
             if (_currentRepositionSubState != RepositioningSubState.None)
             {
-                HandleRepositioning(context, target, delta);
-                return;
+                return HandleRepositioning(context, target, delta);
             }
 
-            // Логика движения к цели теперь находится в AttackState. Этот класс работает, когда цель уже в радиусе атаки.
+            var fromPosition = _attackAction?.MuzzlePoint?.GlobalPosition ?? context.GlobalPosition;
+            uint losMask = context.Profile?.CombatProfile?.LineOfSightMask ?? 1;
 
-            var muzzlePoint = _attackAction?.MuzzlePoint;
-            Vector3? visiblePoint = null;
+            var losResult = AITacticalAnalysis.AnalyzeLineOfSight(context, fromPosition, target, losMask, out _);
 
-            // Используем кэшированный метод AIEntity для проверки видимости.
-            // Приоритет - проверка от дула, если это требуется.
-            if (_requireMuzzleLoS && muzzlePoint != null)
+            switch (losResult)
             {
-                visiblePoint = context.GetVisibleTargetPointFrom(target, muzzlePoint.GlobalPosition);
-            }
-            else
-            {
-                visiblePoint = context.GetVisibleTargetPoint(target);
-            }
+                case LoSAnalysisResult.Clear:
+                    context.MovementController.StopMovement();
+                    if (_timeSinceLastAttack >= AttackCooldown)
+                    {
+                        _attackAction?.Execute(context, target, target.GlobalPosition);
+                        _timeSinceLastAttack = 0;
+                    }
+                    break;
 
-            if (visiblePoint.HasValue) // Если цель видна (или ее часть)
-            {
-                context.MovementController.StopMovement();
-                if (_timeSinceLastAttack >= AttackCooldown)
-                {
-                    _attackAction?.Execute(context, target, visiblePoint.Value);
-                    _timeSinceLastAttack = 0;
-                }
+                case LoSAnalysisResult.BlockedByAlly:
+                    if (_allyRepositionCooldown <= 0)
+                    {
+                        var sidestepPos = AITacticalAnalysis.FindSidestepPosition(context, target);
+                        if (sidestepPos.HasValue)
+                        {
+                            context.MovementController.MoveTo(sidestepPos.Value);
+                            _allyRepositionCooldown = ALLY_REPOSITION_COOLDOWN_TIME;
+                        }
+                    }
+                    break;
+
+                case LoSAnalysisResult.BlockedByObstacle:
+                    if (!AttemptReposition(context, target))
+                    {
+                        GD.Print($"{context.Name} failed to find a repositioning point and cannot engage.");
+                        return false; // Сигнализируем о тактической неудаче
+                    }
+                    break;
             }
-            else // Если ничего не видно с текущей позиции
-            {
-                AttemptReposition(context, target);
-            }
+            return true; // Бой продолжается
         }
 
-        private void AttemptReposition(AIEntity context, PhysicsBody3D target)
+        private bool AttemptReposition(AIEntity context, PhysicsBody3D target)
         {
             context.MovementController.StopMovement();
             bool foundNewPosition = false;
@@ -125,27 +134,31 @@ namespace Game.Entity.AI.Behaviors
                 }
             }
 
-            if (!foundNewPosition && _allowLiveSearch) StartLiveSearch(context, target);
-            else if (!foundNewPosition) GD.Print($"{context.Name} cannot reposition, holding position.");
+            if (!foundNewPosition && _allowLiveSearch)
+            {
+                StartLiveSearch(context, target);
+                return true; // Мы начали поиск, так что это еще не провал
+            }
+
+            return foundNewPosition; // Возвращаем, удалось ли нам хоть что-то предпринять
         }
 
-        private void HandleRepositioning(AIEntity context, PhysicsBody3D target, double delta)
+        private bool HandleRepositioning(AIEntity context, PhysicsBody3D target, double delta)
         {
             if (!IsInstanceValid(target) || target is not LivingEntity livingTarget)
             {
                 ResetRepositioningState(context);
-                return;
+                return true;
             }
 
             var muzzlePoint = _attackAction?.MuzzlePoint;
-            // Если во время движения к новой точке мы УЖЕ увидели цель, останавливаемся и начинаем атаковать.
             if (_requireMuzzleLoS && muzzlePoint != null)
             {
-                // Используем централизованный метод для проверки
-                if (context.GetVisibleTargetPointFrom(livingTarget, muzzlePoint.GlobalPosition).HasValue)
+                uint losMask = context.Profile?.CombatProfile?.LineOfSightMask ?? 1;
+                if (AITacticalAnalysis.AnalyzeLineOfSight(context, muzzlePoint.GlobalPosition, livingTarget, losMask, out _) == LoSAnalysisResult.Clear)
                 {
                     ResetRepositioningState(context);
-                    return;
+                    return true; // Нашли цель, возвращаемся к обычной атаке
                 }
             }
 
@@ -163,13 +176,20 @@ namespace Game.Entity.AI.Behaviors
                 case RepositioningSubState.LiveSearchRotate:
                     _liveSearchTotalTimer -= delta;
                     _liveSearchSegmentTimer -= delta;
-                    if (_liveSearchTotalTimer <= 0) { ResetRepositioningState(context); return; }
+                    if (_liveSearchTotalTimer <= 0)
+                    {
+                        GD.Print($"{context.Name} live search timed out. Target not found.");
+                        ResetRepositioningState(context);
+                        return false; // Поиск провалился, сигнализируем о неудаче
+                    }
                     if (_liveSearchSegmentTimer <= 0) ChooseNextLiveSearchAction(context, target);
                     PerformLiveSearchMovement(context);
                     break;
             }
+            return true; // Процесс репозиционирования продолжается
         }
 
+        // ... (остальные методы без изменений: StartLiveSearch, ChooseNextLiveSearchAction, PerformLiveSearchMovement, ResetRepositioningState) ...
         private void StartLiveSearch(AIEntity context, PhysicsBody3D target)
         {
             _availableLiveSearchActions.Clear();

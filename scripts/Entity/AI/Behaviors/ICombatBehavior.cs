@@ -12,7 +12,8 @@ namespace Game.Entity.AI.Behaviors
         /// <summary>
         /// Вызывается каждый кадр из AttackState. Содержит всю логику боя.
         /// </summary>
-        void Process(AIEntity context, double delta);
+        /// <returns>true, если поведение продолжает бой; false, если цель тактически потеряна.</returns>
+        bool Process(AIEntity context, double delta);
 
         /// <summary>
         /// Вызывается при входе в состояние атаки. Подготавливает поведение к бою.

@@ -72,7 +72,7 @@ public partial class BaseProjectile : Area3D
         RayQueryParams.From = GlobalPosition;
         RayQueryParams.To = nextPosition;
 
-        var result = Constants.DirectSpaceState.IntersectRay(RayQueryParams);
+        var result = World.DirectSpaceState.IntersectRay(RayQueryParams);
 
         if (result.Count > 0)
         {

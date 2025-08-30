@@ -113,7 +113,7 @@ public partial class TurretCameraController : Node, ICameraController
         var camTransform = _camera!.GlobalTransform;
         _rayQuery.From = camTransform.Origin;
         _rayQuery.To = _rayQuery.From - camTransform.Basis.Z * _aimTargetDistance;
-        var result = Constants.DirectSpaceState.IntersectRay(_rayQuery);
+        var result = World.DirectSpaceState.IntersectRay(_rayQuery);
         Vector3 targetPoint = result.Count > 0 ? (Vector3)result["position"] : _rayQuery.To;
 
         Vector3 aimVector = targetPoint - _ownerTurret!.BarrelEnd.GlobalPosition;

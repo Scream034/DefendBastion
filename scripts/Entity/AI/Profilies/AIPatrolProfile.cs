@@ -14,5 +14,9 @@ namespace Game.Entity.AI.Profiles
         [Export] public bool UseRandomWaitTime { get; private set; } = true;
         [Export(PropertyHint.Range, "0, 10, 0.5")] public float MinPatrolWaitTime { get; private set; } = 1.0f;
         [Export(PropertyHint.Range, "0, 10, 0.5")] public float MaxPatrolWaitTime { get; private set; } = 3.0f;
+
+        [ExportGroup("Path Following Behavior")]
+        [Export(PropertyHint.Range, "0.0, 15.0, 0.5")]
+        public float PathWaypointAccuracyRadius { get; private set; } = 2.0f;
     }
 }

@@ -34,7 +34,7 @@ public abstract partial class MoveableEntity : LivingEntity
         {
             // Мы напрямую изменяем свойство Velocity,
             // дочерние классы будут работать с ним дальше.
-            Velocity = Velocity with { Y = Velocity.Y - Constants.DefaultGravity * (float)delta };
+            Velocity = Velocity with { Y = Velocity.Y - World.DefaultGravity * (float)delta };
         }
     }
 

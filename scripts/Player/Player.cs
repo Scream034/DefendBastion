@@ -46,7 +46,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 #if DEBUG
         if (_head == null) GD.PushError("Для игрока не был назначен PlayerHead.");
         if (_collisionShape == null) GD.PushError("Для игрока не был назначен CollisionShape3D.");
-        if (Constants.DefaultGravity <= 0) GD.PushWarning($"Неверное использование гравитации: {Constants.DefaultGravity}");
+        if (World.DefaultGravity <= 0) GD.PushWarning($"Неверное использование гравитации: {World.DefaultGravity}");
 #endif
     }
 

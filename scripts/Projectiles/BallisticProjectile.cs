@@ -22,7 +22,7 @@ public partial class BallisticProjectile : BaseProjectile
     {
         var fDelta = (float)delta;
 
-        _velocity += Constants.DefaultGravityVector * fDelta;
+        _velocity += World.DefaultGravityVector * fDelta;
 
         Position += _velocity * fDelta;
 
