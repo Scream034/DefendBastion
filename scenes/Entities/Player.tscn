@@ -1,17 +1,18 @@
 [gd_scene load_steps=5 format=3 uid="uid://c48vh6kflnrnw"]
 
-[ext_resource type="Script" uid="uid://pmveimvnm0l" path="res://scripts/Player/Player.cs" id="1_k5qh4"]
-[ext_resource type="Script" uid="uid://b33hvq88td6f1" path="res://scripts/Player/PlayerHead.cs" id="2_vm2lv"]
-[ext_resource type="Script" uid="uid://dx6u4adsk5r58" path="res://scripts/Components/Nodes/Shaker3D.cs" id="3_dnc2b"]
+[ext_resource type="Script" uid="uid://bd2uqlyw8wafr" path="res://scripts/Player/Player.cs" id="1_k5qh4"]
+[ext_resource type="Script" uid="uid://c40qjkqff56m2" path="res://scripts/Player/PlayerHead.cs" id="2_vm2lv"]
+[ext_resource type="Script" uid="uid://d0ov3vqxcnfxx" path="res://scripts/Components/Nodes/Shaker3D.cs" id="3_dnc2b"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_w7kh3"]
 
-[node name="Player" type="CharacterBody3D" node_paths=PackedStringArray("_head", "_collisionShape")]
+[node name="Player" type="CharacterBody3D" node_paths=PackedStringArray("_head", "_collisionShape", "SightPoints")]
 physics_interpolation_mode = 1
 script = ExtResource("1_k5qh4")
 _head = NodePath("Head")
 _collisionShape = NodePath("CollisionShape3D")
 Faction = 1
+SightPoints = [NodePath("Head/LOSPoint1")]
 
 [node name="Shaker3D" type="Node" parent="." node_paths=PackedStringArray("_target")]
 script = ExtResource("3_dnc2b")
@@ -41,3 +42,6 @@ debug_shape_custom_color = Color(0.615886, 0.665092, 0.8914, 1)
 
 [node name="Camera3D" type="Camera3D" parent="Head"]
 current = true
+
+[node name="LOSPoint1" type="Marker3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35295475, 0)

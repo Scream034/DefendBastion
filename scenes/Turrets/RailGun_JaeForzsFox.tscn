@@ -1,9 +1,9 @@
 [gd_scene load_steps=41 format=4 uid="uid://h4e5iifitbua"]
 
-[ext_resource type="Script" uid="uid://bj2x3gpu5h051" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_lbqb5"]
+[ext_resource type="Script" uid="uid://dkvis5pabe152" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_lbqb5"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="2_6xwvg"]
-[ext_resource type="Script" uid="uid://cvnninnh5e4tb" path="res://scripts/Turrets/TurretCameraController.cs" id="3_ddxjo"]
-[ext_resource type="Script" uid="uid://dx6u4adsk5r58" path="res://scripts/Components/Nodes/Shaker3D.cs" id="3_s7gp7"]
+[ext_resource type="Script" uid="uid://bjyvyrjexoq44" path="res://scripts/Turrets/TurretCameraController.cs" id="3_ddxjo"]
+[ext_resource type="Script" uid="uid://d0ov3vqxcnfxx" path="res://scripts/Components/Nodes/Shaker3D.cs" id="3_s7gp7"]
 [ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/turret/RailGun/Base.tres" id="4_lrb7t"]
 [ext_resource type="Material" uid="uid://dgx370rssxhh5" path="res://materials/turret/RailGun/Accent.tres" id="5_qh1gm"]
 [ext_resource type="AudioStream" uid="uid://biph0x4s4cufb" path="res://sounds/railgun_fire.wav" id="6_ca4b8"]
@@ -1979,7 +1979,7 @@ libraries = {
 }
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.65661e-10, 1.4129, 0.893818)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.656613e-10, 1.4128969, 0.8938179)
 current = true
 fov = 71.5487
 
@@ -2277,11 +2277,11 @@ transform = Transform3D(0.5, 0.000161857, 0.000467975, -0.000160173, 0.499997, -
 shape = SubResource("ConvexPolygonShape3D_2nxjb")
 
 [node name="CollisionShape3DTurretBarrel" type="CollisionShape3D" parent="."]
-transform = Transform3D(0.5, 3.97904e-14, 4.9738e-14, -3.97904e-14, 0.5, -1.5416e-20, -4.9738e-14, 1.5416e-20, 0.5, -0.000696525, 0.750318, -1.28687)
+transform = Transform3D(0.5, 3.979038e-14, 4.973797e-14, -3.979038e-14, 0.5, -2.8460296e-21, -4.973797e-14, 1.5415994e-20, 0.5, -0.0006965248, 0.750318, -1.2868743)
 shape = SubResource("ConvexPolygonShape3D_s7gp7")
 
 [node name="CollisionShape3D3TurretBase" type="CollisionShape3D" parent="."]
-transform = Transform3D(0.5, 3.99946e-05, -9.32205e-05, -4.00041e-05, 0.5, -5.0783e-05, 9.32164e-05, 5.07905e-05, 0.5, 0, 0.750383, -1.2849)
+transform = Transform3D(0.5, 3.99946e-05, -9.32205e-05, -4.00041e-05, 0.5, -5.07831e-05, 9.32164e-05, 5.07905e-05, 0.5, 0, 0.7503832, -1.2849045)
 shape = SubResource("ConvexPolygonShape3D_0s56n")
 
 [node name="LOSPoint1" type="Marker3D" parent="."]

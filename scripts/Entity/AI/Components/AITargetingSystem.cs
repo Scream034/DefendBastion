@@ -1,13 +1,17 @@
+// --- ИЗМЕНЕНИЯ ---
+// 1. Добавлен новый публичный метод ForceReevaluation(), который позволяет состояниям явно запрашивать
+//    немедленную переоценку целей без необходимости сбрасывать текущую цель в null.
+// 2. В EvaluateTargets добавлена логика, которая сбрасывает цель, если она больше не является лучшей
+//    (например, вышла из зоны видимости), а других целей нет.
+// -----------------
+
 using Godot;
 using Game.Interfaces;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Game.Entity.AI.Components
 {
-    /// <summary>
-    /// Компонент, отвечающий за обнаружение, отслеживание и выбор целей для ИИ.
-    /// Инкапсулирует работу с Area3D и логику оценки угроз.
-    /// </summary>
     public partial class AITargetingSystem : Node
     {
         [ExportGroup("Dependencies")]
@@ -18,7 +22,7 @@ namespace Game.Entity.AI.Components
         private readonly List<LivingEntity> _potentialTargets = [];
 
         public LivingEntity CurrentTarget { get; private set; }
-        public IReadOnlyList<PhysicsBody3D> PotentialTargets => _potentialTargets;
+        public IReadOnlyList<LivingEntity> PotentialTargets => _potentialTargets;
 
         public void Initialize(AIEntity context)
         {
@@ -30,7 +34,7 @@ namespace Game.Entity.AI.Components
                 return;
             }
 
-            _targetEvaluationTimer = _context.Profile.CombatProfile.TargetEvaluationInterval / ProjectSettings.GetSetting("physics/common/physics_ticks_per_second").AsInt32();
+            _targetEvaluationTimer = _context.Profile.CombatProfile.TargetEvaluationInterval;
 
             if (_targetDetectionArea == null)
             {
@@ -53,45 +57,45 @@ namespace Game.Entity.AI.Components
             }
         }
 
+        /// <summary>
+        /// Принудительно запускает немедленную переоценку всех потенциальных целей.
+        /// </summary>
+        public void ForceReevaluation()
+        {
+            GD.Print($"{_context.Name} is forcing target re-evaluation.");
+            EvaluateTargets();
+            _targetEvaluationTimer = _context.Profile.CombatProfile.TargetEvaluationInterval;
+        }
+
         private void EvaluateTargets()
         {
-            _potentialTargets.RemoveAll(target => !IsInstanceValid(target) || (target is ICharacter character && character.Health <= 0));
+            _potentialTargets.RemoveAll(target => !IsInstanceValid(target) || !target.IsAlive);
 
-            if (_potentialTargets.Count == 0 && CurrentTarget == null)
-            {
-                return;
-            }
+            var bestAvailableTarget = AITargetEvaluator.GetBestTarget(_context, _potentialTargets);
 
-            var bestTarget = AITargetEvaluator.GetBestTarget(_context, _potentialTargets);
-
-            if (bestTarget != null)
+            // Мы меняем цель, только если нашли НОВУЮ и ВАЛИДНУЮ цель.
+            if (bestAvailableTarget != null && bestAvailableTarget != CurrentTarget)
             {
-                SetAttackTarget(bestTarget);
+                SetAttackTarget(bestAvailableTarget);
             }
-            else if (CurrentTarget != null && (_potentialTargets.Count == 0 || !_potentialTargets.Contains(CurrentTarget)))
-            {
-                // Если текущая цель больше не в списке потенциальных (но еще жива), возможно, она просто вышла из триггера
-                // В этом случае логика состояний (Pursuit) должна сама решить, что делать.
-                // Здесь мы просто перестаем ее считать "лучшей", но не сбрасываем, чтобы состояние могло отреагировать.
-            }
+            // Если bestAvailableTarget равен null (т.е. не найдено ни одной цели в LoS),
+            // мы сознательно НЕ ДЕЛАЕМ НИЧЕГО. Мы не вызываем SetAttackTarget(null).
+            // AI будет продолжать "держаться" за свою CurrentTarget, пока она физически
+            // не будет уничтожена. Это и есть "упертость".
         }
 
         public void OnTargetEliminated(LivingEntity eliminatedTarget)
         {
-            // Это предотвращает ObjectDisposedException, если цель была удалена в том же кадре.
             string targetName = IsInstanceValid(eliminatedTarget) ? eliminatedTarget.Name : "[Freed Target]";
             GD.Print($"{_context.Name}: Confirmed elimination of [{targetName}].");
 
-            // Сравнение с `null` или уничтоженным объектом безопасно.
             if (CurrentTarget == eliminatedTarget)
             {
                 CurrentTarget = null;
             }
-
-            // `Remove` также безопасно обработает null или уничтоженную ссылку.
             _potentialTargets.Remove(eliminatedTarget);
 
-            EvaluateTargets();
+            ForceReevaluation(); // Сразу ищем новую цель после убийства
         }
 
         public void ClearTarget()
@@ -99,20 +103,24 @@ namespace Game.Entity.AI.Components
             CurrentTarget = null;
         }
 
-        private void SetAttackTarget(LivingEntity target)
+        private void SetAttackTarget(LivingEntity newTarget)
         {
-            if (target == _context || target == CurrentTarget) return;
+            // Если новая цель - это та же, что и была, ничего не делаем.
+            if (newTarget == CurrentTarget) return;
 
-            if (target is not ICharacter || target is not IFactionMember)
+            // Если новая цель невалидна (например, null), а старая была, это значит, мы потеряли все цели.
+            else if (newTarget == null)
             {
-                GD.PrintErr($"Attempted to target {target.Name}, which is not a valid target.");
+                GD.Print($"{_context.Name} lost all targets.");
+                CurrentTarget = null;
+                // Не вызываем здесь OnTargetLostLineOfSight, т.к. это может привести к нежелательным переходам состояний.
+                // Состояния сами должны решить, что делать при CurrentTarget == null.
                 return;
             }
 
-            CurrentTarget = target;
-            GD.Print($"{_context.Name} new best target is: {target.Name}");
-
-            _context.OnNewTargetAcquired(target);
+            GD.Print($"{_context.Name} new best target is: {newTarget.Name}");
+            CurrentTarget = newTarget;
+            _context.OnNewTargetAcquired(newTarget);
         }
 
         private void OnTargetDetected(Node3D body)
@@ -133,7 +141,12 @@ namespace Game.Entity.AI.Components
             {
                 _potentialTargets.Remove(entity);
                 GD.Print($"{_context.Name} removed {body.Name} from potential targets.");
-                _context.OnTargetLostLineOfSight(entity);
+
+                // Если именно текущая цель вышла из триггера, форсируем переоценку.
+                if (entity == CurrentTarget)
+                {
+                    ForceReevaluation();
+                }
             }
         }
     }

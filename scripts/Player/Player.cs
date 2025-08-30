@@ -148,6 +148,8 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         CurrentState = PlayerState.InTurret;
         CurrentTurret = turret;
         UI.Instance.HideInteractionText();
+
+        GD.Print("Player enter turret");
     }
 
     public void ExitTurret(Vector3 exitPosition)
@@ -160,6 +162,8 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
         // Сообщаем менеджеру, что нужно вернуть управление голове игрока
         PlayerInputManager.Instance.SwitchController(_head);
+
+        GD.Print("Player exit turret");
     }
 
     public bool IsInTurret() => CurrentState == PlayerState.InTurret;

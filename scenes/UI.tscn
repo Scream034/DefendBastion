@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://cm0epusci4ngu"]
 
-[ext_resource type="Script" uid="uid://c10bbw1r0tfai" path="res://scripts/UI.cs" id="1_dj8aq"]
+[ext_resource type="Script" uid="uid://b83p5xdhf0qdg" path="res://scripts/UI.cs" id="1_dj8aq"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ll0sn"]
 content_margin_left = 2.0

@@ -1,3 +1,15 @@
+// --- ИЗМЕНЕНИЯ ---
+// 1. Введены новые константы для более гибкой настройки приоритетов:
+//    - OccupiedTurretPriorityMultiplier: для турелей, в которых сидит враг (высший приоритет).
+//    - TurretPriorityMultiplier: для автоматических AI турелей (средний приоритет).
+//    - EmptyTurretPriorityMultiplier: для пустых турелей (низший приоритет).
+// 2. Логика в CalculateThreatScore() полностью переработана. Теперь она сначала определяет
+//    правильный множитель в зависимости от типа цели и её состояния (занята/пуста),
+//    а затем вычисляет итоговый рейтинг.
+// 3. Этот подход решает проблему бесконечного цикла: когда игрок выходит, пустая турель
+//    получает низкий рейтинг, и AI немедленно переключается на игрока как на более важную цель.
+// -----------------
+
 using System.Collections.Generic;
 using Godot;
 using Game.Interfaces;
@@ -6,23 +18,22 @@ using Game.Entity.AI.Utils;
 
 namespace Game.Entity.AI
 {
-    /// <summary>
-    /// Статический класс, отвечающий за логику оценки и выбора наилучшей цели для ИИ.
-    /// Инкапсулирует правила приоритизации, чтобы основной класс AIEntity оставался чистым.
-    /// </summary>
     public static class AITargetEvaluator
     {
-        // Константы для настройки весов различных факторов при оценке угрозы.
-        private const float DistanceWeight = 2f; // Насколько сильно расстояние влияет на угрозу.
-        private const float TurretPriorityMultiplier = 3f; // Множитель угрозы для турелей.
-        private const float LowHealthBonusMultiplier = 0.5f; // Бонус за низкое здоровье цели (0.5 = до 50% бонуса).
+        // Новые константы для гибкой настройки приоритетов
+        private const float DistanceWeight = 2f;
+        private const float LowHealthBonusMultiplier = 0.5f;
 
-        /// <summary>
-        /// Оценивает список потенциальных целей и возвращает наиболее приоритетную.
-        /// </summary>
-        /// <param name="evaluator">ИИ, который производит оценку.</param>
-        /// <param name="potentialTargets">Список врагов для оценки.</param>
-        /// <returns>Наиболее подходящая цель или null, если достойных целей нет.</returns>
+        /// <summary>Множитель для турелей, в которых находится враг. Самый высокий приоритет.</summary>
+        private const float OccupiedTurretPriorityMultiplier = 3.0f;
+        /// <summary>Множитель для обычных AI турелей (неуправляемых игроком).</summary>
+        private const float TurretPriorityMultiplier = 1.5f;
+        /// <summary>Множитель для пустых турелей. Низкий приоритет, чтобы AI не атаковал их, если есть цели важнее.</summary>
+        private const float EmptyTurretPriorityMultiplier = 0.5f;
+        /// <summary>Стандартный множитель для игрока и других сущностей.</summary>
+        private const float DefaultPriorityMultiplier = 1.0f;
+
+
         public static LivingEntity GetBestTarget(AIEntity evaluator, IReadOnlyList<LivingEntity> potentialTargets)
         {
             LivingEntity bestTargetObject = null;
@@ -32,81 +43,76 @@ namespace Game.Entity.AI
             {
                 if (!GodotObject.IsInstanceValid(potentialTarget)) continue;
 
-                // Определяем реальную сущность для оценки.
-                // Если это игрок в турели, реальная цель - турель.
                 var effectiveTarget = GetEffectiveTarget(potentialTarget, evaluator);
-
-                // Если по какой-то причине цель недействительна (например, игрок в дружественной турели), пропускаем.
                 if (effectiveTarget == null || !GodotObject.IsInstanceValid(effectiveTarget)) continue;
 
                 float currentScore = CalculateThreatScore(evaluator, effectiveTarget);
-
                 if (currentScore > highestScore)
                 {
                     highestScore = currentScore;
-                    bestTargetObject = effectiveTarget; // Сохраняем именно РЕАЛЬНУЮ цель (турель).
+                    bestTargetObject = effectiveTarget;
                 }
             }
             return bestTargetObject;
         }
 
-        /// <summary>
-        /// Определяет, какую сущность на самом деле следует атаковать.
-        /// Если игрок находится в турели, целью является турель.
-        /// </summary>
         private static LivingEntity GetEffectiveTarget(LivingEntity potentialTarget, AIEntity evaluator)
         {
             if (potentialTarget is Player.Player player && player.IsInTurret())
             {
                 var turret = player.CurrentTurret;
-                // Атакуем турель, только если она враждебна.
                 if (turret != null && turret.IsHostile(evaluator))
                 {
                     return turret;
                 }
-                // Если игрок в невраждебной турели, он не является целью.
                 return null;
             }
-            // Для всех остальных случаев целью является сама сущность.
             return potentialTarget;
         }
 
         private static float CalculateThreatScore(AIEntity evaluator, LivingEntity target)
         {
-            // Проверка на прямую видимость. Цель без LoS имеет 0 угрозы.
             if (!evaluator.GetVisibleTargetPoint(target).HasValue)
             {
                 return -1f;
             }
 
+            float priorityMultiplier;
 
-            // Если это турель (независимо от того, кто в ней), у нее повышенный приоритет.
-            if (target is BaseTurret)
+            // Определяем приоритет в зависимости от типа и состояния цели
+            if (target is ControllableTurret cTurret)
             {
-                return CalculateScoreForTarget(evaluator, target, TurretPriorityMultiplier);
+                // Если турель занята - это угроза №1. Если пуста - низкий приоритет.
+                priorityMultiplier = cTurret.CurrentController != null ? OccupiedTurretPriorityMultiplier : EmptyTurretPriorityMultiplier;
+            }
+            else if (target is BaseTurret)
+            {
+                // Это AI турель, у нее средний приоритет.
+                priorityMultiplier = TurretPriorityMultiplier;
+            }
+            else
+            {
+                // Это игрок или другой моб. Стандартный приоритет.
+                priorityMultiplier = DefaultPriorityMultiplier;
             }
 
-            // Стандартная оценка для всех остальных целей.
-            return CalculateScoreForTarget(evaluator, target, 1.0f);
+            return CalculateScoreForTarget(evaluator, target, priorityMultiplier);
         }
 
-        private static float CalculateScoreForTarget(AIEntity evaluator, PhysicsBody3D target, in float priorityMultiplier)
+        private static float CalculateScoreForTarget(AIEntity evaluator, LivingEntity target, in float priorityMultiplier)
         {
             if (target is not ICharacter character) return -1f;
-            if (character.Health <= 0) return -1f; // Добавлена проверка на живость цели
+            else if (character.Health < 0) return -1;
 
             float baseThreat = character.BaseThreatValue;
 
-            // Фактор расстояния. Используем DistanceSquared для производительности.
-            // Добавляем 1, чтобы избежать деления на ноль.
             float distanceSq = evaluator.GlobalPosition.DistanceSquaredTo(target.GlobalPosition) + 1.0f;
-            float distanceFactor = 1.0f / Mathf.Pow(distanceSq, DistanceWeight * 0.5f); // 0.5f, т.к. работаем с квадратом расстояния
+            float distanceFactor = 1.0f / Mathf.Pow(distanceSq, DistanceWeight * 0.5f);
 
             float score = baseThreat * distanceFactor * priorityMultiplier;
 
-            // Бонус за низкое здоровье. Помогает ИИ "добивать" раненых.
             float healthPercentage = character.Health / character.MaxHealth;
-            float healthBonus = (1.0f - healthPercentage) * LowHealthBonusMultiplier; // Бонус до 50%
+            float healthBonus = (1.0f - healthPercentage) * LowHealthBonusMultiplier;
             score *= 1.0f + healthBonus;
 
             return score;

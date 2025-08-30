@@ -1,6 +1,6 @@
 [gd_scene load_steps=21 format=3 uid="uid://q2747brlyw05"]
 
-[ext_resource type="Script" uid="uid://ccqijst1j3nwi" path="res://scripts/GameManager.cs" id="1_pdh0q"]
+[ext_resource type="Script" uid="uid://dscm0inttd3ba" path="res://scripts/GameManager.cs" id="1_pdh0q"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_h1bdy"]
 [ext_resource type="AudioStream" uid="uid://qpfbu8qea6qg" path="res://sounds/ambient2.wav" id="3_7c4bj"]
 [ext_resource type="AudioStream" uid="uid://c2qqp6aadfxmn" path="res://sounds/victory.ogg" id="4_nrtoj"]
@@ -94,9 +94,8 @@ process_mode = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.47342, 1.99271, -2.07314)
 visible = false
 
-[node name="Player" parent="." node_paths=PackedStringArray("SightPoints") instance=ExtResource("9_nthub")]
+[node name="Player" parent="." instance=ExtResource("9_nthub")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.6516, 1.49353, 7.93497)
-SightPoints = []
 
 [node name="SlowGPUParticles3D" type="GPUParticles3D" parent="Player"]
 process_priority = -1

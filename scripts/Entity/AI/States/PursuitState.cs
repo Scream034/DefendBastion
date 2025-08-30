@@ -1,3 +1,9 @@
+// --- ИЗМЕНЕНИЯ ---
+// 1. В методе Enter() теперь используется `context.PursuitTargetPosition` вместо `context.LastKnownTargetPosition`.
+//    Это гарантирует, что AI будет преследовать именно ту цель, которую он "запомнил",
+//    даже если `LastKnownTargetPosition` обновится из-за краткого обнаружения другой цели.
+// -----------------
+
 using Godot;
 
 namespace Game.Entity.AI.States
@@ -10,8 +16,9 @@ namespace Game.Entity.AI.States
         public override void Enter()
         {
             _context.SetMovementSpeed(_context.Profile.MovementProfile.FastSpeed);
-            _context.MovementController.MoveTo(_context.LastKnownTargetPosition);
-            _context.LookController.SetInterestPoint(_context.LastKnownTargetPosition);
+            // Используем новую, специально предназначенную для этого позицию.
+            _context.MovementController.MoveTo(_context.PursuitTargetPosition);
+            _context.LookController.SetInterestPoint(_context.PursuitTargetPosition);
             _timer = PursuitTimeout;
         }
 
@@ -24,20 +31,20 @@ namespace Game.Entity.AI.States
         {
             _timer -= delta;
 
-            if (!GodotObject.IsInstanceValid(_context.TargetingSystem.CurrentTarget))
+            if (!_context.IsTargetValid)
             {
-                _context.OnTargetEliminated();
+                _context.OnCurrentTargetInvalidated();
                 return;
             }
-            
-            // Если мы снова увидели цель - возвращаемся в атаку.
+
+            // Важно: в состоянии преследования мы ищем ЛЮБУЮ враждебную цель.
+            // Если мы увидели любую цель (даже не ту, которую преследовали), надо атаковать.
             if (_context.HasLineOfSightToCurrentTarget)
             {
                 _context.ChangeState(new AttackState(_context));
                 return;
             }
 
-            // Если дошли до точки или время вышло - преследование провалено.
             if (_context.MovementController.NavigationAgent.IsNavigationFinished() || _timer <= 0)
             {
                 GD.Print($"{_context.Name} pursuit failed. Target not found.");

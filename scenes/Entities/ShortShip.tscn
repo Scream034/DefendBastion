@@ -25,6 +25,9 @@ metadata/_custom_type_script = "uid://mfi5lttimbhk"
 
 [sub_resource type="Resource" id="Resource_w7ywg"]
 script = ExtResource("4_a6sgv")
+SlowSpeed = 5.0
+NormalSpeed = 9.0
+FastSpeed = 11.0
 metadata/_custom_type_script = "uid://djqrbt2cu6u0v"
 
 [sub_resource type="Resource" id="Resource_5snbc"]

@@ -16,6 +16,7 @@ using Game.Entity.AI.Profiles;
 using Game.Entity.AI.Components;
 using Game.Turrets;
 using Game.Entity.AI.Utils;
+using System.Linq;
 
 namespace Game.Entity.AI
 {
@@ -40,14 +41,16 @@ namespace Game.Entity.AI
         public ICombatBehavior CombatBehavior { get; private set; }
         public Marker3D EyesPosition => _eyesPosition;
 
+        public bool IsMoving => Velocity.LengthSquared() > 0.01f;
+        public bool IsTargetValid => GodotObject.IsInstanceValid(TargetingSystem.CurrentTarget);
+        public bool HasLineOfSightToCurrentTarget => GetVisibleTargetPoint(TargetingSystem.CurrentTarget).HasValue;
+
         public Vector3 SpawnPosition { get; private set; }
         public Vector3 LastKnownTargetPosition { get; private set; }
+        public Vector3 PursuitTargetPosition { get; private set; }
         public Vector3 InvestigationPosition { get; set; }
         public Vector3 LastEngagementPosition { get; set; }
 
-        public bool IsMoving => Velocity.LengthSquared() > 0.01f;
-        public bool HasLineOfSightToCurrentTarget => GetVisibleTargetPoint(TargetingSystem.CurrentTarget).HasValue;
-        
         private LivingEntity _lastTrackedTarget;
 
         private Vector3? _cachedVisiblePoint = null;
@@ -125,13 +128,13 @@ namespace Game.Entity.AI
             base._PhysicsProcess(delta);
             if (!_isAiActive) return;
 
-            var currentTarget = TargetingSystem.CurrentTarget;
-            if (IsInstanceValid(currentTarget))
+            if (IsTargetValid)
             {
-                _lastTrackedTarget = currentTarget;
-                LastKnownTargetPosition = currentTarget.GlobalPosition;
+                _lastTrackedTarget = TargetingSystem.CurrentTarget;
+                // Эта позиция теперь обновляется всегда, когда есть валидная цель.
+                LastKnownTargetPosition = TargetingSystem.CurrentTarget.GlobalPosition;
             }
-            
+
             _currentState?.Update((float)delta);
         }
 
@@ -147,13 +150,13 @@ namespace Game.Entity.AI
         }
 
         #region Line-of-Sight Methods
-        
+
         public Vector3? GetVisibleTargetPoint(LivingEntity target)
         {
             var fromPosition = EyesPosition?.GlobalPosition ?? GlobalPosition;
             return GetVisibleTargetPointFrom(target, fromPosition);
         }
-        
+
         public Vector3? GetVisibleTargetPointFrom(LivingEntity target, Vector3 fromPosition)
         {
             if (!IsInstanceValid(target)) return null;
@@ -194,15 +197,34 @@ namespace Game.Entity.AI
             ChangeState(_defaultState);
         }
 
-        public bool NeedsToReevaluateTarget()
+        /// <summary>
+        /// Проверяет, является ли текущая цель всё ещё наилучшей.
+        /// Возвращает true, если цель - пустая турель, И есть другие потенциальные цели.
+        /// </summary>
+        // public bool NeedsToReevaluateTarget()
+        // {
+        //     if (!IsTargetValid) return false;
+
+        //     var currentTarget = TargetingSystem.CurrentTarget;
+
+        //     // Проверяем, является ли цель пустой управляемой турелью.
+        //     if (currentTarget is ControllableTurret { CurrentController: null })
+        //     {
+        //         // Если это так, нужно переоценивать, ТОЛЬКО ЕСЛИ есть другие варианты.
+        //         // Если в списке потенциальных целей больше одной записи (сама турель + кто-то еще),
+        //         // или если есть цели, но текущая - не единственная, значит, есть смысл искать лучшую.
+        //         // Самый простой способ: есть ли в списке хоть кто-то, кроме текущей цели.
+        //         return TargetingSystem.PotentialTargets.Any(t => t != currentTarget);
+        //     }
+
+        //     return false;
+        // }
+
+        /// Устанавливает конкретную точку, к которой должно двигаться состояние преследования.
+        /// </summary>
+        public void SetPursuitTargetPosition(Vector3 position)
         {
-            var currentTarget = TargetingSystem.CurrentTarget;
-            if (currentTarget == null || !IsInstanceValid(currentTarget)) return true;
-            if (currentTarget is ControllableTurret turret && turret.CurrentController == null)
-            {
-                return true;
-            }
-            return false;
+            PursuitTargetPosition = position;
         }
 
         public void OnNewTargetAcquired(PhysicsBody3D newTarget)
@@ -220,22 +242,65 @@ namespace Game.Entity.AI
                 ChangeState(new PursuitState(this));
             }
         }
-        
-        public void OnTargetEliminated()
+
+        public void OnCurrentTargetInvalidated()
         {
-            var eliminatedEntity = _lastTrackedTarget; // Используем сохраненную ссылку
-            TargetingSystem.OnTargetEliminated(eliminatedEntity);
-
-            if (IsInstanceValid(eliminatedEntity) && eliminatedEntity is IContainerEntity container)
+            if (!GodotObject.IsInstanceValid(_lastTrackedTarget))
             {
-                var containedEntity = container.GetContainedEntity();
-                if (IsInstanceValid(containedEntity) && IsHostile(containedEntity))
-                {
-                    return;
-                }
+                // Используем LastKnownTargetPosition, так как это была последняя валидная позиция _lastTrackedTarget
+                OnTargetEliminated(_lastTrackedTarget, LastKnownTargetPosition);
             }
+            else
+            {
+                ReturnToDefaultState();
+            }
+        }
 
-            DecideNextActionAfterCombat(LastKnownTargetPosition);
+        /// <summary>
+        /// Централизованный обработчик события уничтожения цели.
+        /// Содержит новую логику для расследования уничтоженных контейнеров.
+        /// </summary>
+        private void OnTargetEliminated(LivingEntity eliminatedEntity, Vector3 lastKnownPosition)
+        {
+            TargetingSystem.OnTargetEliminated(eliminatedEntity);
+            _lastTrackedTarget = null;
+
+            // Проверяем, не уничтожили ли мы контейнер, и следует ли нам проверить, не остался ли кто-то внутри.
+            if (eliminatedEntity is IContainerEntity && ShouldInvestigateAfterContainerDestroy())
+            {
+                // Если да, то вместо стандартного поведения после боя, мы начинаем расследование.
+                StartInvestigation(lastKnownPosition);
+            }
+            else
+            {
+                // Иначе используем стандартную логику (бдительность или возврат к задачам).
+                DecideNextActionAfterCombat(lastKnownPosition);
+            }
+        }
+
+        /// <summary>
+        /// Запускает состояние расследования в указанной точке.
+        /// </summary>
+        private void StartInvestigation(Vector3 position)
+        {
+            GD.Print($"{Name} destroyed a container. Investigating the area for occupants at {position}.");
+            InvestigationPosition = position;
+            ChangeState(new InvestigateState(this));
+        }
+
+        /// <summary>
+        /// Определяет, должен ли AI расследовать место уничтожения контейнера на основе своей текущей задачи.
+        /// </summary>
+        private bool ShouldInvestigateAfterContainerDestroy()
+        {
+            // В режиме "Прорыв" мы игнорируем все отвлекающие факторы и бежим к цели.
+            if (Profile.MainTask == AIMainTask.Assault && Profile.AssaultBehavior == AssaultMode.Rush)
+            {
+                return false;
+            }
+            // Во всех остальных режимах (Патруль, Штурм/Уничтожение) расследование является
+            // правильным тактическим решением.
+            return true;
         }
 
         public void DecideNextActionAfterCombat(Vector3 lastEngagementPosition)
@@ -245,7 +310,7 @@ namespace Game.Entity.AI
                 LastEngagementPosition = lastEngagementPosition;
                 ChangeState(new VigilanceState(this));
             }
-            else if (TargetingSystem.CurrentTarget == null)
+            else if (!IsTargetValid)
             {
                 ReturnToDefaultState();
             }
