@@ -16,6 +16,8 @@
 
 [sub_resource type="Resource" id="Resource_pmaxb"]
 script = ExtResource("2_ax7fu")
+AimSpreadRadius = 3.0
+PredictionAccuracy = 0.2
 metadata/_custom_type_script = "uid://8ocvhoc155cc"
 
 [sub_resource type="Resource" id="Resource_i3yv7"]

@@ -5,12 +5,20 @@ namespace Game.Entity.AI.Profiles
     [GlobalClass]
     public partial class AICombatProfile : Resource
     {
-        [ExportGroup("Targetting System")]
+        [ExportGroup("Targeting System")]
         [Export(PropertyHint.Range, "0.1, 2.0, 0.1")]
         public float TargetEvaluationInterval = 0.5f;
 
         [ExportGroup("Repositioning")]
         [Export(PropertyHint.Range, "0.5, 5.0, 0.1")] public float RepositionSearchStep { get; private set; } = 1.5f;
+
+        [ExportGroup("Shooting Accuracy")]
+        [Export(PropertyHint.Range, "0.0, 10.0, 0.1")]
+        public float AimSpreadRadius { get; private set; } = 2.25f;
+        [Export]
+        public bool EnableTargetPrediction { get; private set; } = true;
+        [Export(PropertyHint.Range, "0.0, 1.0, 0.05")]
+        public float PredictionAccuracy { get; private set; } = 0.7f;
 
         [ExportGroup("Post-Combat Behavior")]
         [Export] public bool EnablePostCombatVigilance { get; private set; } = true;
