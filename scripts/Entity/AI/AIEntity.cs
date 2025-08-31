@@ -1,18 +1,9 @@
-// --- ИЗМЕНЕНИЯ ---
-// 1. В `GetVisibleTargetPointFrom` немного упрощена логика кэширования, так как
-//    основная оптимизация теперь происходит в `StationaryCombatBehavior`.
-// 2. Добавлен новый метод `OnMissionPathCompleted` для обработки события завершения
-//    пути в режиме Assault.
-// -----------------
-
 using Godot;
 using Game.Entity.AI.Behaviors;
 using Game.Entity.AI.States;
 using System.Threading.Tasks;
-using Game.Interfaces;
 using Game.Entity.AI.Profiles;
 using Game.Entity.AI.Components;
-using System.Reflection.Metadata;
 using Game.Singletons;
 
 namespace Game.Entity.AI
@@ -44,7 +35,7 @@ namespace Game.Entity.AI
         public bool IsMoving => Velocity.LengthSquared() > 0.01f;
         public bool IsTargetValid => GodotObject.IsInstanceValid(TargetingSystem.CurrentTarget);
         public bool HasLineOfSightToCurrentTarget => GetVisibleTargetPoint(TargetingSystem.CurrentTarget).HasValue;
-        public bool IsInCombat { get; private set; } // Новое свойство
+        public bool IsInCombat { get; private set; }
 
         public Vector3 SpawnPosition { get; private set; }
         public Vector3 LastKnownTargetPosition { get; private set; }
@@ -53,11 +44,6 @@ namespace Game.Entity.AI
         public Vector3 LastEngagementPosition { get; set; }
 
         private LivingEntity _lastTrackedTarget;
-
-        private Vector3? _cachedVisiblePoint = null;
-        private ulong _cacheFrame = ulong.MaxValue;
-        private ulong _cachedTargetInstanceId = 0;
-        private const float LoSCacheInvalidationDistanceSqr = 0.0625f; // 0.25 * 0.25
 
         private State _currentState;
         private State _defaultState;
@@ -156,23 +142,9 @@ namespace Game.Entity.AI
         {
             if (!IsInstanceValid(target)) return null;
 
-            var currentFrame = (ulong)Constants.Tree.GetFrame();
-            var targetInstanceId = target.GetInstanceId();
-
-            // Проверяем, не запрашиваем ли мы LoS для той же цели в том же кадре.
-            if (_cacheFrame == currentFrame && _cachedTargetInstanceId == targetInstanceId)
-            {
-                return _cachedVisiblePoint;
-            }
-
             uint mask = Profile?.CombatProfile?.LineOfSightMask ?? 1;
             var exclude = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
             var resultPoint = AITacticalAnalysis.GetFirstVisiblePoint(fromPosition, target, exclude, mask);
-
-            // Обновляем кэш
-            _cachedVisiblePoint = resultPoint;
-            _cacheFrame = currentFrame;
-            _cachedTargetInstanceId = targetInstanceId;
 
             return resultPoint;
         }

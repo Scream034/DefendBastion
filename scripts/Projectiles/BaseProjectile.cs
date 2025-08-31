@@ -1,10 +1,7 @@
 using Godot;
 using Game.Interfaces;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using Game.Singletons;
 using Game.Entity;
-using System.Linq;
 
 namespace Game.Projectiles;
 

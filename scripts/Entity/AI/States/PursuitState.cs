@@ -1,9 +1,3 @@
-// --- ИЗМЕНЕНИЯ ---
-// 1. В методе Enter() теперь используется `context.PursuitTargetPosition` вместо `context.LastKnownTargetPosition`.
-//    Это гарантирует, что AI будет преследовать именно ту цель, которую он "запомнил",
-//    даже если `LastKnownTargetPosition` обновится из-за краткого обнаружения другой цели.
-// -----------------
-
 using Godot;
 
 namespace Game.Entity.AI.States

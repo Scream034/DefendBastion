@@ -1,4 +1,3 @@
-using Game.Singletons;
 using Godot;
 
 namespace Game.Entity;
@@ -14,11 +13,6 @@ public abstract partial class MoveableEntity : LivingEntity
     [Export] public float Acceleration { get; protected set; } = 4.0f;
     [Export] public float Deceleration { get; protected set; } = 4.0f;
     [Export] public float JumpVelocity { get; protected set; } = 4.5f;
-
-    public override void _Ready()
-    {
-        base._Ready();
-    }
 
     /// <summary>
     /// Этот метод вызывается каждый кадр физики.
