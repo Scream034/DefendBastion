@@ -1,16 +1,12 @@
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
-using Game.Entity.AI.Behaviors;
 using Game.Entity.AI.Orchestrator;
 
 namespace Game.Entity.AI.Components
 {
-    // Расширяем SquadState
     public enum SquadState { Idle, MovingToPoint, FollowingPath, InCombat }
-    // Добавляем основную задачу
     public enum SquadTask { Standby, PatrolPath, AssaultPath }
-
 
     public partial class AISquad : Node
     {
@@ -19,10 +15,10 @@ namespace Game.Entity.AI.Components
         [Export] public SquadTask Task = SquadTask.Standby;
         [Export] public Formation MarchingFormation;
         [Export] public Formation CombatFormation;
-        [Export] public Path3D MissionPath; // <--- НОВОЕ ПОЛЕ ДЛЯ ПУТИ
+        [Export] public Path3D MissionPath;
 
         [ExportGroup("Task Settings")]
-        [Export] private float _pathWaypointThreshold = 2.0f; // Дистанция до точки пути для ее зачета
+        [Export] private float _pathWaypointThreshold = 2.0f;
 
         public SquadState CurrentState { get; private set; } = SquadState.Idle;
         public LivingEntity CurrentTarget { get; private set; }
@@ -31,10 +27,9 @@ namespace Game.Entity.AI.Components
         private readonly HashSet<AIEntity> _membersAtDestination = new();
         private Vector3 _squadCenterCache;
 
-        // <--- НОВЫЕ ПОЛЯ ДЛЯ СЛЕДОВАНИЯ ПО ПУТИ --->
         private Vector3[] _pathPoints;
         private int _currentPathIndex = 0;
-        private int _pathDirection = 1; // 1 для вперед, -1 для назад (в патруле)
+        private int _pathDirection = 1;
 
         public override void _Ready()
         {
@@ -45,22 +40,18 @@ namespace Game.Entity.AI.Components
                 return;
             }
             Orchestrator.LegionBrain.Instance.RegisterSquad(this);
-            SetProcess(true); // Включаем process-цикл для автономного поведения
+            SetProcess(true);
         }
 
         public override void _PhysicsProcess(double delta)
         {
-            if (_members.Count == 0) return;
+            if (_members.Count == 0 || CurrentState != SquadState.FollowingPath) return;
 
-            // Автономное поведение отряда
-            if (CurrentState == SquadState.FollowingPath)
+            UpdateSquadCenter();
+            var targetWaypoint = MissionPath.ToGlobal(_pathPoints[_currentPathIndex]);
+            if (_squadCenterCache.DistanceSquaredTo(targetWaypoint) < _pathWaypointThreshold * _pathWaypointThreshold)
             {
-                UpdateSquadCenter();
-                var targetWaypoint = MissionPath.ToGlobal(_pathPoints[_currentPathIndex]);
-                if (_squadCenterCache.DistanceSquaredTo(targetWaypoint) < _pathWaypointThreshold * _pathWaypointThreshold)
-                {
-                    MoveToNextWaypoint();
-                }
+                MoveToNextWaypoint();
             }
         }
 
@@ -76,7 +67,6 @@ namespace Game.Entity.AI.Components
             }
             GD.Print($"Squad '{SquadName}' initialized with {_members.Count} members.");
 
-            // <--- ИНИЦИАЛИЗАЦИЯ ЗАДАЧИ --->
             if (Task == SquadTask.PatrolPath || Task == SquadTask.AssaultPath)
             {
                 if (MissionPath != null && MissionPath.Curve.PointCount > 0)
@@ -87,7 +77,7 @@ namespace Game.Entity.AI.Components
                 else
                 {
                     GD.PushWarning($"Squad '{SquadName}' is set to follow a path, but MissionPath is not assigned or is empty.");
-                    Task = SquadTask.Standby; // Переводим в безопасный режим
+                    Task = SquadTask.Standby;
                 }
             }
         }
@@ -107,7 +97,7 @@ namespace Game.Entity.AI.Components
                 if (_currentPathIndex >= _pathPoints.Length)
                 {
                     GD.Print($"Squad '{SquadName}' has completed its assault path.");
-                    CurrentState = SquadState.Idle; // Штурм завершен, ждем новых приказов
+                    CurrentState = SquadState.Idle;
                     return;
                 }
             }
@@ -115,15 +105,17 @@ namespace Game.Entity.AI.Components
             {
                 if ((_currentPathIndex >= _pathPoints.Length - 1 && _pathDirection > 0) || (_currentPathIndex <= 0 && _pathDirection < 0))
                 {
-                    _pathDirection *= -1; // Меняем направление в конце пути
+                    _pathDirection *= -1;
                 }
+                // Pre-increment/decrement to avoid getting stuck at endpoints
                 _currentPathIndex += _pathDirection;
             }
 
             var targetPosition = MissionPath.ToGlobal(_pathPoints[_currentPathIndex]);
-            AssignMoveTarget(targetPosition); // Используем уже существующий метод для движения в строю
-            CurrentState = SquadState.FollowingPath; // Перезаписываем состояние, так как AssignMoveTarget ставит MovingToPoint
+            AssignMoveTarget(targetPosition);
+            CurrentState = SquadState.FollowingPath;
         }
+
 
         public void AssignMoveTarget(Vector3 targetPosition)
         {
@@ -134,12 +126,13 @@ namespace Game.Entity.AI.Components
 
             if (MarchingFormation == null || MarchingFormation.MemberPositions.Length == 0)
             {
+                GD.PushWarning($"Squad '{SquadName}' has no MarchingFormation. Moving without formation.");
                 foreach (var member in _members) member.ReceiveOrderMoveTo(targetPosition);
                 return;
             }
 
             UpdateSquadCenter();
-            var direction = (_squadCenterCache.DirectionTo(targetPosition)).Normalized();
+            var direction = _members.Count > 0 ? (_squadCenterCache.DirectionTo(targetPosition)).Normalized() : Vector3.Forward;
             var rotation = Basis.LookingAt(direction, Vector3.Up);
 
             for (int i = 0; i < _members.Count; i++)
@@ -154,11 +147,10 @@ namespace Game.Entity.AI.Components
 
         public void AssignCombatTarget(LivingEntity target)
         {
-            // <--- ИЗМЕНЕНИЕ: ПРОВЕРКА ЗАДАЧИ "ШТУРМ" --->
             if (Task == SquadTask.AssaultPath && CurrentState == SquadState.FollowingPath)
             {
                 GD.Print($"Squad '{SquadName}' is on assault task. Ignoring target {target.Name} to reach objective.");
-                return; // Игнорируем цели, пока не дойдем до конца пути штурма
+                return;
             }
 
             if (CurrentTarget == target && CurrentState == SquadState.InCombat) return;
@@ -171,30 +163,43 @@ namespace Game.Entity.AI.Components
 
             var positionAssignments = AITacticalAnalysis.FindCoverAndFirePositions(_members, target);
 
-            if (positionAssignments == null || positionAssignments.Count < _members.Count)
+            if (positionAssignments == null || positionAssignments.Count == 0)
             {
-                GD.PushWarning($"Squad '{SquadName}' failed to find enough cover. Using CombatFormation as fallback.");
-                positionAssignments = GeneratePositionsFromFormation(CombatFormation, target.GlobalPosition);
+                GD.Print("Squad '{SquadName}' failed to find any cover. Using CombatFormation as fallback.");
+                // <--- ИЗМЕНЕНИЕ: Передаем цель в метод генерации, чтобы построиться относительно нее --->
+                positionAssignments = GeneratePositionsFromFormation(CombatFormation, target);
             }
 
-            if (positionAssignments != null)
+            if (positionAssignments != null && positionAssignments.Count > 0)
             {
+                GD.Print($"Assigning {positionAssignments.Count} combat positions.");
                 foreach (var (ai, position) in positionAssignments)
                 {
                     ai.ReceiveOrderMoveTo(position);
                     ai.ReceiveOrderAttackTarget(target);
                 }
             }
+            else
+            {
+                GD.PushError($"Squad '{SquadName}' could not determine any combat positions for target {target.Name}!");
+            }
         }
 
-        private Dictionary<AIEntity, Vector3> GeneratePositionsFromFormation(Formation formation, Vector3 faceTowards)
+        // <--- ИЗМЕНЕНИЕ: Логика построения относительно цели --->
+        private Dictionary<AIEntity, Vector3> GeneratePositionsFromFormation(Formation formation, LivingEntity target)
         {
-            if (formation == null || formation.MemberPositions.Length == 0) return null;
+            if (formation == null || formation.MemberPositions.Length == 0 || !IsInstanceValid(target)) return null;
 
             UpdateSquadCenter();
-            var direction = (_squadCenterCache.DirectionTo(faceTowards)).Normalized();
-            var rotation = Basis.LookingAt(direction, Vector3.Up);
-            var anchorPoint = _squadCenterCache;
+
+            // Якорь - это не наша текущая позиция, а точка на оптимальном расстоянии от врага!
+            float optimalDistance = _members.Average(ai => ai.CombatBehavior.AttackRange) * 0.8f; // 80% от макс. дальности
+            var directionFromTarget = target.GlobalPosition.DirectionTo(_squadCenterCache).Normalized();
+            var anchorPoint = target.GlobalPosition + directionFromTarget * optimalDistance;
+
+            // Поворачиваем формацию лицом к врагу
+            var lookDirection = anchorPoint.DirectionTo(target.GlobalPosition).Normalized();
+            var rotation = Basis.LookingAt(lookDirection, Vector3.Up);
 
             var assignments = new Dictionary<AIEntity, Vector3>();
             for (int i = 0; i < _members.Count; i++)
@@ -211,10 +216,10 @@ namespace Game.Entity.AI.Components
 
         public void ReportPositionReached(AIEntity member)
         {
-            if (CurrentState != SquadState.MovingToPoint) return;
+            if (CurrentState != SquadState.MovingToPoint && CurrentState != SquadState.FollowingPath) return;
 
             _membersAtDestination.Add(member);
-            if (_membersAtDestination.Count >= _members.Count)
+            if (CurrentState == SquadState.MovingToPoint && _membersAtDestination.Count >= _members.Count)
             {
                 GD.Print($"Squad '{SquadName}' has reached its destination. Switching to Idle.");
                 CurrentState = SquadState.Idle;
@@ -224,7 +229,7 @@ namespace Game.Entity.AI.Components
         public void OnMemberDestroyed(AIEntity member)
         {
             _members.Remove(member);
-            _membersAtDestination.Remove(member); // Важно удалить и из этого списка
+            _membersAtDestination.Remove(member);
             if (_members.Count == 0)
             {
                 GD.Print($"Squad '{SquadName}' has been eliminated.");

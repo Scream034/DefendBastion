@@ -80,6 +80,7 @@ namespace Game.Entity.AI
             base._PhysicsProcess(delta);
             _timeSinceLastAttack += delta;
 
+            // --- БЛОК 1: НАБЛЮДЕНИЕ И ДОКЛАД (без приказа) ---
             if (!_hasAttackOrder)
             {
                 var visibleTarget = TargetingSystem.PotentialTargets
@@ -92,42 +93,54 @@ namespace Game.Entity.AI
                 return;
             }
 
+            // --- БЛОК 2: ВЫПОЛНЕНИЕ ПРИКАЗОВ (есть приказ атаковать) ---
             if (!IsInstanceValid(_attackTarget) || !_attackTarget.IsAlive)
             {
                 ClearOrders();
                 return;
             }
 
+            bool isAtDestination = true; // Считаем, что мы на месте, если нет приказа двигаться
+
+            // --- Логика движения ---
             if (_hasMoveOrder)
             {
-                if (GlobalPosition.DistanceSquaredTo(_moveTarget) < 1.0f)
+                if (GlobalPosition.DistanceSquaredTo(_moveTarget) < 1.0f) // Погрешность в 1 метр
                 {
+                    // Мы прибыли
                     _hasMoveOrder = false;
                     MovementController.StopMovement();
-
                     Squad?.ReportPositionReached(this);
+                    isAtDestination = true;
                 }
                 else
                 {
-                    return;
+                    // Мы еще в пути
+                    isAtDestination = false;
                 }
             }
 
-            var fromPos = CombatBehavior?.Action?.MuzzlePoint?.GlobalPosition ?? GlobalPosition;
-            if (AITacticalAnalysis.HasClearPath(fromPos, _attackTarget.GlobalPosition, [GetRid(), _attackTarget.GetRid()], Profile.CombatProfile.LineOfSightMask))
+            // <--- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ЛОГИКИ АТАКИ --->
+            // Если мы получили приказ на атаку И мы уже на своей позиции (или нам и не приказывали двигаться),
+            // мы можем начинать стрелять.
+            if (_hasAttackOrder && isAtDestination)
             {
-                MovementController.StopMovement();
-                if (_timeSinceLastAttack >= CombatBehavior.AttackCooldown)
+                var fromPos = CombatBehavior?.Action?.MuzzlePoint?.GlobalPosition ?? GlobalPosition;
+                if (AITacticalAnalysis.HasClearPath(fromPos, _attackTarget.GlobalPosition, [GetRid(), _attackTarget.GetRid()], Profile.CombatProfile.LineOfSightMask))
                 {
-                    CombatBehavior?.Action?.Execute(this, _attackTarget, _attackTarget.GlobalPosition);
-                    _timeSinceLastAttack = 0;
+                    // Цель в зоне видимости, ведем огонь
+                    if (_timeSinceLastAttack >= CombatBehavior.AttackCooldown)
+                    {
+                        CombatBehavior?.Action?.Execute(this, _attackTarget, _attackTarget.GlobalPosition);
+                        _timeSinceLastAttack = 0;
+                    }
                 }
-            }
-            else
-            {
-                // Если мы уже на позиции (_hasMoveOrder == false), но потеряли цель, докладываем.
-                ClearOrders();
-                LegionBrain.Instance.ReportEnemySighting(this, _attackTarget);
+                else
+                {
+                    // Мы на позиции, но цель скрылась. Докладываем, чтобы отряд перестроился.
+                    ClearOrders();
+                    LegionBrain.Instance.ReportEnemySighting(this, _attackTarget);
+                }
             }
         }
 
