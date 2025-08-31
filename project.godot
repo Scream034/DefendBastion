@@ -91,6 +91,10 @@ interact={
 3d_physics/layer_2="Entity"
 3d_physics/layer_3="Interactable"
 
+[navigation]
+
+baking/use_crash_prevention_checks=false
+
 [physics]
 
 3d/run_on_separate_thread=true

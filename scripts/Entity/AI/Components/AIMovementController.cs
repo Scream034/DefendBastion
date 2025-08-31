@@ -7,23 +7,32 @@ namespace Game.Entity.AI.Components
     public partial class AIMovementController : Node
     {
         [ExportGroup("Dependencies")]
-        [Export] private NavigationAgent3D _navigationAgent;
+        [Export] public NavigationAgent3D NavigationAgent;
         [Export] private Node3D _headPivot;
 
         // --- Настройки Separation Force ---
-        [Export] private float _separationRadius = 3.0f; // Радиус, в котором ищем соседей для избегания
-        [Export] private float _separationWeight = 5.0f; // Сила отталкивания
+        // Вес больше не нужен, так как мы убираем кастомную силу
+        // [Export] private float _separationWeight = 4.0f; 
 
         private AIEntity _context;
         private AIMovementProfile _movementProfile;
         private AILookProfile _lookProfile;
 
-        public NavigationAgent3D NavigationAgent => _navigationAgent;
+        // <--- ИЗМЕНЕНИЕ: Добавляем свойства, которые ты хотел использовать ---
+        /// <summary>
+        /// Дистанция до цели, на которой агент считает путь завершенным (в квадрате для оптимизации).
+        /// </summary>
+        public float TargetDesiredDistanceSq { get; private set; }
+
+        /// <summary>
+        /// Линейный радиус для расчетов безопасного расстояния.
+        /// </summary>
+        public float SeparationRadius { get; private set; }
+
         public Vector3 TargetVelocity { get; set; }
 
         public void Initialize(AIEntity context)
         {
-            // ... (Существующая логика инициализации) ...
             _context = context;
             _movementProfile = context.Profile?.MovementProfile;
             _lookProfile = context.Profile?.LookProfile;
@@ -34,95 +43,52 @@ namespace Game.Entity.AI.Components
                 SetPhysicsProcess(false);
                 return;
             }
-            if (_navigationAgent == null)
+            if (NavigationAgent == null)
             {
                 GD.PushError($"NavigationAgent3D not assigned to {Name}!");
                 SetPhysicsProcess(false);
+                return;
             }
+
+            // <--- ИЗМЕНЕНИЕ: Инициализируем новые свойства ---
+            TargetDesiredDistanceSq = NavigationAgent.TargetDesiredDistance * NavigationAgent.TargetDesiredDistance;
+            // Используем радиус из NavigationAgent как основу для всех расчетов дистанции
+            SeparationRadius = NavigationAgent.Radius;
         }
 
         public override void _PhysicsProcess(double delta)
         {
             // 1. Расчет базовой навигации (сила притяжения к цели)
             Vector3 navigationVelocity = Vector3.Zero;
-            if (!_navigationAgent.IsNavigationFinished())
+            if (!NavigationAgent.IsNavigationFinished())
             {
-                var nextPoint = _navigationAgent.GetNextPathPosition();
+                var nextPoint = NavigationAgent.GetNextPathPosition();
                 navigationVelocity = _context.GlobalPosition.DirectionTo(nextPoint) * _context.Speed;
             }
 
-            // 2. Расчет Separation Force (сила отталкивания от союзников)
-            Vector3 separationForce = CalculateSeparationForce();
-
-            // 3. Комбинирование сил.
-            // Мы даем приоритет Separation, чтобы избежать столкновения, 
-            // но навигация остается основной движущей силой.
+            // <--- ИЗМЕНЕНИЕ: Полностью убираем кастомную логику Separation ---
+            // Вся логика избегания агентов теперь лежит на NavigationAgent3D (avoidance_enabled = true)
+            // Vector3 separationForce = CalculateSeparationForce();
 
             // Навигационная скорость преобразуется в Steering Force:
             Vector3 steeringForce = navigationVelocity - _context.Velocity;
 
-            // Итоговая сила: Навигационное намерение + Отталкивание
-            Vector3 finalForce = steeringForce + separationForce;
+            // Итоговая сила: теперь это только навигационное намерение.
+            Vector3 finalForce = steeringForce;
 
-            // Ограничиваем силу ускорением
             TargetVelocity = (_context.Velocity + finalForce).LimitLength(_context.Speed);
-
             _context.Velocity = _context.Velocity.Lerp(TargetVelocity, _context.Acceleration * (float)delta);
 
-            // 4. Управление вращением и MoveAndSlide
             RotateBody((float)delta);
             RotateHead((float)delta);
 
             _context.MoveAndSlide();
         }
 
-        /// <summary>
-        /// Вычисляет силу, необходимую для отталкивания от ближайших союзников.
-        /// Реализует паттерн Separation из Flocking.
-        /// </summary>
-        private Vector3 CalculateSeparationForce()
-        {
-            if (_context.Squad == null || _context.Squad.Members.Count <= 1) return Vector3.Zero;
-
-            Vector3 steering = Vector3.Zero;
-            int neighborCount = 0;
-
-            // Используем только тех, кто находится в радиусе отделения
-            var closeAllies = _context.Squad.Members
-                .Where(m => m != _context && m.GlobalPosition.DistanceSquaredTo(_context.GlobalPosition) < _separationRadius * _separationRadius);
-
-            foreach (var ally in closeAllies)
-            {
-                if (!IsInstanceValid(ally)) continue;
-
-                Vector3 direction = _context.GlobalPosition - ally.GlobalPosition;
-                float distance = direction.Length();
-
-                if (distance > 0)
-                {
-                    // Сила тем больше, чем ближе юнит. (1/distance)
-                    // Нормализуем направление и масштабируем по инверсии квадрата расстояния.
-                    float strength = 1.0f / distance;
-                    steering += direction.Normalized() * strength;
-                    neighborCount++;
-                }
-            }
-
-            if (neighborCount > 0)
-            {
-                steering /= neighborCount; // Усредняем силу
-                steering = steering.Normalized() * _context.Speed; // Масштабируем до максимальной скорости
-                steering = steering - _context.Velocity; // Преобразуем в Steering Force
-                steering = steering.LimitLength(_separationWeight); // Применяем вес
-            }
-
-            return steering;
-        }
-
         private void RotateBody(float delta)
         {
             // Приоритет №1: Если мы в бою и стоим на месте, поворачиваем тело к врагу.
-            if (_context.IsInCombat && IsInstanceValid(_context.TargetingSystem.CurrentTarget) && TargetVelocity.IsZeroApprox())
+            if (_context.IsInCombat && IsInstanceValid(_context.TargetingSystem.CurrentTarget) && NavigationAgent.Velocity.IsZeroApprox())
             {
                 var directionToTarget = _context.GlobalPosition.DirectionTo(_context.TargetingSystem.CurrentTarget.GlobalPosition) with { Y = 0 };
                 if (!directionToTarget.IsZeroApprox())
@@ -174,19 +140,19 @@ namespace Game.Entity.AI.Components
 
         public void MoveTo(Vector3 targetPosition)
         {
-            // Здесь дополнительно проверяем, не конфликтует ли позиция с кем-то в AITacticalCoordinator.
-            // В нашей текущей архитектуре эту проверку делает Squad перед выдачей приказа,
-            // но на всякий случай можно добавить логику пересчета пути, если позиция занята.
-            // Однако, в целях KISS и производительности, мы полагаемся на Separation Force
-            // и на то, что Squad выдал валидные, непересекающиеся точки.
-            if (_navigationAgent.TargetPosition == targetPosition) return;
-            _navigationAgent.TargetPosition = targetPosition;
+            if (NavigationAgent.TargetPosition.IsEqualApprox(targetPosition)) return;
+            NavigationAgent.TargetPosition = targetPosition;
             AITacticalCoordinator.ReservePosition(_context, targetPosition);
+            GD.Print($"{_context.Name} MoveTo {targetPosition}");
         }
 
         public void StopMovement()
         {
-            _navigationAgent.TargetPosition = _context.GlobalPosition;
+            // Делаем остановку более явной и быстрой 
+            // Мы не только меняем цель навигатора, но и напрямую обнуляем целевую скорость.
+            // Это заставит юнит остановиться и начать поворот к врагу практически мгновенно.
+            NavigationAgent.TargetPosition = _context.GlobalPosition;
+            TargetVelocity = Vector3.Zero;
             AITacticalCoordinator.ReleasePosition(_context);
         }
     }

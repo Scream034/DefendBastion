@@ -80,10 +80,12 @@ namespace Game.Entity.AI
             base._PhysicsProcess(delta);
             _timeSinceLastAttack += delta;
 
-            // --- БЛОК 1: НАБЛЮДЕНИЕ И ДОКЛАД (без приказа атаковать) ---
-            if (!_hasAttackOrder)
+            // <--- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Устанавливаем четкую иерархию принятия решений ---
+
+            // --- БЛОК 1: НАБЛЮДЕНИЕ И ДОКЛАД (только если отряд НЕ в бою) ---
+            // Если у отряда нет боевой задачи, каждый боец сам ищет угрозы.
+            if (Squad == null || Squad.CurrentState != SquadState.InCombat)
             {
-                // ... (Логика поиска и доклада остается прежней) ...
                 var visibleTarget = TargetingSystem.PotentialTargets
                     .FirstOrDefault(t => IsInstanceValid(t) && GetVisibleTargetPoint(t).HasValue);
 
@@ -92,78 +94,73 @@ namespace Game.Entity.AI
                     // Докладываем мозгу, чтобы отряд получил приказ
                     LegionBrain.Instance.ReportEnemySighting(this, visibleTarget);
                 }
-                return;
+                // Если мы не в бою и не видим цель, то мы просто выполняем приказ на движение (если он есть)
+                // или стоим на месте. Логика ниже для этого не нужна.
             }
 
-            // --- БЛОК 2: ВЫПОЛНЕНИЕ ПРИКАЗОВ (есть приказ атаковать) ---
+            // БЛОК 2: ВЫПОЛНЕНИЕ ПРИКАЗОВ
+            if (!_hasAttackOrder) return;
+
             if (!IsInstanceValid(_attackTarget) || !_attackTarget.IsAlive)
             {
                 ClearOrders();
                 return;
             }
 
-            // 1. Логика движения
+            // 1. Логика движения к боевой позиции
             bool isAtMoveTarget = true;
             if (_hasMoveOrder)
             {
-                // Проверяем, достигли ли мы конечной точки
-                if (GlobalPosition.DistanceSquaredTo(_moveTarget) < 1.0f) // Погрешность
+                // Используем TargetDesiredDistanceSq, который мы правильно добавили в прошлый раз
+                if (GlobalPosition.DistanceSquaredTo(_moveTarget) < MovementController.TargetDesiredDistanceSq || MovementController.NavigationAgent.IsNavigationFinished())
                 {
-                    // Мы прибыли
                     _hasMoveOrder = false;
+
+                    // <--- ИЗМЕНЕНИЕ: Возвращаем критически важный вызов! ---
+                    // Этот приказ синхронизирует "мозг" (AIEntity) и "тело" (AIMovementController).
+                    // Теперь NavigationAgent получит команду остановиться, и юнит перестанет "дрожать".
                     MovementController.StopMovement();
+
                     Squad?.ReportPositionReached(this);
-                    // Продолжаем движение к цели, пока не остановились, даже если isAtMoveTarget = true
                 }
                 else
                 {
-                    isAtMoveTarget = false; // Мы еще в пути
+                    isAtMoveTarget = false;
                 }
             }
 
-            // 2. Логика боя (ДЕКУПЛИНГ)
-            // Фактор готовности к бою (Check Readiness):
+            // 2. Логика боя (проверка готовности к стрельбе) - теперь будет работать корректно
             bool isReadyToEngage = isAtMoveTarget;
 
-            // Дополнительная проверка: Если мы не достигли точной точки (isAtMoveTarget == false), 
-            // но находимся в пределах радиуса атаки, мы тоже готовы стрелять.
             if (!isReadyToEngage)
             {
                 float requiredRangeSq = CombatBehavior.AttackRange * CombatBehavior.AttackRange;
-                if (GlobalPosition.DistanceSquaredTo(_attackTarget.GlobalPosition) <= requiredRangeSq * 1.2f) // Допустимый небольшой запас
+                if (GlobalPosition.DistanceSquaredTo(_attackTarget.GlobalPosition) <= requiredRangeSq)
                 {
                     isReadyToEngage = true;
                 }
             }
 
-            if (_hasAttackOrder && isReadyToEngage)
+            if (isReadyToEngage)
             {
                 var fromPos = CombatBehavior?.Action?.MuzzlePoint?.GlobalPosition ?? GlobalPosition;
 
-                // Дополнительная проверка на дальность перед выстрелом, 
-                // хотя isReadyToEngage уже включает это условие для стационарных позиций.
-                if (GlobalPosition.DistanceTo(_attackTarget.GlobalPosition) > CombatBehavior.AttackRange)
-                {
-                    // Мы не на формационной точке и вышли за радиус. Ждем.
-                    return;
-                }
+                // Получаем конкретную точку для прицеливания
+                var aimPoint = AITacticalAnalysis.GetFirstVisiblePointOfTarget(
+                    fromPos,
+                    _attackTarget,
+                    [GetRid(), _attackTarget.GetRid()],
+                    Profile.CombatProfile.LineOfSightMask
+                );
 
-                // Проверка линии видимости (LoS)
-                if (AITacticalAnalysis.HasClearPath(fromPos, _attackTarget.GlobalPosition, [GetRid(), _attackTarget.GetRid()], Profile.CombatProfile.LineOfSightMask))
+                // Если aimPoint не null, значит, мы видим цель.
+                if (aimPoint.HasValue)
                 {
-                    // Цель в зоне видимости, ведем огонь
                     if (_timeSinceLastAttack >= CombatBehavior.AttackCooldown)
                     {
-                        CombatBehavior?.Action?.Execute(this, _attackTarget, _attackTarget.GlobalPosition);
+                        CombatBehavior?.Action?.Execute(this, _attackTarget, aimPoint.Value);
                         _timeSinceLastAttack = 0;
                     }
-                }
-                else if (isAtMoveTarget)
-                {
-                    // Мы прибыли на назначенную точку, но внезапно потеряли LoS из-за дыма или нового препятствия. 
-                    // Сообщаем отряду о потере цели с этой позиции.
-                    ClearOrders();
-                    LegionBrain.Instance.ReportEnemySighting(this, _attackTarget);
                 }
             }
         }

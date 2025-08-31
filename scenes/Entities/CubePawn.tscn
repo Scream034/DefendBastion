@@ -16,7 +16,6 @@
 
 [sub_resource type="Resource" id="Resource_4aidf"]
 script = ExtResource("2_p06bi")
-RepositionSearchStep = 0.5
 AimSpreadRadius = 0.0
 PredictionAccuracy = 1.0
 metadata/_custom_type_script = "uid://bh6xlp0n5roe6"
@@ -110,21 +109,22 @@ max_polyphony = 2
 attenuation_filter_cutoff_hz = 9000.0
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
-path_desired_distance = 4.0
-target_desired_distance = 4.0
+path_desired_distance = 3.7
+target_desired_distance = 3.8
+simplify_path = true
+simplify_epsilon = 1.0
+path_search_max_polygons = 256
 avoidance_enabled = true
-height = 4.6
-radius = 5.0
-time_horizon_agents = 2.0
-time_horizon_obstacles = 1.5
+height = 3.6
+radius = 1.42
 debug_enabled = true
 
 [node name="AILookController" type="Node" parent="."]
 script = ExtResource("8_8f78k")
 
-[node name="AIMovementController" type="Node" parent="." node_paths=PackedStringArray("_navigationAgent", "_headPivot")]
+[node name="AIMovementController" type="Node" parent="." node_paths=PackedStringArray("NavigationAgent", "_headPivot")]
 script = ExtResource("9_b51h5")
-_navigationAgent = NodePath("../NavigationAgent3D")
+NavigationAgent = NodePath("../NavigationAgent3D")
 _headPivot = NodePath("../Head")
 
 [node name="AITargetingSystem" type="Node" parent="." node_paths=PackedStringArray("_targetDetectionArea")]

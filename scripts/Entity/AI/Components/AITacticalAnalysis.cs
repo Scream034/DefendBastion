@@ -1,4 +1,3 @@
-using Game.Entity.AI.Behaviors;
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
@@ -86,72 +85,42 @@ namespace Game.Entity.AI.Components
         }
 
         /// <summary>
-        /// Находит наилучшую тактическую позицию для атаки цели.
-        /// Генерирует набор точек-кандидатов, оценивает их и возвращает лучшую.
+        /// Находит первую видимую точку на цели (из SightPoints или центра).
         /// </summary>
-        public static Vector3? FindBestTacticalPosition(AIEntity context, LivingEntity target, Vector3 weaponLocalOffset, float searchRadius, bool preferSidestep)
+        /// <param name="fromPosition">Точка, с которой ведется наблюдение.</param>
+        /// <param name="target">Цель.</param>
+        /// <param name="exclude">Объекты, которые нужно исключить из проверки (обычно сам стрелок и цель).</param>
+        /// <param name="collisionMask">Маска столкновений для луча.</param>
+        /// <returns>Глобальные координаты видимой точки или null, если цель не видна.</returns>
+        public static Vector3? GetFirstVisiblePointOfTarget(Vector3 fromPosition, LivingEntity target, Godot.Collections.Array<Rid> exclude, uint collisionMask)
         {
-            var candidates = new List<(Vector3 Position, float Score)>();
-            var directionToTarget = context.GlobalPosition.DirectionTo(target.GlobalPosition).Normalized();
-            var flankDirection = directionToTarget.Cross(Vector3.Up).Normalized();
+            if (!GodotObject.IsInstanceValid(target)) return null;
 
-            // Генерируем направления для поиска: сначала боковые, потом остальные.
-            var searchVectors = new List<Vector3>
+            if (target.SightPoints?.Length > 0)
             {
-                flankDirection,         // Вправо
-                -flankDirection,        // Влево
-                (flankDirection - directionToTarget).Normalized(),  // Вправо-назад
-                (-flankDirection - directionToTarget).Normalized(), // Влево-назад
-                -directionToTarget      // Прямо назад
-            };
-
-            // Если не требуется боковой шаг, добавляем и другие направления
-            if (!preferSidestep)
-            {
-                searchVectors.Add(directionToTarget); // Прямо вперед
-                searchVectors.Add((flankDirection + directionToTarget).Normalized()); // Вправо-вперед
-                searchVectors.Add((-flankDirection + directionToTarget).Normalized()); // Влево-вперед
-            }
-
-            float step = context.Profile.CombatProfile.RepositionSearchStep;
-            uint collisionMask = context.Profile.CombatProfile.LineOfSightMask;
-
-            foreach (var vector in searchVectors.Where(v => !v.IsZeroApprox()))
-            {
-                // Проверяем точки на разном удалении в каждом направлении
-                for (float offset = step; offset <= searchRadius; offset += step)
+                foreach (var point in target.SightPoints)
                 {
-                    var candidatePoint = context.GlobalPosition + vector * offset;
-                    var navMeshPoint = NavigationServer3D.MapGetClosestPoint(World.Real.NavigationMap, candidatePoint);
-
-                    // Проверяем, что точка на навмеше достаточно близка к нашей цели
-                    if (navMeshPoint.DistanceSquaredTo(candidatePoint) > step * step) continue;
-
-                    // Проверяем, не зарезервирована ли эта точка другим союзником
-                    if (AITacticalCoordinator.IsPositionReserved(navMeshPoint, context)) continue;
-
-                    var weaponPositionAtCandidate = navMeshPoint + (context.Basis * weaponLocalOffset);
-                    if (HasClearPath(weaponPositionAtCandidate, target.GlobalPosition, [context.GetRid(), target.GetRid()], collisionMask))
+                    if (GodotObject.IsInstanceValid(point) && HasClearPath(fromPosition, point.GlobalPosition, exclude, collisionMask))
                     {
-                        // Оцениваем позицию. Приоритет у более близких к нам точек.
-                        float score = 1.0f / (1.0f + context.GlobalPosition.DistanceSquaredTo(navMeshPoint));
-                        candidates.Add((navMeshPoint, score));
-                        // Нашли хорошую точку в этом направлении, можно переходить к следующему вектору.
-                        break;
+                        return point.GlobalPosition; // Нашли! Возвращаем конкретную точку.
                     }
                 }
             }
 
-            if (candidates.Count == 0) return null;
+            // Fallback: если уязвимых точек нет или ни одна не видна, проверяем центр объекта.
+            var targetCenter = target.GlobalPosition;
+            if (HasClearPath(fromPosition, targetCenter, exclude, collisionMask))
+            {
+                return targetCenter;
+            }
 
-            // Возвращаем кандидата с наивысшим счетом
-            return candidates.OrderByDescending(c => c.Score).First().Position;
+            return null; // Цель не видна.
         }
-
 
         /// <summary>
         /// Находит лучшие позиции для ведения огня, предпочитая укрытия.
-        /// Алгоритм работает "от цели", находя края препятствий и проверяя точки за ними.
+        /// Алгоритм работает "от цели", находя края препятствий и проверяя точки за ними,
+        /// с учетом тактически верной дистанции.
         /// </summary>
         public static Dictionary<AIEntity, Vector3> FindCoverAndFirePositions(List<AIEntity> squad, LivingEntity target, int pointsToGenerate = 16)
         {
@@ -159,19 +128,27 @@ namespace Game.Entity.AI.Components
 
             var validPositions = new List<Vector3>();
             var targetPos = target.GlobalPosition;
-            var navMap = squad[0].GetWorld3D().NavigationMap;
             uint losMask = squad[0].Profile.CombatProfile.LineOfSightMask;
 
-            float searchRadius = squad.Average(ai => ai.CombatBehavior.AttackRange);
+            // Определяем тактические дистанции
+            float averageAttackRange = squad.Average(ai => ai.CombatBehavior.AttackRange);
+            // Минимальная дистанция, чтобы не подходить вплотную. Например, 40% от макс. дальности.
+            float minEngagementDistanceSq = averageAttackRange * 0.4f * (averageAttackRange * 0.4f);
+            // Максимальная дистанция для поиска укрытий, равна средней дальности атаки.
+            float maxSearchRadius = averageAttackRange;
 
             // 1. Генерируем лучи ИЗ ЦЕЛИ во все стороны.
             for (int i = 0; i < pointsToGenerate; i++)
             {
                 float angle = (Mathf.Pi * 2f / pointsToGenerate) * i;
                 var direction = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
-                var rayEnd = targetPos + direction * searchRadius;
+                var rayEnd = targetPos + direction * maxSearchRadius;
 
-                var result = World.IntersectRay(targetPos, rayEnd, losMask, [target.GetRid()]);
+                // Важно: Исключаем самого себя И ЦЕЛЬ из raycast, чтобы не попасть в коллайдер цели.
+                var exclude = new Godot.Collections.Array<Rid> { target.GetRid() };
+                foreach (var member in squad) { exclude.Add(member.GetRid()); }
+
+                var result = World.IntersectRay(targetPos, rayEnd, losMask, exclude);
 
                 if (result.Count > 0)
                 {
@@ -183,16 +160,24 @@ namespace Game.Entity.AI.Components
                     for (float offset = 1.5f; offset <= 4.5f; offset += 1.5f)
                     {
                         var candidatePoint = hitPosition + normal * offset;
-                        var navMeshPoint = NavigationServer3D.MapGetClosestPoint(navMap, candidatePoint);
+                        var navMeshPoint = NavigationServer3D.MapGetClosestPoint(World.Real.NavigationMap, candidatePoint);
 
                         // 4. Валидация точки.
                         if (navMeshPoint.DistanceSquaredTo(candidatePoint) < 1.0f) // Доступна на навмеше
                         {
+                            // Добавляем проверку дистанции!
+                            float distanceToTargetSq = navMeshPoint.DistanceSquaredTo(targetPos);
+                            if (distanceToTargetSq < minEngagementDistanceSq)
+                            {
+                                // Это укрытие слишком близко к цели. Игнорируем.
+                                continue;
+                            }
+
                             // С нее есть прострел до цели, но от цели до нее - нет (т.е. это укрытие).
-                            if (HasClearPath(navMeshPoint, targetPos, [squad[0].GetRid()], losMask))
+                            if (GetFirstVisiblePointOfTarget(navMeshPoint, target, exclude, losMask).HasValue)
                             {
                                 validPositions.Add(navMeshPoint);
-                                break; // Нашли хорошую точку за этим укрытием, идем к следующему лучу.
+                                break;
                             }
                         }
                     }
@@ -201,8 +186,9 @@ namespace Game.Entity.AI.Components
 
             if (validPositions.Count == 0)
             {
-                // Если не найдено ни одного укрытия, просто генерируем огневую дугу.
-                return GenerateFiringArcPositions(squad, target);
+                // Если не найдено ни одного подходящего укрытия, возвращаем null,
+                // чтобы вызывающий код использовал fallback-логику (боевую формацию).
+                return null;
             }
 
             // 5. Распределяем лучшие найденные позиции между членами отряда.
@@ -216,12 +202,15 @@ namespace Game.Entity.AI.Components
             {
                 if (unassignedAIs.Count == 0) break;
 
+                // Находим AI, для которого эта позиция наиболее близка к его текущему положению.
                 var bestAI = unassignedAIs.OrderBy(ai => ai.GlobalPosition.DistanceSquaredTo(pos)).First();
                 assignments[bestAI] = pos;
                 unassignedAIs.Remove(bestAI);
             }
 
-            // Если для кого-то не хватило укрытий, им позиция не назначается (они будут ждать)
+            // Если для кого-то не хватило укрытий, им позиция не назначается.
+            // В идеале, нужно иметь логику для тех, кто остался без приказа (например, держать позицию).
+            // Но в нашей системе они просто не получат нового приказа MoveTo, что тоже приемлемо.
             return assignments;
         }
 
@@ -233,16 +222,24 @@ namespace Game.Entity.AI.Components
         {
             if (squad == null || squad.Count == 0 || !GodotObject.IsInstanceValid(target)) return null;
 
-            // 1. Определяем параметры дуги
+            // Учитываем радиус юнитов для минимального расстояния
+            float minSpacing = squad.Average(ai => ai.MovementController.NavigationAgent.Radius) * 2.5f; // Расстояние = 2.5 радиуса
+
+            // Определяем параметры дуги
             var squadCenter = squad.Select(ai => ai.GlobalPosition).Aggregate(Vector3.Zero, (a, b) => a + b) / squad.Count;
             var directionToSquad = target.GlobalPosition.DirectionTo(squadCenter).Normalized();
 
-            // Используем среднюю дальность атаки отряда как радиус дуги
             float optimalDistance = squad.Average(ai => ai.CombatBehavior.AttackRange) * 0.9f;
             int squadCount = squad.Count;
-            float totalArcDegrees = Mathf.Min(squadCount * 20f, 120f); // Ширина дуги, например 20 градусов на юнита
-            float angleStep = squadCount > 1 ? Mathf.DegToRad(totalArcDegrees) / (squadCount - 1) : 0;
-            float startAngle = -Mathf.DegToRad(totalArcDegrees) / 2f;
+
+            // Динамически вычисляем угол, чтобы обеспечить минимальное расстояние
+            float requiredArcLength = minSpacing * (squadCount - 1);
+            float circumferenceAtOptimalDistance = 2 * Mathf.Pi * optimalDistance;
+            float totalArcRadians = requiredArcLength / circumferenceAtOptimalDistance * 2 * Mathf.Pi;
+            totalArcRadians = Mathf.Min(totalArcRadians, Mathf.DegToRad(120f)); // Ограничиваем максимальную ширину дуги
+
+            float angleStep = squadCount > 1 ? totalArcRadians / (squadCount - 1) : 0;
+            float startAngle = -totalArcRadians / 2f;
 
             var assignments = new Dictionary<AIEntity, Vector3>();
             var availablePositions = new List<Vector3>();
@@ -254,30 +251,35 @@ namespace Game.Entity.AI.Components
                 var rotatedDirection = directionToSquad.Rotated(Vector3.Up, currentAngle);
                 var idealPoint = target.GlobalPosition + rotatedDirection * optimalDistance;
 
-                // 3. Валидируем каждую точку
                 var navMap = squad[0].GetWorld3D().NavigationMap;
                 var navMeshPoint = NavigationServer3D.MapGetClosestPoint(navMap, idealPoint);
 
-                // Точка валидна, если она на навмеше, близко к идеальной, и с нее есть прострел
-                if (navMeshPoint.DistanceSquaredTo(idealPoint) < 4f) // Допуск ~2 метра
+                if (navMeshPoint.DistanceSquaredTo(idealPoint) < 4f)
                 {
                     uint mask = squad[0].Profile.CombatProfile.LineOfSightMask;
-                    if (HasClearPath(navMeshPoint, target.GlobalPosition, [target.GetRid()], mask))
+                    if (GetFirstVisiblePointOfTarget(navMeshPoint, target, [target.GetRid()], mask).HasValue)
                     {
                         availablePositions.Add(navMeshPoint);
                     }
                 }
             }
 
-            if (availablePositions.Count < squadCount) return null; // Недостаточно хороших позиций для всего отряда
+            // ВАЖНО: Распределение позиций теперь происходит в AISquad,
+            // поэтому здесь мы просто возвращаем null, если позиций не хватает.
+            // Но для `GenerateFiringArcPositions`, который используется как часть `FindCover...`
+            // лучше оставить старую логику, так как она может вызываться отдельно.
+            // Для чистоты архитектуры мы можем делегировать распределение `AISquad`,
+            // но пока оставим так для совместимости.
 
-            // 4. Распределяем ближайшие валидные точки между членами отряда
+            if (availablePositions.Count < squadCount) return null;
+
+            // Мы можем использовать тот же GetOptimalAssignments, если бы он был статическим,
+            // но пока оставим простое распределение внутри AITacticalAnalysis.
             var unassignedAIs = new List<AIEntity>(squad);
             foreach (var pos in availablePositions)
             {
                 if (unassignedAIs.Count == 0) break;
 
-                // Находим ближайшего к этой точке свободного AI
                 var bestAI = unassignedAIs.OrderBy(ai => ai.GlobalPosition.DistanceSquaredTo(pos)).First();
                 assignments[bestAI] = pos;
                 unassignedAIs.Remove(bestAI);
