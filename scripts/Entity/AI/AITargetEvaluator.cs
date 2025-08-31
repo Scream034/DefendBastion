@@ -54,11 +54,10 @@ namespace Game.Entity.AI
         private static float CalculateThreatScore(AIEntity evaluator, LivingEntity target, PhysicsDirectSpaceState3D spaceState)
         {
             var fromPos = evaluator.EyesPosition?.GlobalPosition ?? evaluator.GlobalPosition;
-            var toPos = target.GlobalPosition; // Для оценки достаточно центра цели
             uint mask = evaluator.Profile?.CombatProfile?.LineOfSightMask ?? 1;
 
             // Оптимизация: используем один быстрый рейкаст вместо GetFirstVisiblePoint
-            if (!AITacticalAnalysis.HasClearPath(fromPos, toPos, [ evaluator.GetRid(), target.GetRid() ], mask))
+            if (!AITacticalAnalysis.GetFirstVisiblePointOfTarget(fromPos, target, [ evaluator.GetRid(), target.GetRid() ], mask).HasValue)
             {
                 return -1f; // Цель не видна
             }

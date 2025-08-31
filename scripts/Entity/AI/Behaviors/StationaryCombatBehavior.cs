@@ -11,7 +11,6 @@ namespace Game.Entity.AI.Behaviors
         public IAttackAction Action { get; private set; }
 
         private double _timeSinceLastAttack = 0;
-        private double _effectiveAttackCooldown;
         private bool _isRepositioning = false;
 
         public override void _Ready()
@@ -19,15 +18,14 @@ namespace Game.Entity.AI.Behaviors
             if (_attackActionNode is IAttackAction action) Action = action;
             else { GD.PushError($"Для {GetPath()} не назначен узел с IAttackAction!"); SetProcess(false); return; }
 
-            var variance = (float)GD.RandRange(-0.1, 0.1);
-            _effectiveAttackCooldown = AttackCooldown * (1.0f + variance);
+            AttackCooldown *= (float)GD.RandRange(1f, 1.5f);
 
-            _timeSinceLastAttack = _effectiveAttackCooldown; 
+            _timeSinceLastAttack = AttackCooldown;
         }
 
         public void EnterCombat(AIEntity context)
         {
-            _timeSinceLastAttack = _effectiveAttackCooldown;
+            _timeSinceLastAttack = AttackCooldown;
         }
 
         public void ExitCombat(AIEntity context)

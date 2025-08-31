@@ -58,16 +58,8 @@ namespace Game.Entity.AI.Components
                     MoveToNextWaypoint();
                 }
             }
-            // <--- ИЗМЕНЕНИЕ: Добавляем блок управления состоянием боя ---
-            else if (CurrentState == SquadState.InCombat)
-            {
-                // Командир отряда сам проверяет, актуальна ли его цель.
-                if (!IsInstanceValid(CurrentTarget) || !CurrentTarget.IsAlive)
-                {
-                    GD.Print($"Squad '{SquadName}' target is eliminated or invalid. Disengaging.");
-                    Disengage();
-                }
-            }
+            // В состоянии боя командир теперь действует, только когда получает доклад от бойцов,
+            // поэтому активная проверка цели здесь больше не нужна. Это делает систему более событийно-ориентированной.
         }
 
         public void InitializeMembersFromGroup()
@@ -99,10 +91,20 @@ namespace Game.Entity.AI.Components
 
         private void StartFollowingPath()
         {
-            GD.Print($"Squad '{SquadName}' starts following its mission path.");
+            GD.Print($"Squad '{SquadName}' starts/resumes following its mission path.");
             CurrentState = SquadState.FollowingPath;
-            _currentPathIndex = 0;
-            _pathDirection = 1; // Всегда начинаем движение вперед по пути
+
+            // Не сбрасываем индекс, если он уже валиден.
+            // Сброс нужен только при самой первой инициализации.
+            // Мы можем сделать это, проверяя, находимся ли мы уже в пути.
+            // Но более надежный способ - просто не вызывать этот метод целиком для возобновления.
+            // Давайте изменим логику выхода из боя (Disengage).
+
+            // Старая логика:
+            // _currentPathIndex = 0; 
+            // _pathDirection = 1;
+
+            // Новая логика: Мы просто вызываем MoveToNextWaypoint(), который использует ТЕКУЩИЙ индекс.
             MoveToNextWaypoint();
         }
 
@@ -187,7 +189,7 @@ namespace Game.Entity.AI.Components
                 worldPositions.Add(targetPosition + worldOffset);
             }
 
-            var assignments = GetOptimalAssignments(Members, worldPositions);
+            var assignments = AITacticalAnalysis.GetOptimalAssignments(Members, worldPositions, targetPosition);
 
             foreach (var (member, position) in assignments)
             {
@@ -195,18 +197,13 @@ namespace Game.Entity.AI.Components
             }
         }
 
+
         public void AssignCombatTarget(LivingEntity target)
         {
-            // <--- ИЗМЕНЕНИЕ: "Пуленепробиваемый" вход в метод ---
-            // Это первая линия обороны. Ни при каких обстоятельствах мы не работаем с невалидной целью.
             if (!IsInstanceValid(target))
             {
                 GD.PushWarning($"Squad '{SquadName}' received an order to attack an invalid target. Order ignored.");
-                // Если мы уже были в бою, то отменяем его, т.к. пришел приказ на невалидную цель
-                if (CurrentState == SquadState.InCombat)
-                {
-                    Disengage();
-                }
+                if (CurrentState == SquadState.InCombat) Disengage();
                 return;
             }
 
@@ -216,51 +213,106 @@ namespace Game.Entity.AI.Components
                 return;
             }
 
-            // Если мы уже атакуем эту же цель, ничего не делаем.
             if (CurrentTarget == target && CurrentState == SquadState.InCombat) return;
 
             GD.Print($"Squad '{SquadName}' engaging target {target.Name}.");
 
-            // Очищаем предыдущие приказы, чтобы не мешать новому
-            foreach (var member in Members)
-            {
-                member.ClearOrders();
-            }
+            foreach (var member in Members) member.ClearOrders();
 
             CurrentTarget = target;
             CurrentState = SquadState.InCombat;
             _membersAtDestination.Clear();
 
-            var positionAssignments = AITacticalAnalysis.FindCoverAndFirePositions(Members, target);
-
-            if (positionAssignments == null || positionAssignments.Count == 0)
+            // <--- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Вычисляем смещение дула перед анализом.
+            var representative = Members.FirstOrDefault(m => IsInstanceValid(m) && m.CombatBehavior?.Action?.MuzzlePoint != null);
+            Vector3 muzzleOffset = Vector3.Zero;
+            if (representative != null)
             {
-                GD.Print($"Squad '{SquadName}' failed to find any cover. Using CombatFormation as fallback.");
-                positionAssignments = GeneratePositionsFromFormation(CombatFormation, target);
-            }
-
-            if (positionAssignments != null && positionAssignments.Count > 0)
-            {
-                GD.Print($"Assigning {positionAssignments.Count} combat positions.");
-                foreach (var (ai, position) in positionAssignments)
-                {
-                    ai.ReceiveOrderMoveTo(position);
-                    ai.ReceiveOrderAttackTarget(target);
-                }
+                // Мы берем локальную позицию MuzzlePoint. Когда мы прибавляем ее к глобальной
+                // позиции на NavMesh, мы эффективно симулируем глобальное положение дула.
+                muzzleOffset = representative.CombatBehavior.Action.MuzzlePoint.Position;
             }
             else
             {
-                // Эта ошибка теперь будет вызываться только в том случае, если цель валидна,
-                // но по какой-то причине мы не смогли сгенерировать для нее НИ ОДНОЙ позиции.
-                GD.PushError($"Squad '{SquadName}' could not determine any combat positions for target {target.Name}!");
-                // В этом случае отряд должен прекратить попытки, а не зацикливаться.
-                Disengage();
+                GD.PushWarning($"Squad '{SquadName}' has no members with a MuzzlePoint. Line-of-fire checks may be inaccurate.");
+                // В качестве запасного варианта можно использовать высоту глаз.
+                // muzzleOffset = Vector3.Up * 1.6f;
+            }
+
+            Dictionary<AIEntity, Vector3> positionAssignments = AITacticalAnalysis.FindCoverAndFirePositions(Members, target, muzzleOffset);
+
+            // Если с укрытиями не вышло, пробуем боевую формацию.
+            if (positionAssignments == null || positionAssignments.Count < Members.Count)
+            {
+                GD.Print($"Squad '{SquadName}' failed to find enough cover positions. Using CombatFormation as fallback.");
+                positionAssignments = AITacticalAnalysis.GeneratePositionsFromFormation(Members, CombatFormation, target, muzzleOffset);
+            }
+
+            // Если и с формацией не вышло, пробуем План В: создать огневую дугу.
+            if (positionAssignments == null || positionAssignments.Count < Members.Count)
+            {
+                GD.PushWarning($"Squad '{SquadName}' failed to find formation positions. Attempting to generate a firing arc.");
+
+                // <--- ИЗМЕНЕНИЕ: Используем новую версию GenerateFiringArcPositions ---
+                var arcPositions = AITacticalAnalysis.GenerateFiringArcPositions(Members, target);
+
+                if (arcPositions != null && arcPositions.Count > 0)
+                {
+                    // Используем наш "умный" распределитель
+                    positionAssignments = AITacticalAnalysis.GetOptimalAssignments(Members, arcPositions, target.GlobalPosition);
+                }
+            }
+
+            // Если после всех попыток позиций все равно нет или их мало, переходим к Плану Г.
+            if (positionAssignments == null || positionAssignments.Count == 0)
+            {
+                GD.PushError($"Squad '{SquadName}' could not find/generate any valid positions. Ordering a direct assault!");
+                foreach (var member in Members)
+                {
+                    member.ReceiveOrderMoveTo(target.GlobalPosition);
+                    member.ReceiveOrderAttackTarget(target);
+                }
+                return; // Выходим
+            }
+
+            // --- Блок назначения приказов (остается почти без изменений) ---
+            GD.Print($"Assigning {positionAssignments.Count} combat positions.");
+            foreach (var (ai, position) in positionAssignments)
+            {
+                ai.ReceiveOrderMoveTo(position);
+                ai.ReceiveOrderAttackTarget(target);
+            }
+
+            // Назначаем приказ на прямую атаку тем, кому позиция не досталась
+            foreach (var member in Members.Where(m => !positionAssignments.ContainsKey(m)))
+            {
+                GD.Print($"Member {member.Name} did not receive a position, ordering direct assault.");
+                member.ReceiveOrderMoveTo(target.GlobalPosition);
+                member.ReceiveOrderAttackTarget(target);
             }
         }
 
-        // <--- ИЗМЕНЕНИЕ: Новый метод для чистого выхода из боя ---
         /// <summary>
-        /// Выводит отряд из состояния боя, отменяет приказы и переводит в режим ожидания.
+        /// Вызывается членом отряда, когда его цель становится невалидной.
+        /// Позволяет командиру отряда принять решение о дальнейших действиях.
+        /// </summary>
+        public void ReportTargetEliminated(AIEntity reporter, LivingEntity eliminatedTarget)
+        {
+            // 1. Проверяем, является ли этот доклад актуальным.
+            // Если цель уже не та, которую мы атакуем, или доклад пришел с опозданием, игнорируем.
+            if (!IsInstanceValid(CurrentTarget) || eliminatedTarget != CurrentTarget)
+            {
+                return;
+            }
+
+            GD.Print($"Squad '{SquadName}' confirms target {eliminatedTarget.Name} is eliminated. Disengaging...");
+
+            // 2. Выводим отряд из боя и возвращаем его к основной задаче.
+            Disengage();
+        }
+
+        /// <summary>
+        /// Выводит отряд из состояния боя, отменяет приказы и, если нужно, возвращает к патрулированию.
         /// </summary>
         private void Disengage()
         {
@@ -272,90 +324,17 @@ namespace Game.Entity.AI.Components
                 member.ClearOrders();
             }
 
-            // TODO: В будущем здесь можно добавить логику возвращения к патрулированию,
-            // но пока что простой переход в Idle - самое надежное решение.
-        }
-
-        private Dictionary<AIEntity, Vector3> GeneratePositionsFromFormation(Formation formation, LivingEntity target)
-        {
-            if (formation == null || formation.MemberPositions.Length == 0 || !IsInstanceValid(target)) return null;
-
-            UpdateSquadCenter();
-
-            float optimalDistance = Members.Average(ai => ai.CombatBehavior.AttackRange) * 0.8f;
-            var directionFromTarget = target.GlobalPosition.DirectionTo(_squadCenterCache).Normalized();
-            var anchorPoint = target.GlobalPosition + directionFromTarget * optimalDistance;
-
-            var lookDirection = anchorPoint.DirectionTo(target.GlobalPosition).Normalized();
-            var rotation = Basis.LookingAt(lookDirection, Vector3.Up);
-
-            // <--- ИЗМЕНЕНИЕ: Теперь мы ищем не просто точки, а ТАКТИЧЕСКИ ВЫГОДНЫЕ точки ---
-            var validCombatPositions = new List<Vector3>();
-            var navMap = Members[0].GetWorld3D().NavigationMap;
-            uint losMask = Members[0].Profile.CombatProfile.LineOfSightMask;
-            // Собираем RID'ы отряда один раз, чтобы не делать это в цикле
-            var squadRids = new Godot.Collections.Array<Rid>();
-            foreach (var member in Members) squadRids.Add(member.GetRid());
-            squadRids.Add(target.GetRid());
-
-            for (int i = 0; i < formation.MemberPositions.Length; i++)
+            if (Task == SquadTask.PatrolPath || Task == SquadTask.AssaultPath)
             {
-                var localOffset = formation.MemberPositions[i];
-                var worldOffset = rotation * localOffset;
-                var idealPosition = anchorPoint + worldOffset;
-                var navMeshPosition = NavigationServer3D.MapGetClosestPoint(navMap, idealPosition);
+                // <--- ИЗМЕНЕНИЕ: Вместо полного перезапуска патруля, мы просто продолжаем с того места, где остановились.
+                GD.Print($"Squad '{SquadName}' resuming mission path after combat.");
+                // StartFollowingPath(); // Старый вызов, который все сбрасывал
 
-                // Проверяем, что точка на NavMesh не слишком далеко от идеальной
-                if (navMeshPosition.DistanceSquaredTo(idealPosition) > 4.0f) // допуск 2 метра
-                {
-                    continue; // Эта точка не подходит, ищем для следующего бойца
-                }
-
-                // "есть ли точка, которую можно увидеть?".
-                if (AITacticalAnalysis.GetFirstVisiblePointOfTarget(navMeshPosition, target, squadRids, losMask).HasValue)
-                {
-                    validCombatPositions.Add(navMeshPosition);
-                }
+                // Новый подход: Просто даем команду двигаться к текущей (или следующей) точке маршрута.
+                // Это предотвратит бег назад.
+                CurrentState = SquadState.FollowingPath;
+                MoveToNextWaypoint();
             }
-
-            // Если мы не смогли найти достаточно хороших позиций для всего отряда, считаем операцию провальной.
-            if (validCombatPositions.Count < Members.Count)
-            {
-                GD.Print($"Squad '{SquadName}' found only {validCombatPositions.Count} valid combat positions out of {Members.Count} required. Fallback failed.");
-                return null;
-            }
-
-            // Теперь, когда у нас есть список гарантированно хороших позиций, оптимально распределяем их.
-            return GetOptimalAssignments(Members, validCombatPositions);
-        }
-
-        /// <summary>
-        /// Реализует жадный алгоритм для назначения агентам ближайших к ним целевых позиций.
-        /// Минимизирует общее расстояние перемещения отряда.
-        /// </summary>
-        /// <param name="agents">Список агентов для назначения.</param>
-        /// <param name="positions">Список доступных позиций.</param>
-        /// <returns>Словарь оптимальных назначений {Агент -> Позиция}.</returns>
-        private static Dictionary<AIEntity, Vector3> GetOptimalAssignments(List<AIEntity> agents, List<Vector3> positions)
-        {
-            var assignments = new Dictionary<AIEntity, Vector3>();
-            var unassignedAgents = new List<AIEntity>(agents);
-            var availablePositions = new List<Vector3>(positions);
-
-            foreach (var position in availablePositions)
-            {
-                if (unassignedAgents.Count == 0) break;
-
-                // Находим ближайшего к этой позиции свободного агента
-                AIEntity bestAgent = unassignedAgents
-                    .OrderBy(agent => agent.GlobalPosition.DistanceSquaredTo(position))
-                    .First();
-
-                assignments[bestAgent] = position;
-                unassignedAgents.Remove(bestAgent);
-            }
-
-            return assignments;
         }
 
         public void ReportPositionReached(AIEntity member)

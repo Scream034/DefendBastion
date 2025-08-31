@@ -15,12 +15,6 @@ namespace Game.Entity.AI.Behaviors
         public IAttackAction Action { get; } // <--- ДОБАВЛЕНО ЭТО СВОЙСТВО
 
         /// <summary>
-        /// Вызывается каждый кадр из AttackState. Содержит всю логику боя.
-        /// </summary>
-        /// <returns>true, если поведение продолжает бой; false, если цель тактически потеряна.</returns>
-        // bool Process(AIEntity context, double delta); // Этот метод больше не используется в новой архитектуре.
-
-        /// <summary>
         /// Вызывается при входе в состояние атаки. Подготавливает поведение к бою.
         /// </summary>
         void EnterCombat(AIEntity context);

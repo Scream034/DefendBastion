@@ -25,33 +25,45 @@ namespace Game.Entity.AI.Components
         /// <summary>
         /// Запрашивает, генерирует и назначает позиции для целой группы AI.
         /// </summary>
-        /// <returns>True, если позиции были успешно назначены для всей группы.</returns>
-        public static bool RequestPositionsForSquad(List<AIEntity> squad, LivingEntity target)
+        /// <returns>Словарь {AI, Позиция} или null в случае неудачи.</returns>
+        public static Dictionary<AIEntity, Vector3> RequestPositionsForSquad(List<AIEntity> squad, LivingEntity target)
         {
-            // Если кто-то из отряда уже выполняет тактический маневр, отменяем новый запрос.
             if (squad.Any(ai => _assignedPositions.ContainsKey(ai.GetInstanceId())))
             {
-                return false;
+                return null; // Кто-то уже занят, отменяем.
             }
 
-            // Генерируем идеальные позиции для построения "огневой дуги".
+            // 1. Генерируем СПИСОК идеальных позиций.
             var idealPositions = AITacticalAnalysis.GenerateFiringArcPositions(squad, target);
 
-            if (idealPositions == null || idealPositions.Count != squad.Count)
+            // Если не удалось сгенерировать достаточно позиций
+            if (idealPositions == null || idealPositions.Count < squad.Count)
             {
-                GD.PrintErr("Failed to generate enough valid positions for the squad.");
-                return false;
-            }
-            
-            GD.Print($"Squad Coordinator: Assigning {idealPositions.Count} positions for squad targeting {target.Name}.");
-            
-            // Назначаем каждому AI его позицию.
-            foreach (var assignment in idealPositions)
-            {
-                _assignedPositions[assignment.Key.GetInstanceId()] = assignment.Value;
+                GD.Print($"Squad Coordinator: Failed to generate enough valid positions for the squad ({idealPositions?.Count ?? 0}/{squad.Count}).");
+                return null;
             }
 
-            return true;
+            // 2. РАСПРЕДЕЛЯЕМ эти позиции с помощью нашего умного метода.
+            // Он вернет словарь, который нам нужен.
+            var assignments = AITacticalAnalysis.GetOptimalAssignments(squad, idealPositions, target.GlobalPosition);
+
+            // Если по какой-то причине распределить не удалось
+            if (assignments == null || assignments.Count < squad.Count)
+            {
+                GD.Print($"Squad Coordinator: Failed to assign positions after generation.");
+                return null;
+            }
+
+            GD.Print($"Squad Coordinator: Assigning {assignments.Count} positions for squad targeting {target.Name}.");
+
+            // 3. Теперь мы работаем с правильным СЛОВАРЕМ. Ошибок не будет.
+            // Используем деконструкцию для более чистого кода.
+            foreach (var (ai, position) in assignments)
+            {
+                _assignedPositions[ai.GetInstanceId()] = position;
+            }
+
+            return assignments; // Возвращаем результат
         }
 
         /// <summary>
