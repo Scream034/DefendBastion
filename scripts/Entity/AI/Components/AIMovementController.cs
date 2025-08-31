@@ -1,17 +1,18 @@
 using Godot;
 using Game.Entity.AI.Profiles;
+using System.Linq;
 
 namespace Game.Entity.AI.Components
 {
-    /// <summary>
-    /// Компонент, отвечающий за физическое перемещение и вращение AIEntity.
-    /// Получает команды от AIEntity и его состояний, а сам реализует их в _PhysicsProcess.
-    /// </summary>
     public partial class AIMovementController : Node
     {
         [ExportGroup("Dependencies")]
         [Export] private NavigationAgent3D _navigationAgent;
         [Export] private Node3D _headPivot;
+
+        // --- Настройки Separation Force ---
+        [Export] private float _separationRadius = 3.0f; // Радиус, в котором ищем соседей для избегания
+        [Export] private float _separationWeight = 5.0f; // Сила отталкивания
 
         private AIEntity _context;
         private AIMovementProfile _movementProfile;
@@ -22,6 +23,7 @@ namespace Game.Entity.AI.Components
 
         public void Initialize(AIEntity context)
         {
+            // ... (Существующая логика инициализации) ...
             _context = context;
             _movementProfile = context.Profile?.MovementProfile;
             _lookProfile = context.Profile?.LookProfile;
@@ -41,26 +43,80 @@ namespace Game.Entity.AI.Components
 
         public override void _PhysicsProcess(double delta)
         {
-            // 1. Управление движением
+            // 1. Расчет базовой навигации (сила притяжения к цели)
+            Vector3 navigationVelocity = Vector3.Zero;
             if (!_navigationAgent.IsNavigationFinished())
             {
                 var nextPoint = _navigationAgent.GetNextPathPosition();
-                var direction = _context.GlobalPosition.DirectionTo(nextPoint);
-                TargetVelocity = direction * _context.Speed;
+                navigationVelocity = _context.GlobalPosition.DirectionTo(nextPoint) * _context.Speed;
             }
-            else
-            {
-                TargetVelocity = Vector3.Zero;
-            }
+
+            // 2. Расчет Separation Force (сила отталкивания от союзников)
+            Vector3 separationForce = CalculateSeparationForce();
+
+            // 3. Комбинирование сил.
+            // Мы даем приоритет Separation, чтобы избежать столкновения, 
+            // но навигация остается основной движущей силой.
+
+            // Навигационная скорость преобразуется в Steering Force:
+            Vector3 steeringForce = navigationVelocity - _context.Velocity;
+
+            // Итоговая сила: Навигационное намерение + Отталкивание
+            Vector3 finalForce = steeringForce + separationForce;
+
+            // Ограничиваем силу ускорением
+            TargetVelocity = (_context.Velocity + finalForce).LimitLength(_context.Speed);
+
             _context.Velocity = _context.Velocity.Lerp(TargetVelocity, _context.Acceleration * (float)delta);
 
-            // 2. Вращение тела
+            // 4. Управление вращением и MoveAndSlide
             RotateBody((float)delta);
-
-            // 3. Вращение головы
             RotateHead((float)delta);
 
             _context.MoveAndSlide();
+        }
+
+        /// <summary>
+        /// Вычисляет силу, необходимую для отталкивания от ближайших союзников.
+        /// Реализует паттерн Separation из Flocking.
+        /// </summary>
+        private Vector3 CalculateSeparationForce()
+        {
+            if (_context.Squad == null || _context.Squad.Members.Count <= 1) return Vector3.Zero;
+
+            Vector3 steering = Vector3.Zero;
+            int neighborCount = 0;
+
+            // Используем только тех, кто находится в радиусе отделения
+            var closeAllies = _context.Squad.Members
+                .Where(m => m != _context && m.GlobalPosition.DistanceSquaredTo(_context.GlobalPosition) < _separationRadius * _separationRadius);
+
+            foreach (var ally in closeAllies)
+            {
+                if (!IsInstanceValid(ally)) continue;
+
+                Vector3 direction = _context.GlobalPosition - ally.GlobalPosition;
+                float distance = direction.Length();
+
+                if (distance > 0)
+                {
+                    // Сила тем больше, чем ближе юнит. (1/distance)
+                    // Нормализуем направление и масштабируем по инверсии квадрата расстояния.
+                    float strength = 1.0f / distance;
+                    steering += direction.Normalized() * strength;
+                    neighborCount++;
+                }
+            }
+
+            if (neighborCount > 0)
+            {
+                steering /= neighborCount; // Усредняем силу
+                steering = steering.Normalized() * _context.Speed; // Масштабируем до максимальной скорости
+                steering = steering - _context.Velocity; // Преобразуем в Steering Force
+                steering = steering.LimitLength(_separationWeight); // Применяем вес
+            }
+
+            return steering;
         }
 
         private void RotateBody(float delta)
@@ -118,13 +174,20 @@ namespace Game.Entity.AI.Components
 
         public void MoveTo(Vector3 targetPosition)
         {
+            // Здесь дополнительно проверяем, не конфликтует ли позиция с кем-то в AITacticalCoordinator.
+            // В нашей текущей архитектуре эту проверку делает Squad перед выдачей приказа,
+            // но на всякий случай можно добавить логику пересчета пути, если позиция занята.
+            // Однако, в целях KISS и производительности, мы полагаемся на Separation Force
+            // и на то, что Squad выдал валидные, непересекающиеся точки.
             if (_navigationAgent.TargetPosition == targetPosition) return;
             _navigationAgent.TargetPosition = targetPosition;
+            AITacticalCoordinator.ReservePosition(_context, targetPosition);
         }
 
         public void StopMovement()
         {
             _navigationAgent.TargetPosition = _context.GlobalPosition;
+            AITacticalCoordinator.ReleasePosition(_context);
         }
     }
 }

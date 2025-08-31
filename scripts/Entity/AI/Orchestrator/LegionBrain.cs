@@ -8,7 +8,7 @@ namespace Game.Entity.AI.Orchestrator
     {
         public static LegionBrain Instance { get; private set; }
 
-        private readonly Dictionary<string, AISquad> _squads = new();
+        private readonly Dictionary<string, AISquad> _squads = [];
 
         public override void _EnterTree() => Instance = this;
 
@@ -40,7 +40,6 @@ namespace Game.Entity.AI.Orchestrator
             reporter.Squad.AssignCombatTarget(target);
         }
 
-        // <--- НОВЫЙ МЕТОД --->
         /// <summary>
         /// Отдает приказ указанному отряду двигаться к цели.
         /// </summary>

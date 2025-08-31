@@ -12,7 +12,7 @@ namespace Game.Entity.AI.Components
     public static class AISquadCoordinator
     {
         // Хранит назначенную позицию для каждого AI (GetInstanceId -> TargetPosition)
-        private static readonly Dictionary<ulong, Vector3> _assignedPositions = new();
+        private static readonly Dictionary<ulong, Vector3> _assignedPositions = [];
 
         /// <summary>
         /// Проверяет, есть ли у AI уже назначенная тактическая позиция.

@@ -10,7 +10,7 @@ namespace Game.Entity.AI.Components
     /// </summary>
     public static class AITacticalCoordinator
     {
-        private static readonly Dictionary<ulong, Vector3> _reservedDestinations = new();
+        private static readonly Dictionary<ulong, Vector3> _reservedDestinations = [];
         private const float RESERVATION_RADIUS_SQUARED = 2.25f; // 1.5m * 1.5m
 
         /// <summary>

@@ -20,11 +20,11 @@ namespace Game.Entity.AI.Components
         [ExportGroup("Task Settings")]
         [Export] private float _pathWaypointThreshold = 2.0f;
 
+        public readonly List<AIEntity> Members = [];
         public SquadState CurrentState { get; private set; } = SquadState.Idle;
         public LivingEntity CurrentTarget { get; private set; }
 
-        private readonly List<AIEntity> _members = new();
-        private readonly HashSet<AIEntity> _membersAtDestination = new();
+        private readonly HashSet<AIEntity> _membersAtDestination = [];
         private Vector3 _squadCenterCache;
 
         private Vector3[] _pathPoints;
@@ -45,7 +45,7 @@ namespace Game.Entity.AI.Components
 
         public override void _PhysicsProcess(double delta)
         {
-            if (_members.Count == 0 || CurrentState != SquadState.FollowingPath) return;
+            if (Members.Count == 0 || CurrentState != SquadState.FollowingPath) return;
 
             UpdateSquadCenter();
             var targetWaypoint = MissionPath.ToGlobal(_pathPoints[_currentPathIndex]);
@@ -61,11 +61,11 @@ namespace Game.Entity.AI.Components
             {
                 if (node is AIEntity ai)
                 {
-                    _members.Add(ai);
+                    Members.Add(ai);
                     ai.AssignToSquad(this);
                 }
             }
-            GD.Print($"Squad '{SquadName}' initialized with {_members.Count} members.");
+            GD.Print($"Squad '{SquadName}' initialized with {Members.Count} members.");
 
             if (Task == SquadTask.PatrolPath || Task == SquadTask.AssaultPath)
             {
@@ -127,21 +127,21 @@ namespace Game.Entity.AI.Components
             if (MarchingFormation == null || MarchingFormation.MemberPositions.Length == 0)
             {
                 GD.PushWarning($"Squad '{SquadName}' has no MarchingFormation. Moving without formation.");
-                foreach (var member in _members) member.ReceiveOrderMoveTo(targetPosition);
+                foreach (var member in Members) member.ReceiveOrderMoveTo(targetPosition);
                 return;
             }
 
             UpdateSquadCenter();
-            var direction = _members.Count > 0 ? (_squadCenterCache.DirectionTo(targetPosition)).Normalized() : Vector3.Forward;
+            var direction = Members.Count > 0 ? (_squadCenterCache.DirectionTo(targetPosition)).Normalized() : Vector3.Forward;
             var rotation = Basis.LookingAt(direction, Vector3.Up);
 
-            for (int i = 0; i < _members.Count; i++)
+            for (int i = 0; i < Members.Count; i++)
             {
                 if (i >= MarchingFormation.MemberPositions.Length) break;
                 var localOffset = MarchingFormation.MemberPositions[i];
                 var worldOffset = rotation * localOffset;
                 var memberTargetPosition = targetPosition + worldOffset;
-                _members[i].ReceiveOrderMoveTo(memberTargetPosition);
+                Members[i].ReceiveOrderMoveTo(memberTargetPosition);
             }
         }
 
@@ -161,7 +161,7 @@ namespace Game.Entity.AI.Components
 
             GD.Print($"Squad '{SquadName}' engaging target {target.Name}.");
 
-            var positionAssignments = AITacticalAnalysis.FindCoverAndFirePositions(_members, target);
+            var positionAssignments = AITacticalAnalysis.FindCoverAndFirePositions(Members, target);
 
             if (positionAssignments == null || positionAssignments.Count == 0)
             {
@@ -193,7 +193,7 @@ namespace Game.Entity.AI.Components
             UpdateSquadCenter();
 
             // Якорь - это не наша текущая позиция, а точка на оптимальном расстоянии от врага!
-            float optimalDistance = _members.Average(ai => ai.CombatBehavior.AttackRange) * 0.8f; // 80% от макс. дальности
+            float optimalDistance = Members.Average(ai => ai.CombatBehavior.AttackRange) * 0.8f; // 80% от макс. дальности
             var directionFromTarget = target.GlobalPosition.DirectionTo(_squadCenterCache).Normalized();
             var anchorPoint = target.GlobalPosition + directionFromTarget * optimalDistance;
 
@@ -202,14 +202,14 @@ namespace Game.Entity.AI.Components
             var rotation = Basis.LookingAt(lookDirection, Vector3.Up);
 
             var assignments = new Dictionary<AIEntity, Vector3>();
-            for (int i = 0; i < _members.Count; i++)
+            for (int i = 0; i < Members.Count; i++)
             {
                 if (i >= formation.MemberPositions.Length) break;
                 var localOffset = formation.MemberPositions[i];
                 var worldOffset = rotation * localOffset;
-                var navMap = _members[i].GetWorld3D().NavigationMap;
+                var navMap = Members[i].GetWorld3D().NavigationMap;
                 var targetPos = NavigationServer3D.MapGetClosestPoint(navMap, anchorPoint + worldOffset);
-                assignments[_members[i]] = targetPos;
+                assignments[Members[i]] = targetPos;
             }
             return assignments;
         }
@@ -219,7 +219,7 @@ namespace Game.Entity.AI.Components
             if (CurrentState != SquadState.MovingToPoint && CurrentState != SquadState.FollowingPath) return;
 
             _membersAtDestination.Add(member);
-            if (CurrentState == SquadState.MovingToPoint && _membersAtDestination.Count >= _members.Count)
+            if (CurrentState == SquadState.MovingToPoint && _membersAtDestination.Count >= Members.Count)
             {
                 GD.Print($"Squad '{SquadName}' has reached its destination. Switching to Idle.");
                 CurrentState = SquadState.Idle;
@@ -228,9 +228,9 @@ namespace Game.Entity.AI.Components
 
         public void OnMemberDestroyed(AIEntity member)
         {
-            _members.Remove(member);
+            Members.Remove(member);
             _membersAtDestination.Remove(member);
-            if (_members.Count == 0)
+            if (Members.Count == 0)
             {
                 GD.Print($"Squad '{SquadName}' has been eliminated.");
                 QueueFree();
@@ -243,8 +243,8 @@ namespace Game.Entity.AI.Components
 
         private void UpdateSquadCenter()
         {
-            if (_members.Count == 0) return;
-            _squadCenterCache = _members.Select(m => m.GlobalPosition).Aggregate(Vector3.Zero, (a, b) => a + b) / _members.Count;
+            if (Members.Count == 0) return;
+            _squadCenterCache = Members.Select(m => m.GlobalPosition).Aggregate(Vector3.Zero, (a, b) => a + b) / Members.Count;
         }
     }
 }
