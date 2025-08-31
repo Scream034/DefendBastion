@@ -35,6 +35,16 @@ namespace Game.Entity.AI
         // --- Внутреннее состояние ---
         private double _timeSinceLastAttack;
 
+        /// <summary>
+        /// Если нет LoS x секунд, просим сменить позицию
+        /// </summary>
+        private const float REPOSITION_REQUEST_THRESHOLD = 2f;
+        /// <summary>
+        /// Время без LoS в секундах
+        /// </summary>
+        private double _timeWithoutLoS = 0;
+        private bool _hasRequestedReposition = false;
+
         public override async void _Ready()
         {
             base._Ready();
@@ -93,56 +103,78 @@ namespace Game.Entity.AI
                 return;
             }
 
-            // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Проверяем и линию огня, и дальность атаки ---
+            // --- НОВАЯ УМНАЯ ЛОГИКА С ДВУМЯ ДИСТАНЦИЯМИ ---
 
-            // 1. Проверяем дальность
-            float attackRangeSq = CombatBehavior.AttackRange * CombatBehavior.AttackRange;
-            bool isInRange = GlobalPosition.DistanceSquaredTo(_attackTarget.GlobalPosition) <= attackRangeSq;
+            // 1. Рассчитываем обе дистанции (в квадратах для производительности)
+            float maxAttackRange = CombatBehavior.AttackRange;
+            float engagementRange = maxAttackRange * Profile.CombatProfile.EngagementRangeFactor;
 
-            // 2. Проверяем линию огня (только если мы в принципе в радиусе атаки)
-            Vector3? aimPoint = null;
-            if (isInRange)
+            float maxAttackRangeSq = maxAttackRange * maxAttackRange;
+            float engagementRangeSq = engagementRange * engagementRange;
+
+            float distanceToTargetSq = GlobalPosition.DistanceSquaredTo(_attackTarget.GlobalPosition);
+
+            // 2. Определяем наше тактическое состояние
+            bool isBeyondMaxRange = distanceToTargetSq > maxAttackRangeSq;
+            bool isInOptimalRange = distanceToTargetSq <= engagementRangeSq;
+            // "Серая зона": мы можем стрелять, но хотим подойти ближе
+            bool isInFiringEnvelope = !isBeyondMaxRange && !isInOptimalRange;
+
+            Vector3? aimPoint = GetMuzzleLineOfFirePoint(_attackTarget); // Проверяем LoS в любом случае
+
+            // --- ЛОГИКА ПРИНЯТИЯ РЕШЕНИЙ ---
+
+            // СЦЕНАРИЙ 1: Мы слишком далеко. Только движение.
+            if (isBeyondMaxRange)
             {
-                aimPoint = GetMuzzleLineOfFirePoint(_attackTarget);
+                // Продолжаем считать время без LoS, так как мы не можем атаковать
+                // Движение к цели управляется отрядом (через _hasMoveOrder).
+                // Если приказа двигаться нет, AI будет ждать, пока командир не даст новый приказ.
+                // Наша система переоценки должна это обработать.
+                _timeWithoutLoS += delta;
+                return; // Стрелять не можем, выходим из боевой логики.
             }
 
-            // Теперь главный вопрос: есть ли у нас чистая линия огня И находимся ли мы на нужной дистанции?
-            if (isInRange && aimPoint.HasValue)
+            // СЦЕНАРИЙ 2: Мы в оптимальной зоне для атаки. Приоритет - огонь.
+            if (isInOptimalRange)
             {
-                // --- У НАС ЕСТЬ ЛИНИЯ ОГНЯ И МЫ В РАДИУСЕ ПОРАЖЕНИЯ ---
-                // 1. Прекратить движение.
-                if (_hasMoveOrder || MovementController.NavigationAgent.Velocity.LengthSquared() > 0.1f)
+                if (aimPoint.HasValue) // Если видим цель
                 {
-                    MovementController.StopMovement();
-                    _hasMoveOrder = false;
-                    Squad?.ReportPositionReached(this);
-                }
-
-                // 2. Атаковать, если готова перезарядка.
-                if (_timeSinceLastAttack >= CombatBehavior.AttackCooldown)
-                {
-                    CombatBehavior.Action?.Execute(this, _attackTarget, aimPoint.Value);
-                    _timeSinceLastAttack = 0;
-                }
-            }
-            else
-            {
-                // --- У НАС НЕТ ЛИНИИ ОГНЯ И/ИЛИ МЫ СЛИШКОМ ДАЛЕКО ---
-                // 1. Мы должны двигаться к назначенной тактической позиции.
-                if (_hasMoveOrder)
-                {
-                    // Если мы уже на "плохой" позиции (нет LoS или далеко), сообщаем отряду.
-                    // Отряд должен будет принять решение о передислокации.
-                    if (MovementController.NavigationAgent.IsNavigationFinished())
+                    // Позиция идеальна. Останавливаемся и ведем огонь.
+                    if (_hasMoveOrder || MovementController.NavigationAgent.Velocity.LengthSquared() > 0.1f)
                     {
-                        _hasMoveOrder = false;
                         MovementController.StopMovement();
-                        Squad?.ReportPositionReached(this); // Сообщаем, что мы на позиции (хоть она и плохая)
+                        _hasMoveOrder = false;
+                        Squad?.ReportPositionReached(this);
                     }
-                    // Если еще не дошли - MovementController продолжает работу.
+
+                    // Атакуем, если можем
+                    FireIfReady(aimPoint.Value);
                 }
-                // Если приказа двигаться нет, но мы внезапно оказались вне зоны досягаемости 
-                // (например, цель отбежала), AI будет просто ждать новых приказов от отряда.
+                else // Не видим цель, даже находясь близко
+                {
+                    RequestRepositionIfNeeded(delta);
+                }
+                return;
+            }
+
+            // СЦЕНАРИЙ 3: Мы в "серой зоне" (можем стрелять, но хотим подойти ближе).
+            if (isInFiringEnvelope)
+            {
+                // Здесь самая интересная логика: "преследование с огнем".
+                // Мы НЕ останавливаемся. Движение продолжается, если есть приказ.
+
+                if (aimPoint.HasValue) // Если видим цель
+                {
+                    // Стреляем "на ходу", не прекращая движения к цели.
+                    FireIfReady(aimPoint.Value);
+                }
+                else // Не видим цель, хотя должны бы
+                {
+                    RequestRepositionIfNeeded(delta);
+                }
+                // Движение к _moveTarget продолжается, управляемое AIMovementController
+                return;
             }
         }
 
@@ -193,7 +225,7 @@ namespace Game.Entity.AI
             return AITacticalAnalysis.GetFirstVisiblePointOfTarget(fromPosition, target, exclude, mask);
         }
 
-        #region API для командной системы
+        #region Orders API
 
         public void AssignToSquad(AISquad squad) => Squad = squad;
 
@@ -203,6 +235,11 @@ namespace Game.Entity.AI
             _hasMoveOrder = true;
             MovementController.MoveTo(position);
             LookController.SetInterestPoint(position);
+
+            // Когда нам дают новый приказ на движение, это значит,
+            // что наш старый запрос на перестроение был учтен. Сбрасываем флаг.
+            _hasRequestedReposition = false;
+            _timeWithoutLoS = 0;
         }
 
         public void ReceiveOrderAttackTarget(LivingEntity target)
@@ -227,7 +264,7 @@ namespace Game.Entity.AI
 
         #endregion
 
-        #region Вспомогательные методы
+        #region Other
 
         public void SetMovementSpeed(float speed)
         {
@@ -247,6 +284,31 @@ namespace Game.Entity.AI
             // Аналогичное исправление и для этой функции.
             var exclude = new Godot.Collections.Array<Rid> { GetRid() };
             return AITacticalAnalysis.GetFirstVisiblePointOfTarget(fromPosition, target, exclude, mask);
+        }
+
+        private void FireIfReady(Vector3 aimPoint)
+        {
+            _timeWithoutLoS = 0;
+            _hasRequestedReposition = false;
+            if (_timeSinceLastAttack >= CombatBehavior.AttackCooldown)
+            {
+                CombatBehavior.Action?.Execute(this, _attackTarget, aimPoint);
+                _timeSinceLastAttack = 0;
+            }
+        }
+
+        private void RequestRepositionIfNeeded(double delta)
+        {
+            if (_hasAttackOrder && !_hasMoveOrder) // Мы стоим на месте в бою, но не можем стрелять
+            {
+                _timeWithoutLoS += delta;
+                if (_timeWithoutLoS > REPOSITION_REQUEST_THRESHOLD && !_hasRequestedReposition)
+                {
+                    GD.Print($"{Name} cannot see target for {_timeWithoutLoS:F1}s. Requesting reposition.");
+                    Squad?.RequestReposition(this);
+                    _hasRequestedReposition = true;
+                }
+            }
         }
 
         #endregion

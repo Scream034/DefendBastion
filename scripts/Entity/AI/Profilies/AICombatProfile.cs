@@ -24,6 +24,12 @@ namespace Game.Entity.AI.Profiles
         [Export(PropertyHint.Layers3DPhysics)]
         public uint LineOfSightMask { get; private set; } = 3; // Layer 1 (World) + Layer 2 (Entity)
 
+        // Добавляем коэффициент для расчета оптимальной дистанции.
+        // 0.7 означает, что AI будет стремиться подойти на 70% от своей максимальной дальности атаки.
+        // Для дробовиков можно поставить 0.4, для винтовок 0.8.
+        [Export(PropertyHint.Range, "0.1,1.0")]
+        public float EngagementRangeFactor { get; private set; } = 0.65f;
+
         [ExportGroup("Post-Combat Behavior")]
         [Export] public bool EnablePostCombatVigilance { get; private set; } = true;
         [Export(PropertyHint.Range, "3, 15, 1")] public float VigilanceDuration { get; private set; } = 8.0f;

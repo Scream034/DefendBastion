@@ -15,6 +15,7 @@ collision_mask = 3
 script = ExtResource("1_k5qh4")
 _head = NodePath("Head")
 _collisionShape = NodePath("CollisionShape3D")
+Speed = 7.0
 Faction = 1
 MaxHealth = 250.0
 DamageMultiplier = 0.1
