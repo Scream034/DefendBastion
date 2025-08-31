@@ -113,9 +113,6 @@ attenuation_filter_cutoff_hz = 9000.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.5, 0)
 height = 3.0
 vertices = PackedVector3Array(0.9801512, 0, -0.9937147, 1.0079963, 0, 0.9634124, -0.9849316, 0, 1.0071692, -0.9849316, 0, -1.0334936)
-affect_navigation_mesh = true
-carve_navigation_mesh = true
-use_3d_avoidance = true
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 4.0
@@ -123,7 +120,8 @@ target_desired_distance = 4.0
 avoidance_enabled = true
 height = 4.6
 radius = 5.0
-use_3d_avoidance = true
+time_horizon_agents = 2.0
+time_horizon_obstacles = 1.5
 debug_enabled = true
 
 [node name="AILookController" type="Node" parent="."]
