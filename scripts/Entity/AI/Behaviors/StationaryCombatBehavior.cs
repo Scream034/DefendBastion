@@ -1,24 +1,25 @@
 using Godot;
-using System.Linq;
-using System;
+using System.Collections.Generic; // Может быть не нужен, если List не используется
 using Game.Entity.AI.Components;
 
 namespace Game.Entity.AI.Behaviors
 {
-    internal enum RepositionStrategy { StandardProbing, HybridAnalysis }
-    internal enum RepositioningSubState { None, CalculatedMove, LiveSearchStrafe, LiveSearchForward, LiveSearchRotate }
-
     public partial class StationaryCombatBehavior : Node, ICombatBehavior
     {
         [Export] public float AttackRange { get; private set; } = 15f;
         [Export] public float AttackCooldown { get; private set; } = 2.0f;
+        // [Export(PropertyHint.Range, "3, 20, 1")] private float _repositionSearchRadius = 10f; // Это поле теперь не используется
         [Export] private Node _attackActionNode;
 
-        public IAttackAction Action { get; private set; }
+        public IAttackAction Action { get; private set; } // <--- УБЕДИТЕСЬ, ЧТО ОНО ЗДЕСЬ
 
-        private double _timeSinceLastAttack;
+        private double _timeSinceLastAttack = 0;
         private double _effectiveAttackCooldown;
-        private bool _isRepositioning = false;
+        private bool _isRepositioning = false; // Это поле теперь не используется, логика перенесена в AISquad
+
+        // const и _allyRepositionCooldown больше не используются в этой версии
+        // private const double ALLY_REPOSITION_COOLDOWN_TIME = 1.5;
+        // private double _allyRepositionCooldown = 0;
 
         public override void _Ready()
         {
@@ -27,112 +28,34 @@ namespace Game.Entity.AI.Behaviors
 
             var variance = (float)GD.RandRange(-0.1, 0.1);
             _effectiveAttackCooldown = AttackCooldown * (1.0f + variance);
-            _timeSinceLastAttack = _effectiveAttackCooldown;
+
+            _timeSinceLastAttack = _effectiveAttackCooldown; // Готов к атаке сразу
         }
 
         public void EnterCombat(AIEntity context)
         {
             _timeSinceLastAttack = _effectiveAttackCooldown;
-            ResetRepositioningState(context);
+            // _allyRepositionCooldown = 0; // Больше не используется
+            // ResetRepositioningState(context); // Логика перенесена
         }
 
         public void ExitCombat(AIEntity context)
         {
-            ResetRepositioningState(context);
+            // ResetRepositioningState(context); // Логика перенесена
         }
 
+        // Метод Process больше не нужен, его логика распределена между AIEntity и AISquad
+        /*
         public bool Process(AIEntity context, double delta)
         {
-            if (context.TargetingSystem.CurrentTarget is not LivingEntity target || !IsInstanceValid(target))
-            {
-                context.ReturnToDefaultState();
-                return true;
-            }
-
-            _timeSinceLastAttack += delta;
-
-            if (_isRepositioning)
-            {
-                if (context.MovementController.NavigationAgent.IsNavigationFinished())
-                {
-                    ResetRepositioningState(context);
-                }
-                else if (CanSeeTarget(context, target))
-                {
-                    ResetRepositioningState(context);
-                }
-                return true;
-            }
-
-            // Проверяем, не назначил ли нам уже координатор позицию.
-            if (AISquadCoordinator.TryGetAssignedPosition(context, out var assignedPos))
-            {
-                StartReposition(context, assignedPos);
-                return true;
-            }
-
-            var fromPosition = Action?.MuzzlePoint?.GlobalPosition ?? context.GlobalPosition;
-            var losResult = AITacticalAnalysis.AnalyzeLineOfSight(context, fromPosition, target, context.Profile.CombatProfile.LineOfSightMask, out _);
-
-            switch (losResult)
-            {
-                case LoSAnalysisResult.Clear:
-                    context.MovementController.StopMovement();
-                    if (_timeSinceLastAttack >= _effectiveAttackCooldown)
-                    {
-                        Action?.Execute(context, target, target.GlobalPosition);
-                        _timeSinceLastAttack = 0;
-                    }
-                    break;
-
-                case LoSAnalysisResult.BlockedByAlly:
-                case LoSAnalysisResult.BlockedByObstacle:
-                    if (!AttemptSquadReposition(context, target))
-                    {
-                        // Если даже скоординированный маневр невозможен, тактическая цель потеряна.
-                        return false;
-                    }
-                    break;
-            }
+            // ... (вся логика этого метода удалена)
             return true;
         }
+        */
 
-        private bool AttemptSquadReposition(AIEntity context, LivingEntity target)
-        {
-            // Этот AI становится инициатором перегруппировки.
-            var nearbyAllies = context.GetNearbyAllies(target, AttackRange * 1.5f);
-
-            // Включаем себя в список, если нас там еще нет.
-            if (!nearbyAllies.Contains(context))
-            {
-                nearbyAllies.Add(context);
-            }
-
-            // Запрашиваем у координатора план для всей группы.
-            return AISquadCoordinator.RequestPositionsForSquad(nearbyAllies, target);
-        }
-
-        private void StartReposition(AIEntity context, Vector3 targetPosition)
-        {
-            _isRepositioning = true;
-            context.MovementController.MoveTo(targetPosition);
-            GD.Print($"{context.Name} moving to assigned squad position {targetPosition}.");
-        }
-
-        private void ResetRepositioningState(AIEntity context)
-        {
-            if (_isRepositioning || AISquadCoordinator.TryGetAssignedPosition(context, out _))
-            {
-                AISquadCoordinator.ReleasePosition(context);
-            }
-            _isRepositioning = false;
-            context.MovementController.StopMovement();
-        }
-
-        private bool CanSeeTarget(AIEntity context, LivingEntity target)
-        {
-            var fromPosition = Action?.MuzzlePoint?.GlobalPosition ?? context.GlobalPosition;
-            return AITacticalAnalysis.AnalyzeLineOfSight(context, fromPosition, target, context.Profile.CombatProfile.LineOfSightMask, out _) == LoSAnalysisResult.Clear;
-        }
+        // Эти вспомогательные методы больше не нужны, так как логика перенесена
+        // private bool AttemptReposition(AIEntity context, LivingEntity target, bool preferSidestep) { return false; }
+        // private void ResetRepositioningState(AIEntity context) { }
+        // private bool CanSeeTarget(AIEntity context, LivingEntity target) { return false; }
     }
 }

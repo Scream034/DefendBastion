@@ -23,10 +23,10 @@ Constants="*res://scripts/Singletons/Constants.cs"
 GlobalEvents="*res://scripts/Singletons/GlobalEvents.cs"
 PlayerInputManager="*res://scripts/Singletons/PlayerInputManager.cs"
 ProjectilePool="*res://scripts/Projectiles/ProjectilePool.cs"
+LegionBrain="*res://scripts/Entity/AI/Orchestrator/LegionBrain.cs"
 
 [debug]
 
-settings/stdout/verbose_stdout=true
 draw_ai_los_rays=false
 draw_ai_los_rays.debug=false
 shapes/collision/draw_ai_los_rays=false

@@ -15,6 +15,9 @@ public partial class RangedAttackStrategy : Node, IAttackAction
     private PackedScene _projectileScene;
 
     [Export]
+    public float AttackCooldown { get; private set; }
+
+    [Export]
     public Marker3D MuzzlePoint { get; private set; }
 
     private float _projectileSpeedCache = -1f;

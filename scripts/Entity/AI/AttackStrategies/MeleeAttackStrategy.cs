@@ -5,6 +5,9 @@ namespace Game.Entity.AI.AttackStrategies
 {
     public partial class MeleeAttackStrategy : Node, IAttackAction
     {
+        [Export]
+        public float AttackCooldown { get; private set; }
+
         public Marker3D MuzzlePoint => null;
 
         [ExportGroup("Melee Attack Settings")]

@@ -8,13 +8,17 @@ namespace Game.Entity.AI.Behaviors
     {
         public float AttackRange { get; }
         public float AttackCooldown { get; }
-        public IAttackAction Action { get; }
+        
+        /// <summary>
+        /// Конкретное действие атаки, которое выполняет это боевое поведение.
+        /// </summary>
+        public IAttackAction Action { get; } // <--- ДОБАВЛЕНО ЭТО СВОЙСТВО
 
         /// <summary>
         /// Вызывается каждый кадр из AttackState. Содержит всю логику боя.
         /// </summary>
         /// <returns>true, если поведение продолжает бой; false, если цель тактически потеряна.</returns>
-        bool Process(AIEntity context, double delta);
+        // bool Process(AIEntity context, double delta); // Этот метод больше не используется в новой архитектуре.
 
         /// <summary>
         /// Вызывается при входе в состояние атаки. Подготавливает поведение к бою.

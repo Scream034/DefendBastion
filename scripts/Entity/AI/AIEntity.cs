@@ -1,77 +1,44 @@
 using Godot;
 using Game.Entity.AI.Behaviors;
-using Game.Entity.AI.States;
-using System.Threading.Tasks;
 using Game.Entity.AI.Profiles;
 using Game.Entity.AI.Components;
-using Game.Singletons;
-using System.Collections.Generic;
+using Game.Entity.AI.Orchestrator;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Game.Entity.AI
 {
-    public enum AIMainTask { FreePatrol, PathPatrol, Assault }
-    public enum AssaultMode { Destroy, Rush }
-
     public abstract partial class AIEntity : MoveableEntity
     {
         [ExportGroup("AI Configuration")]
         [Export] public AIProfile Profile { get; private set; }
-        [Export] public AIMainTask MainTask { get; private set; } = AIMainTask.FreePatrol;
-        [Export] public AssaultMode AssaultBehavior { get; private set; } = AssaultMode.Destroy;
-        [Export] public Path3D MissionPath { get; private set; }
 
         [ExportGroup("Dependencies")]
-        [Export] private AITargetingSystem _targetingSystem;
-        [Export] private AIMovementController _movementController;
-        [Export] private AILookController _lookController;
+        [Export] public AITargetingSystem TargetingSystem { get; private set; }
+        [Export] public AIMovementController MovementController { get; private set; }
+        [Export] public AILookController LookController { get; private set; }
+        [Export] public Marker3D EyesPosition { get; private set; }
         [Export] private Node _combatBehaviorNode;
-        [Export] private Marker3D _eyesPosition;
 
-        public AITargetingSystem TargetingSystem => _targetingSystem;
-        public AIMovementController MovementController => _movementController;
-        public AILookController LookController => _lookController;
+        // --- Свойства для внутреннего и внешнего использования ---
+        public AISquad Squad { get; private set; }
         public ICombatBehavior CombatBehavior { get; private set; }
-        public Marker3D EyesPosition => _eyesPosition;
-
+        public bool IsInCombat => _hasAttackOrder; // Простой способ определить, в бою ли AI
         public bool IsMoving => Velocity.LengthSquared() > 0.01f;
-        public bool IsTargetValid => GodotObject.IsInstanceValid(TargetingSystem.CurrentTarget);
-        public bool HasLineOfSightToCurrentTarget => GetVisibleTargetPoint(TargetingSystem.CurrentTarget).HasValue;
-        public bool IsInCombat { get; private set; }
 
-        public Vector3 SpawnPosition { get; private set; }
-        public Vector3 LastKnownTargetPosition { get; private set; }
-        public Vector3 PursuitTargetPosition { get; private set; }
-        public Vector3 InvestigationPosition { get; set; }
-        public Vector3 LastEngagementPosition { get; set; }
+        // --- Текущие приказы от отряда ---
+        private Vector3 _moveTarget;
+        private LivingEntity _attackTarget;
+        private bool _hasMoveOrder;
+        private bool _hasAttackOrder;
 
-        private LivingEntity _lastTrackedTarget;
-
-        private State _currentState;
-        private State _defaultState;
-        private bool _isAiActive = false;
-
-        private static readonly HashSet<AIEntity> _activeAIEntities = new();
-
-        public override void _EnterTree()
-        {
-            base._EnterTree();
-            _activeAIEntities.Add(this);
-        }
-
-        public override void _ExitTree()
-        {
-            base._ExitTree();
-            _activeAIEntities.Remove(this);
-            // Гарантированно снимаем назначение при удалении AI со сцены
-            AISquadCoordinator.ReleasePosition(this);
-        }
+        // --- Внутреннее состояние ---
+        private double _timeSinceLastAttack;
 
         public override async void _Ready()
         {
             base._Ready();
-            SpawnPosition = GlobalPosition;
 
-            // Используйте #if DEBUG, чтобы избежать этих проверок в релизном билде
             if (!ValidateDependencies())
             {
                 SetPhysicsProcess(false);
@@ -79,14 +46,13 @@ namespace Game.Entity.AI
                 return;
             }
 
-            _targetingSystem.Initialize(this);
-            _movementController.Initialize(this);
-            _lookController.Initialize(this);
+            TargetingSystem.Initialize(this);
+            MovementController.Initialize(this);
+            LookController.Initialize(this);
 
             if (World.Instance != null && World.Instance.IsNavigationReady) InitializeAI();
             else
             {
-                GD.Print($"{Name} waiting for navigation map...");
                 await ToSignal(World.Instance, World.SignalName.NavigationReady);
                 InitializeAI();
             }
@@ -94,178 +60,134 @@ namespace Game.Entity.AI
 
         private void InitializeAI()
         {
-            if (_isAiActive) return;
-            GD.Print($"{Name} initializing AI, navigation map is ready.");
-            _isAiActive = true;
-            _defaultState = MainTask switch
-            {
-                AIMainTask.PathPatrol or AIMainTask.Assault => new PathFollowingState(this),
-                _ => new PatrolState(this),
-            };
-            ChangeState(_defaultState);
+            SetMovementSpeed(Profile.MovementProfile.NormalSpeed);
         }
 
         private bool ValidateDependencies()
         {
             if (Profile == null) { GD.PushError($"AIProfile not assigned to {Name}!"); return false; }
-            if (_targetingSystem == null) { GD.PushError($"AITargetingSystem not assigned to {Name}!"); return false; }
-            if (_movementController == null) { GD.PushError($"AIMovementController not assigned to {Name}!"); return false; }
-            if (_lookController == null) { GD.PushError($"AILookController not assigned to {Name}!"); return false; }
+            if (TargetingSystem == null) { GD.PushError($"AITargetingSystem not assigned to {Name}!"); return false; }
+            if (MovementController == null) { GD.PushError($"AIMovementController not assigned to {Name}!"); return false; }
+            if (LookController == null) { GD.PushError($"AILookController not assigned to {Name}!"); return false; }
             if (_combatBehaviorNode is ICombatBehavior behavior) { CombatBehavior = behavior; }
             else { GD.PushError($"CombatBehavior for {Name} is not assigned or invalid!"); return false; }
-            if (_eyesPosition == null) { GD.PushWarning($"EyesPosition not assigned to {Name}. Line-of-sight checks will originate from the entity's center."); }
-            if ((MainTask == AIMainTask.PathPatrol || MainTask == AIMainTask.Assault) && MissionPath == null)
-            {
-                GD.PushError($"AI {Name} is set to PathPatrol or Assault but has no MissionPath assigned!");
-                return false;
-            }
+            if (EyesPosition == null) { GD.PushWarning($"EyesPosition not assigned to {Name}. Line-of-sight checks will originate from the entity's center."); }
             return true;
         }
 
         public override void _PhysicsProcess(double delta)
         {
             base._PhysicsProcess(delta);
-            if (!_isAiActive) return;
+            _timeSinceLastAttack += delta;
 
-            if (IsTargetValid)
+            if (!_hasAttackOrder)
             {
-                _lastTrackedTarget = TargetingSystem.CurrentTarget;
-                LastKnownTargetPosition = TargetingSystem.CurrentTarget.GlobalPosition;
+                var visibleTarget = TargetingSystem.PotentialTargets
+                    .FirstOrDefault(t => IsInstanceValid(t) && GetVisibleTargetPoint(t).HasValue);
+
+                if (visibleTarget != null)
+                {
+                    LegionBrain.Instance.ReportEnemySighting(this, visibleTarget);
+                }
+                return;
             }
 
-            _currentState?.Update((float)delta);
-        }
-
-        public override async Task<bool> DamageAsync(float amount, LivingEntity source = null)
-        {
-            if (!await base.DamageAsync(amount, source)) return false;
-            if (source != null && _currentState is not AttackState && TargetingSystem.CurrentTarget == null)
+            if (!IsInstanceValid(_attackTarget) || !_attackTarget.IsAlive)
             {
-                InvestigationPosition = source.GlobalPosition;
-                ChangeState(new InvestigateState(this));
+                ClearOrders();
+                return;
             }
-            return true;
+
+            if (_hasMoveOrder)
+            {
+                if (GlobalPosition.DistanceSquaredTo(_moveTarget) < 1.0f)
+                {
+                    _hasMoveOrder = false;
+                    MovementController.StopMovement();
+
+                    Squad?.ReportPositionReached(this);
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            var fromPos = CombatBehavior?.Action?.MuzzlePoint?.GlobalPosition ?? GlobalPosition;
+            if (AITacticalAnalysis.HasClearPath(fromPos, _attackTarget.GlobalPosition, [GetRid(), _attackTarget.GetRid()], Profile.CombatProfile.LineOfSightMask))
+            {
+                MovementController.StopMovement();
+                if (_timeSinceLastAttack >= CombatBehavior.AttackCooldown)
+                {
+                    CombatBehavior?.Action?.Execute(this, _attackTarget, _attackTarget.GlobalPosition);
+                    _timeSinceLastAttack = 0;
+                }
+            }
+            else
+            {
+                // Если мы уже на позиции (_hasMoveOrder == false), но потеряли цель, докладываем.
+                ClearOrders();
+                LegionBrain.Instance.ReportEnemySighting(this, _attackTarget);
+            }
         }
 
-        #region Line-of-Sight Methods
-
-        public Vector3? GetVisibleTargetPoint(LivingEntity target)
+        public override async Task<bool> DestroyAsync()
         {
-            var fromPosition = EyesPosition?.GlobalPosition ?? GlobalPosition;
-            return GetVisibleTargetPointFrom(target, fromPosition);
+            Squad?.OnMemberDestroyed(this);
+            return await base.DestroyAsync();
         }
 
-        public Vector3? GetVisibleTargetPointFrom(LivingEntity target, Vector3 fromPosition)
+        #region API для командной системы
+
+        public void AssignToSquad(AISquad squad) => Squad = squad;
+
+        public void ReceiveOrderMoveTo(Vector3 position)
         {
-            if (!IsInstanceValid(target)) return null;
+            _moveTarget = position;
+            _hasMoveOrder = true;
+            MovementController.MoveTo(position);
+            LookController.SetInterestPoint(position);
+        }
 
-            uint mask = Profile?.CombatProfile?.LineOfSightMask ?? 1;
-            var exclude = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
-            var resultPoint = AITacticalAnalysis.GetFirstVisiblePoint(fromPosition, target, exclude, mask);
+        public void ReceiveOrderAttackTarget(LivingEntity target)
+        {
+            _attackTarget = target;
+            _hasAttackOrder = true;
+            TargetingSystem.ForceSetCurrentTarget(target);
+            // LookController автоматически подхватит цель из TargetingSystem,
+            // поэтому SetInterestPoint здесь не обязателен, но для явности можно оставить.
+            LookController.SetInterestPoint(target.GlobalPosition);
+        }
 
-            return resultPoint;
+        public void ClearOrders()
+        {
+            _hasAttackOrder = false;
+            _hasMoveOrder = false;
+            _attackTarget = null;
+            TargetingSystem.ForceSetCurrentTarget(null);
+            MovementController.StopMovement();
+            LookController.SetInterestPoint(null);
         }
 
         #endregion
 
-        #region State Machine and Event Handling
-        public void ChangeState(State newState)
-        {
-            if (_currentState?.GetType() == newState.GetType()) return; // Не меняем состояние на такое же
+        #region Вспомогательные методы
 
-            _currentState?.Exit();
-            _currentState = newState;
-
-            // Устанавливаем флаг IsInCombat в зависимости от нового состояния
-            IsInCombat = newState is AttackState;
-
-            GD.Print($"{Name} changing state to -> {newState.GetType().Name}");
-            _currentState.Enter();
-        }
-
-        public void ReturnToDefaultState()
-        {
-            TargetingSystem.ClearTarget();
-            ChangeState(_defaultState);
-        }
-
-        /// <summary>
-        /// Находит всех дружественных AI в заданном радиусе, которые атакуют ту же цель.
-        /// </summary>
-        public List<AIEntity> GetNearbyAllies(LivingEntity commonTarget, float radius)
-        {
-            var allies = new List<AIEntity>();
-            var radiusSq = radius * radius;
-
-            foreach (var ai in _activeAIEntities)
-            {
-                if (ai == this || ai.IsHostile(this)) continue;
-                if (ai.TargetingSystem.CurrentTarget != commonTarget) continue;
-                if (GlobalPosition.DistanceSquaredTo(ai.GlobalPosition) > radiusSq) continue;
-
-                allies.Add(ai);
-            }
-            return allies;
-        }
-
-        public void SetPursuitTargetPosition(Vector3 position)
-        {
-            PursuitTargetPosition = position;
-        }
-
-        public void OnNewTargetAcquired(LivingEntity newTarget)
-        {
-            if (_currentState is not AttackState && _currentState is not PursuitState)
-            {
-                ChangeState(new AttackState(this));
-            }
-        }
-
-        public void OnCurrentTargetInvalidated()
-        {
-            var lastKnownPos = LastKnownTargetPosition;
-            // Цель могла быть уничтожена. _lastTrackedTarget может быть невалидным, поэтому мы его не передаем.
-            TargetingSystem.OnTargetEliminated(_lastTrackedTarget);
-            _lastTrackedTarget = null;
-
-            // Решаем, что делать дальше.
-            DecideNextActionAfterCombat(lastKnownPos);
-        }
-
-        /// <summary>
-        /// Вызывается, когда AI достигает конца своего `MissionPath` в режиме `Assault`.
-        /// </summary>
-        public void OnMissionPathCompleted()
-        {
-            if (MainTask == AIMainTask.Assault)
-            {
-                GD.Print($"{Name} has reached the assault objective. Switching to free combat/patrol.");
-                // После достижения цели штурма, AI переходит в режим свободного патруля/боя.
-                _defaultState = new PatrolState(this);
-                ReturnToDefaultState();
-            }
-        }
-
-        private void DecideNextActionAfterCombat(Vector3 lastEngagementPosition)
-        {
-            // Не переходим в Vigilance, если мы должны продолжать штурм
-            if (Profile.CombatProfile.EnablePostCombatVigilance && (MainTask != AIMainTask.Assault || AssaultBehavior != AssaultMode.Rush))
-            {
-                LastEngagementPosition = lastEngagementPosition;
-                ChangeState(new VigilanceState(this));
-            }
-            else if (!IsTargetValid)
-            {
-                ReturnToDefaultState();
-            }
-        }
-        #endregion
-
-        #region API for States
         public void SetMovementSpeed(float speed)
         {
             Speed = speed;
         }
+
+        public Vector3? GetVisibleTargetPoint(LivingEntity target)
+        {
+            var fromPosition = EyesPosition?.GlobalPosition ?? GlobalPosition;
+            if (!IsInstanceValid(target)) return null;
+
+            uint mask = Profile?.CombatProfile?.LineOfSightMask ?? 1;
+            var exclude = new Godot.Collections.Array<Rid> { GetRid(), target.GetRid() };
+            return AITacticalAnalysis.GetFirstVisiblePoint(fromPosition, target, exclude, mask);
+        }
+
         #endregion
     }
 }

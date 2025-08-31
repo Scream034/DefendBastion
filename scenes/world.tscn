@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://q2747brlyw05"]
+[gd_scene load_steps=25 format=3 uid="uid://q2747brlyw05"]
 
 [ext_resource type="Script" uid="uid://dscm0inttd3ba" path="res://scripts/World.cs" id="1_pdh0q"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_h1bdy"]
@@ -15,6 +15,8 @@
 [ext_resource type="QuadMesh" uid="uid://dg1h52u00q1tl" path="res://mesh/SmallSnowflake.tres" id="13_nthub"]
 [ext_resource type="PackedScene" uid="uid://cel18k7e5iwx8" path="res://scenes/Objects/ArmorTurretStand_merrytwer.tscn" id="15_c0d7e"]
 [ext_resource type="PackedScene" uid="uid://cm3tbwblhcjdq" path="res://scenes/Objects/WallBorder_merrytwer.tscn" id="16_o1tcx"]
+[ext_resource type="Script" uid="uid://clmunlb8bo3yq" path="res://scripts/Entity/AI/Components/AISquad.cs" id="16_rpuxp"]
+[ext_resource type="Script" uid="uid://grmghnt35yce" path="res://scripts/Entity/AI/Orchestrator/Formation.cs" id="17_rpuxp"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_w7kh3"]
 playback_mode = 2
@@ -65,6 +67,14 @@ _data = {
 "tilts": PackedFloat32Array(0, 0)
 }
 point_count = 2
+
+[sub_resource type="Resource" id="Resource_nthub"]
+script = ExtResource("17_rpuxp")
+metadata/_custom_type_script = "uid://grmghnt35yce"
+
+[sub_resource type="Resource" id="Resource_44lqw"]
+script = ExtResource("17_rpuxp")
+metadata/_custom_type_script = "uid://grmghnt35yce"
 
 [node name="World" type="Node3D" node_paths=PackedStringArray("_audioAmbient", "_audioVictory", "_audioDefeat")]
 script = ExtResource("1_pdh0q")
@@ -537,29 +547,30 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 166.619, 10.16, -51.607)
 [node name="WallBorder7" parent="NavigationRegion3D" instance=ExtResource("16_o1tcx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 236.619, 18.1131, -51.607)
 
-[node name="CubePawn" parent="." node_paths=PackedStringArray("MissionPath") instance=ExtResource("12_7c4bj")]
+[node name="CubePawn" parent="." groups=["sq_1"] instance=ExtResource("12_7c4bj")]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -92.59503, 9.02048, -184.288)
-MainTask = 2
-MissionPath = NodePath("../RPath")
 
-[node name="CubePawn2" parent="." node_paths=PackedStringArray("MissionPath") instance=ExtResource("12_7c4bj")]
+[node name="CubePawn2" parent="." groups=["sq_1"] instance=ExtResource("12_7c4bj")]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -102.29215, 9.02048, -189.99892)
-MainTask = 1
-MissionPath = NodePath("../RPath")
 
-[node name="CubePawn3" parent="." node_paths=PackedStringArray("MissionPath") instance=ExtResource("12_7c4bj")]
+[node name="CubePawn3" parent="." groups=["sq_1"] instance=ExtResource("12_7c4bj")]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -83.05464, 9.02048, -189.99892)
-MainTask = 1
-MissionPath = NodePath("../RPath")
 
-[node name="CubePawn4" parent="." node_paths=PackedStringArray("MissionPath") instance=ExtResource("12_7c4bj")]
+[node name="CubePawn4" parent="." instance=ExtResource("12_7c4bj")]
+process_mode = 4
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 129.32608, 9.02048, -178.25294)
-MainTask = 2
-AssaultBehavior = 1
-MissionPath = NodePath("../RPath")
 
 [node name="RPath" type="Path3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9239273, 8.01343, 0)
 curve = SubResource("Curve3D_c0d7e")
+
+[node name="AISquad" type="Node" parent="." node_paths=PackedStringArray("MissionPath")]
+script = ExtResource("16_rpuxp")
+SquadName = "sq_1"
+Task = 1
+MarchingFormation = SubResource("Resource_nthub")
+CombatFormation = SubResource("Resource_44lqw")
+MissionPath = NodePath("../RPath")
+metadata/_custom_type_script = "uid://clmunlb8bo3yq"
 
 [connection signal="body_entered" from="TargetZone" to="." method="OnTargetZoneEnter"]

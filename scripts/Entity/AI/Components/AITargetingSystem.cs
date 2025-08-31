@@ -1,6 +1,6 @@
 using Godot;
-using Game.Interfaces;
 using System.Collections.Generic;
+using Game.Interfaces;
 
 namespace Game.Entity.AI.Components
 {
@@ -13,7 +13,7 @@ namespace Game.Entity.AI.Components
         private float _targetEvaluationTimer;
         private readonly List<LivingEntity> _potentialTargets = [];
 
-        public LivingEntity CurrentTarget { get; private set; }
+        public LivingEntity CurrentTarget { get; private set; } // Оставляем private set
         public IReadOnlyList<LivingEntity> PotentialTargets => _potentialTargets;
 
         public void Initialize(AIEntity context)
@@ -59,61 +59,51 @@ namespace Game.Entity.AI.Components
             _targetEvaluationTimer = _context.Profile.CombatProfile.TargetEvaluationInterval;
         }
 
+        /// <summary>
+        /// Позволяет внешнему коду (AISquad) принудительно установить текущую цель.
+        /// Используется для выполнения приказов.
+        /// </summary>
+        public void ForceSetCurrentTarget(LivingEntity newTarget) // <--- НОВЫЙ МЕТОД
+        {
+            if (newTarget == CurrentTarget) return;
+
+            CurrentTarget = newTarget;
+            if (newTarget != null)
+            {
+                GD.Print($"{_context.Name} received forced target: {newTarget.Name}");
+            }
+            else
+            {
+                GD.Print($"{_context.Name} target cleared by force.");
+            }
+        }
+
         private void EvaluateTargets()
         {
             _potentialTargets.RemoveAll(target => !IsInstanceValid(target) || !target.IsAlive);
 
-            var bestAvailableTarget = AITargetEvaluator.GetBestTarget(_context, _potentialTargets);
-
-            // Мы меняем цель, только если нашли НОВУЮ и ВАЛИДНУЮ цель.
-            if (bestAvailableTarget != null && bestAvailableTarget != CurrentTarget)
-            {
-                SetAttackTarget(bestAvailableTarget);
-            }
-            // Если bestAvailableTarget равен null (т.е. не найдено ни одной цели в LoS),
-            // мы сознательно НЕ ДЕЛАЕМ НИЧЕГО. Мы не вызываем SetAttackTarget(null).
-            // AI будет продолжать "держаться" за свою CurrentTarget, пока она физически
-            // не будет уничтожена. Это и есть "упертость".
-        }
-
-        public void OnTargetEliminated(LivingEntity eliminatedTarget)
-        {
-            string targetName = IsInstanceValid(eliminatedTarget) ? eliminatedTarget.Name : "[Freed Target]";
-            GD.Print($"{_context.Name}: Confirmed elimination of [{targetName}].");
-
-            if (CurrentTarget == eliminatedTarget)
+            // В новой архитектуре AITargetingSystem не выбирает "лучшую" цель для атаки,
+            // а лишь поддерживает список потенциальных целей для LegionBrain/AISquad.
+            // CurrentTarget устанавливается только через ForceSetCurrentTarget.
+            // Однако, мы можем использовать этот метод для обновления CurrentTarget
+            // если текущая цель стала невалидной и есть новая, более подходящая.
+            // Но в контексте LegionBrain, сам LegionBrain будет решать, кого атаковать.
+            // Поэтому логика здесь упрощается.
+            
+            // Если CurrentTarget невалиден, очищаем его.
+            if (!IsInstanceValid(CurrentTarget) || !CurrentTarget.IsAlive)
             {
                 CurrentTarget = null;
             }
-            _potentialTargets.Remove(eliminatedTarget);
-
-            ForceReevaluation(); // Сразу ищем новую цель после убийства
         }
 
-        public void ClearTarget()
-        {
-            CurrentTarget = null;
-        }
-
-        private void SetAttackTarget(LivingEntity newTarget)
-        {
-            // Если новая цель - это та же, что и была, ничего не делаем.
-            if (newTarget == CurrentTarget) return;
-
-            // Если новая цель невалидна (например, null), а старая была, это значит, мы потеряли все цели.
-            else if (newTarget == null)
-            {
-                GD.Print($"{_context.Name} lost all targets.");
-                CurrentTarget = null;
-                // Не вызываем здесь OnTargetLostLineOfSight, т.к. это может привести к нежелательным переходам состояний.
-                // Состояния сами должны решить, что делать при CurrentTarget == null.
-                return;
-            }
-
-            GD.Print($"{_context.Name} new best target is: {newTarget.Name}");
-            CurrentTarget = newTarget;
-            _context.OnNewTargetAcquired(newTarget);
-        }
+        // Методы OnTargetEliminated, ClearTarget, SetAttackTarget больше не нужны,
+        // так как их логика перенесена в LegionBrain и AISquad.
+        /*
+        public void OnTargetEliminated(LivingEntity eliminatedTarget) { ... }
+        public void ClearTarget() { ... }
+        private void SetAttackTarget(LivingEntity newTarget) { ... }
+        */
 
         private void OnTargetDetected(Node3D body)
         {
@@ -121,7 +111,7 @@ namespace Game.Entity.AI.Components
             {
                 if (_context.IsHostile(entity) && body is ICharacter && !_potentialTargets.Contains(entity))
                 {
-                    GD.Print($"{_context.Name} added {body.Name} to potential targets.");
+                    // GD.Print($"{_context.Name} added {body.Name} to potential targets.");
                     _potentialTargets.Add(entity);
                 }
             }
@@ -132,12 +122,13 @@ namespace Game.Entity.AI.Components
             if (body is LivingEntity entity)
             {
                 _potentialTargets.Remove(entity);
-                GD.Print($"{_context.Name} removed {body.Name} from potential targets.");
+                // GD.Print($"{_context.Name} removed {body.Name} from potential targets.");
 
-                // Если именно текущая цель вышла из триггера, форсируем переоценку.
+                // Если именно текущая цель вышла из триггера, форсируем переоценку,
+                // но не меняем CurrentTarget, это делает LegionBrain.
                 if (entity == CurrentTarget)
                 {
-                    ForceReevaluation();
+                    CurrentTarget = null; // Просто очищаем, LegionBrain назначит новую.
                 }
             }
         }

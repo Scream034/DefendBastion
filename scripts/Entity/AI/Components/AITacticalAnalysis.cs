@@ -148,6 +148,83 @@ namespace Game.Entity.AI.Components
             return candidates.OrderByDescending(c => c.Score).First().Position;
         }
 
+
+        /// <summary>
+        /// Находит лучшие позиции для ведения огня, предпочитая укрытия.
+        /// Алгоритм работает "от цели", находя края препятствий и проверяя точки за ними.
+        /// </summary>
+        public static Dictionary<AIEntity, Vector3> FindCoverAndFirePositions(List<AIEntity> squad, LivingEntity target, int pointsToGenerate = 16)
+        {
+            if (squad == null || squad.Count == 0 || !GodotObject.IsInstanceValid(target)) return null;
+
+            var validPositions = new List<Vector3>();
+            var targetPos = target.GlobalPosition;
+            var navMap = squad[0].GetWorld3D().NavigationMap;
+            uint losMask = squad[0].Profile.CombatProfile.LineOfSightMask;
+
+            float searchRadius = squad.Average(ai => ai.CombatBehavior.AttackRange);
+
+            // 1. Генерируем лучи ИЗ ЦЕЛИ во все стороны.
+            for (int i = 0; i < pointsToGenerate; i++)
+            {
+                float angle = (Mathf.Pi * 2f / pointsToGenerate) * i;
+                var direction = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
+                var rayEnd = targetPos + direction * searchRadius;
+
+                var result = World.IntersectRay(targetPos, rayEnd, losMask, [target.GetRid()]);
+
+                if (result.Count > 0)
+                {
+                    // 2. Мы попали в препятствие. Точка ПЕРЕД ним - это край укрытия.
+                    var hitPosition = result["position"].AsVector3();
+                    var normal = result["normal"].AsVector3();
+
+                    // 3. Проверяем несколько точек ЗА этим укрытием.
+                    for (float offset = 1.5f; offset <= 4.5f; offset += 1.5f)
+                    {
+                        var candidatePoint = hitPosition + normal * offset;
+                        var navMeshPoint = NavigationServer3D.MapGetClosestPoint(navMap, candidatePoint);
+
+                        // 4. Валидация точки.
+                        if (navMeshPoint.DistanceSquaredTo(candidatePoint) < 1.0f) // Доступна на навмеше
+                        {
+                            // С нее есть прострел до цели, но от цели до нее - нет (т.е. это укрытие).
+                            if (HasClearPath(navMeshPoint, targetPos, [squad[0].GetRid()], losMask))
+                            {
+                                validPositions.Add(navMeshPoint);
+                                break; // Нашли хорошую точку за этим укрытием, идем к следующему лучу.
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (validPositions.Count == 0)
+            {
+                // Если не найдено ни одного укрытия, просто генерируем огневую дугу.
+                return GenerateFiringArcPositions(squad, target);
+            }
+
+            // 5. Распределяем лучшие найденные позиции между членами отряда.
+            var assignments = new Dictionary<AIEntity, Vector3>();
+            var unassignedAIs = new List<AIEntity>(squad);
+
+            // Сортируем позиции, чтобы дать приоритет тем, что дальше от цели (безопаснее)
+            var sortedPositions = validPositions.OrderByDescending(p => p.DistanceSquaredTo(targetPos));
+
+            foreach (var pos in sortedPositions)
+            {
+                if (unassignedAIs.Count == 0) break;
+
+                var bestAI = unassignedAIs.OrderBy(ai => ai.GlobalPosition.DistanceSquaredTo(pos)).First();
+                assignments[bestAI] = pos;
+                unassignedAIs.Remove(bestAI);
+            }
+
+            // Если для кого-то не хватило укрытий, им позиция не назначается (они будут ждать)
+            return assignments;
+        }
+
         /// <summary>
         /// Генерирует и валидирует тактическое построение "огневая дуга" для отряда.
         /// </summary>

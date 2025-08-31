@@ -82,17 +82,17 @@ albedo_color = Color(0.0745098, 0, 0.0235294, 1)
 material = SubResource("ORMMaterial3D_ypjiq")
 size = Vector3(2, 3, 2)
 
-[node name="CubePawn" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "_targetingSystem", "_movementController", "_lookController", "_combatBehaviorNode", "_eyesPosition", "SightPoints")]
+[node name="CubePawn" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "TargetingSystem", "MovementController", "LookController", "EyesPosition", "_combatBehaviorNode", "SightPoints")]
 collision_layer = 3
 collision_mask = 3
 script = ExtResource("1_y4eut")
 _audio = NodePath("AudioStreamPlayer3D")
 Profile = SubResource("Resource_afqxp")
-_targetingSystem = NodePath("AITargetingSystem")
-_movementController = NodePath("AIMovementController")
-_lookController = NodePath("AILookController")
+TargetingSystem = NodePath("AITargetingSystem")
+MovementController = NodePath("AIMovementController")
+LookController = NodePath("AILookController")
+EyesPosition = NodePath("Head/EyesPoint")
 _combatBehaviorNode = NodePath("CombatBehavior")
-_eyesPosition = NodePath("Head/EyesPoint")
 Speed = 10.0
 ID = 1
 Faction = 2
@@ -138,6 +138,7 @@ _attackActionNode = NodePath("../AttackStrategy")
 [node name="AttackStrategy" type="Node" parent="." node_paths=PackedStringArray("MuzzlePoint")]
 script = ExtResource("12_cwmnl")
 _projectileScene = ExtResource("13_wtu6w")
+AttackCooldown = 3.0
 MuzzlePoint = NodePath("../Body/MazzlePoint")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
