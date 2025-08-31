@@ -1,6 +1,5 @@
 using Godot;
 using Game.Entity.AI.Profiles;
-using System.Linq;
 
 namespace Game.Entity.AI.Components
 {
@@ -9,10 +8,6 @@ namespace Game.Entity.AI.Components
         [ExportGroup("Dependencies")]
         [Export] public NavigationAgent3D NavigationAgent;
         [Export] private Node3D _headPivot;
-
-        // --- Настройки Separation Force ---
-        // Вес больше не нужен, так как мы убираем кастомную силу
-        // [Export] private float _separationWeight = 4.0f; 
 
         private AIEntity _context;
         private AIMovementProfile _movementProfile;
@@ -30,6 +25,26 @@ namespace Game.Entity.AI.Components
         public float SeparationRadius { get; private set; }
 
         public Vector3 TargetVelocity { get; set; }
+
+        public Vector3? GetTargetPosition()
+        {
+            // NavigationAgent.TargetPosition может быть не тем, что нам нужно,
+            // если агент уже близко к цели. Лучше хранить цель самим.
+            // Давайте улучшим.
+            if (NavigationAgent.IsTargetReachable())
+            {
+                return NavigationAgent.TargetPosition;
+            }
+            return null;
+        }
+
+        public bool IsMoving() => !NavigationAgent.IsNavigationFinished();
+
+        public bool HasReachedDestination()
+        {
+            // Этот метод используется для проверки, завершил ли AI свой путь.
+            return NavigationAgent.IsNavigationFinished();
+        }
 
         public void Initialize(AIEntity context)
         {

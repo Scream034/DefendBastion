@@ -38,6 +38,10 @@ namespace Game.Entity.AI.Components
         public int PathDirection { get; set; } = 1;
         public bool IsInCombat => _currentState is CombatState || _currentState is PursuitState;
 
+        public Vector3 ObservedTargetVelocity { get; set; } = Vector3.Zero;
+        public Vector3 LastKnownTargetPosition { get; set; }
+        public Vector3 TargetPreviousPosition { get; set; }
+
         private SquadStateBase _currentState;
 
         public override void _Ready()
@@ -119,6 +123,14 @@ namespace Game.Entity.AI.Components
             {
                 GD.Print($"Squad '{SquadName}' is on assault task. Ignoring target {target.Name} to reach objective.");
                 return;
+            }
+
+            if (CurrentTarget != target)
+            {
+                CurrentTarget = target;
+                ObservedTargetVelocity = Vector3.Zero;
+                LastKnownTargetPosition = target.GlobalPosition;
+                TargetPreviousPosition = target.GlobalPosition;
             }
 
             ChangeState(new CombatState(this, target));

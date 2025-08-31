@@ -25,6 +25,29 @@ namespace Game.Entity.AI.Components
     }
 
     /// <summary>
+    /// Представляет результат анализа линии огня (Line of Fire).
+    /// </summary>
+    public enum LineOfFireResult
+    {
+        /// <summary>
+        /// Путь до цели чист.
+        /// </summary>
+        Clear,
+        /// <summary>
+        /// Путь заблокирован дружественным юнитом.
+        /// </summary>
+        BlockedByAlly,
+        /// <summary>
+        /// Путь заблокирован статичным препятствием (стена, объект окружения).
+        /// </summary>
+        BlockedByObstacle,
+        /// <summary>
+        /// Цель полностью за укрытием
+        /// </summary>
+        NoVisiblePoint
+    }
+
+    /// <summary>
     /// Статический класс, содержащий "чистые" функции для тактического анализа,
     /// такие как проверка линии видимости и поиск оптимальных позиций.
     /// </summary>
@@ -57,6 +80,67 @@ namespace Game.Entity.AI.Components
             }
 
             return LoSAnalysisResult.BlockedByObstacle;
+        }
+
+        /// <summary>
+        /// Проводит детальный анализ линии огня от точки до цели.
+        /// </summary>
+        /// <returns>Результат анализа и, если путь чист, точку для прицеливания.</returns>
+        public static (LineOfFireResult result, Vector3? aimPoint) AnalyzeLineOfFire(
+            Vector3 fromPosition,
+            AIEntity shooter,
+            LivingEntity target,
+            uint collisionMask)
+        {
+            if (!GodotObject.IsInstanceValid(target)) return (LineOfFireResult.NoVisiblePoint, null);
+
+            var pointsToCheck = new List<Vector3>();
+            if (target.SightPoints?.Length > 0)
+            {
+                foreach (var point in target.SightPoints)
+                {
+                    if (GodotObject.IsInstanceValid(point)) pointsToCheck.Add(point.GlobalPosition);
+                }
+            }
+            pointsToCheck.Add(target.GlobalPosition); // Запасной вариант
+
+            var exclude = new Godot.Collections.Array<Rid> { shooter.GetRid() };
+
+            foreach (var targetPoint in pointsToCheck)
+            {
+                var resultDict = World.IntersectRay(fromPosition, targetPoint, collisionMask, exclude);
+
+                if (resultDict.Count == 0) // Луч ни во что не попал (цель за пределами геометрии?)
+                {
+                    continue; // Проверяем следующую точку
+                }
+
+                var collider = resultDict["collider"].AsGodotObject();
+                if (collider == null) // Попали в статичную геометрию без коллайдера-объекта
+                {
+                    continue; // Эта точка заблокирована, проверяем следующую
+                }
+
+                // Если первое, во что попал луч, это наша цель - путь чист
+                if (collider.GetInstanceId() == target.GetInstanceId())
+                {
+                    return (LineOfFireResult.Clear, targetPoint);
+                }
+
+                // Если попали в другого AI из того же отряда
+                if (collider is AIEntity otherAI && otherAI.Squad == shooter.Squad)
+                {
+                    // Мы нашли видимую точку, но она заблокирована союзником.
+                    // Это важная информация. Мы можем прекратить поиск и сообщить об этом.
+                    return (LineOfFireResult.BlockedByAlly, null);
+                }
+
+                // В остальных случаях считаем, что это препятствие (стена, враг и т.д.)
+            }
+
+            // Если мы прошли все точки и ни одна не оказалась чистой,
+            // значит, цель полностью за препятствием.
+            return (LineOfFireResult.BlockedByObstacle, null);
         }
 
         /// <summary>

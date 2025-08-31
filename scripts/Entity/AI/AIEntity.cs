@@ -31,9 +31,12 @@ namespace Game.Entity.AI
         private bool _hasAttackOrder;
 
         // Внутреннее состояние
-        private double _timeSinceLastAttack;
+        private const float ALLY_BLOCK_REPOSITION_THRESHOLD = 0.75f;
         private const float REPOSITION_REQUEST_THRESHOLD = 2f;
+
+        private double _timeSinceLastAttack;
         private double _timeWithoutLoS = 0;
+        private double _timeBlockedByAlly = 0;
         private bool _hasRequestedReposition = false;
 
         private float _maxAttackRangeSq;
@@ -93,11 +96,27 @@ namespace Game.Entity.AI
                 return;
             }
 
+            var lofCheck = AITacticalAnalysis.AnalyzeLineOfFire(
+                           CombatBehavior.Action.MuzzlePoint.GlobalPosition,
+                           this,
+                           _attackTarget,
+                           Profile.CombatProfile.LineOfSightMask
+                       );
+
+            // Если путь заблокирован союзником, начинаем считать таймер
+            if (lofCheck.result == LineOfFireResult.BlockedByAlly)
+            {
+                _timeBlockedByAlly += delta;
+            }
+            else
+            {
+                _timeBlockedByAlly = 0; // Сбрасываем таймер, если союзник больше не мешает
+            }
+
             float distanceToTargetSq = GlobalPosition.DistanceSquaredTo(_attackTarget.GlobalPosition);
             bool isBeyondMaxRange = distanceToTargetSq > _maxAttackRangeSq;
             bool isInOptimalRange = distanceToTargetSq <= _engagementRangeSq;
             bool isInFiringEnvelope = !isBeyondMaxRange && !isInOptimalRange;
-            Vector3? aimPoint = GetMuzzleLineOfFirePoint(_attackTarget);
 
             if (isBeyondMaxRange)
             {
@@ -105,35 +124,34 @@ namespace Game.Entity.AI
                 return;
             }
 
-            if (isInOptimalRange)
+            // Логика принятия решений
+            if (lofCheck.result == LineOfFireResult.Clear) // Путь чист!
             {
-                if (aimPoint.HasValue)
+                _timeWithoutLoS = 0; // Сбрасываем оба таймера
+                _timeBlockedByAlly = 0;
+
+                if (isInOptimalRange)
                 {
                     if (_hasMoveOrder) // Позиция идеальна, останавливаемся
                     {
                         MovementController.StopMovement();
                         _hasMoveOrder = false;
-                        Squad?.ReportPositionReached(this); // Это единственный оставшийся прямой вызов, он оправдан для внутренней логики отряда
+                        Squad?.ReportPositionReached(this);
                     }
-                    FireIfReady(aimPoint.Value);
+                    FireIfReady(lofCheck.aimPoint.Value);
                 }
-                else
+                else if (isInFiringEnvelope) // В зоне поражения, но не оптимально
                 {
-                    RequestRepositionIfNeeded(delta);
+                    // Стреляем на ходу
+                    FireIfReady(lofCheck.aimPoint.Value);
                 }
-                return;
+                // Если isBeyondMaxRange, мы просто продолжаем двигаться, ничего не делая.
             }
-
-            if (isInFiringEnvelope)
+            else // Путь заблокирован (союзником или препятствием)
             {
-                if (aimPoint.HasValue)
-                {
-                    FireIfReady(aimPoint.Value); // Стреляем на ходу
-                }
-                else
-                {
-                    RequestRepositionIfNeeded(delta);
-                }
+                // Увеличиваем общий таймер отсутствия линии огня
+                _timeWithoutLoS += delta;
+                RequestRepositionIfNeeded(delta);
             }
         }
 
@@ -170,16 +188,23 @@ namespace Game.Entity.AI
 
         private void RequestRepositionIfNeeded(double delta)
         {
-            if (_hasAttackOrder && !_hasMoveOrder)
+            if (_hasRequestedReposition) return; // Уже отправили запрос, ждем
+
+            // Нас долго блокирует союзник (самый высокий приоритет)
+            bool isBlockedByAlly = _timeBlockedByAlly > ALLY_BLOCK_REPOSITION_THRESHOLD;
+
+            // Мы стоим на месте и долго не видим цель
+            bool isStuckWithoutLoS = !_hasMoveOrder && _timeWithoutLoS > REPOSITION_REQUEST_THRESHOLD;
+
+            // Мы движемся, но очень долго не видим цель (например, бежим в стену)
+            bool isMovingBlindly = _hasMoveOrder && _timeWithoutLoS > REPOSITION_REQUEST_THRESHOLD * 2.0f;
+
+            if (isBlockedByAlly || isStuckWithoutLoS || isMovingBlindly)
             {
-                _timeWithoutLoS += delta;
-                if (_timeWithoutLoS > REPOSITION_REQUEST_THRESHOLD && !_hasRequestedReposition)
-                {
-                    _hasRequestedReposition = true;
-                    // ЭМИТИРУЕМ СОБЫТИЕ вместо прямого вызова
-                    AISignals.Instance.EmitSignal(AISignals.SignalName.RepositionRequested, this);
-                    GD.Print($"{Name} cannot see target. Requesting reposition.");
-                }
+                _hasRequestedReposition = true;
+                // В сигнал можно добавить причину, если нужно
+                AISignals.Instance.EmitSignal(AISignals.SignalName.RepositionRequested, this);
+                GD.Print($"{Name} requests reposition. Reason: AllyBlock={isBlockedByAlly}, Stuck={isStuckWithoutLoS}, MovingBlindly={isMovingBlindly}");
             }
         }
 

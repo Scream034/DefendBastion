@@ -1,6 +1,4 @@
-// Game/Entity/AI/States/Squad/PatrolState.cs
 using Godot;
-using System.Collections.Generic;
 using Game.Entity.AI.Components;
 
 namespace Game.Entity.AI.States.Squad
