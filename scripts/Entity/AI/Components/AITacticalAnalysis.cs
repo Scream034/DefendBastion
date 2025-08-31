@@ -85,111 +85,128 @@ namespace Game.Entity.AI.Components
             return result.Count == 0;
         }
 
-        public static Vector3? FindSidestepPosition(AIEntity context, LivingEntity target)
+        /// <summary>
+        /// Находит наилучшую тактическую позицию для атаки цели.
+        /// Генерирует набор точек-кандидатов, оценивает их и возвращает лучшую.
+        /// </summary>
+        public static Vector3? FindBestTacticalPosition(AIEntity context, LivingEntity target, Vector3 weaponLocalOffset, float searchRadius, bool preferSidestep)
         {
-            var directionToTarget = context.GlobalPosition.DirectionTo(target.GlobalPosition).Normalized();
-            var sidestepVector = directionToTarget.Cross(Vector3.Up).Normalized();
-            uint losMask = context.Profile.CombatProfile.LineOfSightMask;
-
-            // Проверяем несколько точек вбок на разном расстоянии для большей гибкости
-            float[] stepDistances = [1.5f, 2.5f, 1.0f];
-
-            // Определяем, с какой стороны от нас находится ближайшая стена, чтобы не шагать в нее
-            bool isLeftBlocked = World.IntersectRay(context.GlobalPosition, context.GlobalPosition - sidestepVector * 2f, losMask, [context.GetRid()]).Count > 0;
-            bool isRightBlocked = World.IntersectRay(context.GlobalPosition, context.GlobalPosition + sidestepVector * 2f, losMask, [context.GetRid()]).Count > 0;
-
-            var directions = new List<Vector3>();
-            if (!isRightBlocked) directions.Add(sidestepVector);   // Предпочитаем шаг вправо
-            if (!isLeftBlocked) directions.Add(-sidestepVector); // Затем влево
-
-            var weaponLocalOffset = context.CombatBehavior is StationaryCombatBehavior scb && scb.Action.MuzzlePoint != null ? scb.Action.MuzzlePoint.Position : Vector3.Zero;
-
-            foreach (var dir in directions)
-            {
-                foreach (var dist in stepDistances)
-                {
-                    var point = context.GlobalPosition + dir * dist;
-                    var navMeshPoint = NavigationServer3D.MapGetClosestPoint(World.Real.NavigationMap, point);
-                    // Убеждаемся, что точка на навмеше очень близко к нашей боковой цели
-                    if (navMeshPoint.DistanceSquaredTo(point) < 0.5f)
-                    {
-                        var fromPos = navMeshPoint + (context.Basis * weaponLocalOffset);
-                        if (AnalyzeLineOfSight(context, fromPos, target, losMask, out _) == LoSAnalysisResult.Clear)
-                        {
-                            return navMeshPoint;
-                        }
-                    }
-                }
-            }
-
-            return null; // Не удалось найти хорошую точку
-        }
-
-        public static Vector3? FindOptimalFiringPosition_Probing(AIEntity context, PhysicsBody3D target, Vector3 weaponLocalOffset, float searchRadius)
-        {
+            var candidates = new List<(Vector3 Position, float Score)>();
             var directionToTarget = context.GlobalPosition.DirectionTo(target.GlobalPosition).Normalized();
             var flankDirection = directionToTarget.Cross(Vector3.Up).Normalized();
 
-            var searchVectors = new Vector3[]
+            // Генерируем направления для поиска: сначала боковые, потом остальные.
+            var searchVectors = new List<Vector3>
             {
-                flankDirection, -flankDirection, -directionToTarget, directionToTarget,
-                (flankDirection - directionToTarget).Normalized(), (-flankDirection - directionToTarget).Normalized(),
+                flankDirection,         // Вправо
+                -flankDirection,        // Влево
+                (flankDirection - directionToTarget).Normalized(),  // Вправо-назад
+                (-flankDirection - directionToTarget).Normalized(), // Влево-назад
+                -directionToTarget      // Прямо назад
             };
 
-            return ProbeDirections(context, target.GlobalPosition, searchVectors, weaponLocalOffset, searchRadius);
-        }
-
-        public static Vector3? FindOptimalFiringPosition_Hybrid(AIEntity context, PhysicsBody3D target, Vector3 weaponLocalOffset, float searchRadius)
-        {
-            var targetPosition = target.GlobalPosition;
-            var weaponPosition = context.GlobalPosition + (context.Basis * weaponLocalOffset);
-            var result = World.IntersectRay(weaponPosition, targetPosition, context.Profile.CombatProfile.LineOfSightMask, [context.GetRid(), target.GetRid()]);
-
-            var searchVectors = new List<Vector3>();
-
-            if (result.Count > 0)
+            // Если не требуется боковой шаг, добавляем и другие направления
+            if (!preferSidestep)
             {
-                var hitNormal = (Vector3)result["normal"];
-                var surfaceTangent = hitNormal.Cross(Vector3.Up).Normalized();
-                if (surfaceTangent.IsZeroApprox())
-                {
-                    surfaceTangent = context.GlobalPosition.DirectionTo(targetPosition).Normalized().Cross(hitNormal).Normalized();
-                }
-                searchVectors.Add(surfaceTangent);
-                searchVectors.Add(-surfaceTangent);
+                searchVectors.Add(directionToTarget); // Прямо вперед
+                searchVectors.Add((flankDirection + directionToTarget).Normalized()); // Вправо-вперед
+                searchVectors.Add((-flankDirection + directionToTarget).Normalized()); // Влево-вперед
             }
 
-            var dirToTarget = context.GlobalPosition.DirectionTo(targetPosition).Normalized();
-            var flankDir = dirToTarget.Cross(Vector3.Up).Normalized();
-            searchVectors.Add(flankDir);
-            searchVectors.Add(-flankDir);
-            searchVectors.Add(-dirToTarget);
-
-            return ProbeDirections(context, targetPosition, [.. searchVectors], weaponLocalOffset, searchRadius);
-        }
-
-        private static Vector3? ProbeDirections(AIEntity context, Vector3 targetPosition, Vector3[] directions, Vector3 weaponLocalOffset, float searchRadius)
-        {
             float step = context.Profile.CombatProfile.RepositionSearchStep;
             uint collisionMask = context.Profile.CombatProfile.LineOfSightMask;
 
-            foreach (var vector in directions.Where(v => !v.IsZeroApprox()))
+            foreach (var vector in searchVectors.Where(v => !v.IsZeroApprox()))
             {
+                // Проверяем точки на разном удалении в каждом направлении
                 for (float offset = step; offset <= searchRadius; offset += step)
                 {
                     var candidatePoint = context.GlobalPosition + vector * offset;
                     var navMeshPoint = NavigationServer3D.MapGetClosestPoint(World.Real.NavigationMap, candidatePoint);
 
+                    // Проверяем, что точка на навмеше достаточно близка к нашей цели
                     if (navMeshPoint.DistanceSquaredTo(candidatePoint) > step * step) continue;
 
+                    // Проверяем, не зарезервирована ли эта точка другим союзником
+                    if (AITacticalCoordinator.IsPositionReserved(navMeshPoint, context)) continue;
+
                     var weaponPositionAtCandidate = navMeshPoint + (context.Basis * weaponLocalOffset);
-                    if (HasClearPath(weaponPositionAtCandidate, targetPosition, [context.GetRid()], collisionMask))
+                    if (HasClearPath(weaponPositionAtCandidate, target.GlobalPosition, [context.GetRid(), target.GetRid()], collisionMask))
                     {
-                        return navMeshPoint;
+                        // Оцениваем позицию. Приоритет у более близких к нам точек.
+                        float score = 1.0f / (1.0f + context.GlobalPosition.DistanceSquaredTo(navMeshPoint));
+                        candidates.Add((navMeshPoint, score));
+                        // Нашли хорошую точку в этом направлении, можно переходить к следующему вектору.
+                        break;
                     }
                 }
             }
-            return null;
+
+            if (candidates.Count == 0) return null;
+
+            // Возвращаем кандидата с наивысшим счетом
+            return candidates.OrderByDescending(c => c.Score).First().Position;
+        }
+
+        /// <summary>
+        /// Генерирует и валидирует тактическое построение "огневая дуга" для отряда.
+        /// </summary>
+        /// <returns>Словарь {AI, Позиция} или null, если построение невозможно.</returns>
+        public static Dictionary<AIEntity, Vector3> GenerateFiringArcPositions(List<AIEntity> squad, LivingEntity target)
+        {
+            if (squad == null || squad.Count == 0 || !GodotObject.IsInstanceValid(target)) return null;
+
+            // 1. Определяем параметры дуги
+            var squadCenter = squad.Select(ai => ai.GlobalPosition).Aggregate(Vector3.Zero, (a, b) => a + b) / squad.Count;
+            var directionToSquad = target.GlobalPosition.DirectionTo(squadCenter).Normalized();
+
+            // Используем среднюю дальность атаки отряда как радиус дуги
+            float optimalDistance = squad.Average(ai => ai.CombatBehavior.AttackRange) * 0.9f;
+            int squadCount = squad.Count;
+            float totalArcDegrees = Mathf.Min(squadCount * 20f, 120f); // Ширина дуги, например 20 градусов на юнита
+            float angleStep = squadCount > 1 ? Mathf.DegToRad(totalArcDegrees) / (squadCount - 1) : 0;
+            float startAngle = -Mathf.DegToRad(totalArcDegrees) / 2f;
+
+            var assignments = new Dictionary<AIEntity, Vector3>();
+            var availablePositions = new List<Vector3>();
+
+            // 2. Генерируем "идеальные" точки на дуге
+            for (int i = 0; i < squadCount; i++)
+            {
+                float currentAngle = startAngle + i * angleStep;
+                var rotatedDirection = directionToSquad.Rotated(Vector3.Up, currentAngle);
+                var idealPoint = target.GlobalPosition + rotatedDirection * optimalDistance;
+
+                // 3. Валидируем каждую точку
+                var navMap = squad[0].GetWorld3D().NavigationMap;
+                var navMeshPoint = NavigationServer3D.MapGetClosestPoint(navMap, idealPoint);
+
+                // Точка валидна, если она на навмеше, близко к идеальной, и с нее есть прострел
+                if (navMeshPoint.DistanceSquaredTo(idealPoint) < 4f) // Допуск ~2 метра
+                {
+                    uint mask = squad[0].Profile.CombatProfile.LineOfSightMask;
+                    if (HasClearPath(navMeshPoint, target.GlobalPosition, [target.GetRid()], mask))
+                    {
+                        availablePositions.Add(navMeshPoint);
+                    }
+                }
+            }
+
+            if (availablePositions.Count < squadCount) return null; // Недостаточно хороших позиций для всего отряда
+
+            // 4. Распределяем ближайшие валидные точки между членами отряда
+            var unassignedAIs = new List<AIEntity>(squad);
+            foreach (var pos in availablePositions)
+            {
+                if (unassignedAIs.Count == 0) break;
+
+                // Находим ближайшего к этой точке свободного AI
+                var bestAI = unassignedAIs.OrderBy(ai => ai.GlobalPosition.DistanceSquaredTo(pos)).First();
+                assignments[bestAI] = pos;
+                unassignedAIs.Remove(bestAI);
+            }
+
+            return assignments;
         }
     }
 }

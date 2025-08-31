@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Game.Entity.AI.Profiles;
 using Game.Entity.AI.Components;
 using Game.Singletons;
+using System.Collections.Generic;
 
 namespace Game.Entity.AI
 {
@@ -48,6 +49,22 @@ namespace Game.Entity.AI
         private State _currentState;
         private State _defaultState;
         private bool _isAiActive = false;
+
+        private static readonly HashSet<AIEntity> _activeAIEntities = new();
+
+        public override void _EnterTree()
+        {
+            base._EnterTree();
+            _activeAIEntities.Add(this);
+        }
+
+        public override void _ExitTree()
+        {
+            base._ExitTree();
+            _activeAIEntities.Remove(this);
+            // Гарантированно снимаем назначение при удалении AI со сцены
+            AISquadCoordinator.ReleasePosition(this);
+        }
 
         public override async void _Ready()
         {
@@ -170,6 +187,25 @@ namespace Game.Entity.AI
         {
             TargetingSystem.ClearTarget();
             ChangeState(_defaultState);
+        }
+
+        /// <summary>
+        /// Находит всех дружественных AI в заданном радиусе, которые атакуют ту же цель.
+        /// </summary>
+        public List<AIEntity> GetNearbyAllies(LivingEntity commonTarget, float radius)
+        {
+            var allies = new List<AIEntity>();
+            var radiusSq = radius * radius;
+
+            foreach (var ai in _activeAIEntities)
+            {
+                if (ai == this || ai.IsHostile(this)) continue;
+                if (ai.TargetingSystem.CurrentTarget != commonTarget) continue;
+                if (GlobalPosition.DistanceSquaredTo(ai.GlobalPosition) > radiusSq) continue;
+
+                allies.Add(ai);
+            }
+            return allies;
         }
 
         public void SetPursuitTargetPosition(Vector3 position)
