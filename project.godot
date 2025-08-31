@@ -23,6 +23,7 @@ Constants="*res://scripts/Singletons/Constants.cs"
 GlobalEvents="*res://scripts/Singletons/GlobalEvents.cs"
 PlayerInputManager="*res://scripts/Singletons/PlayerInputManager.cs"
 ProjectilePool="*res://scripts/Projectiles/ProjectilePool.cs"
+AiSignals="*res://scripts/Entity/AI/Orchestrator/AISignals.cs"
 LegionBrain="*res://scripts/Entity/AI/Orchestrator/LegionBrain.cs"
 
 [debug]
