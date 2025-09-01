@@ -11,7 +11,6 @@ namespace Game.Entity.AI.Profiles
     {
         [ExportGroup("AI Profiles")]
         [Export] public AIMovementProfile MovementProfile { get; private set; }
-        [Export] public AIPatrolProfile PatrolProfile { get; private set; }
         [Export] public AICombatProfile CombatProfile { get; private set; }
         [Export] public AILookProfile LookProfile { get; private set; }
     }

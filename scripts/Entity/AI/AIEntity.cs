@@ -3,7 +3,6 @@ using Game.Entity.AI.Behaviors;
 using Game.Entity.AI.Profiles;
 using Game.Entity.AI.Components;
 using Game.Entity.AI.Orchestrator;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Game.Entity.AI

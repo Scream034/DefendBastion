@@ -13,7 +13,6 @@ namespace Game.Entity.AI.Components
         private AIMovementProfile _movementProfile;
         private AILookProfile _lookProfile;
 
-        // <--- ИЗМЕНЕНИЕ: Добавляем свойства, которые ты хотел использовать ---
         /// <summary>
         /// Дистанция до цели, на которой агент считает путь завершенным (в квадрате для оптимизации).
         /// </summary>
