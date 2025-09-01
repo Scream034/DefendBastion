@@ -1,10 +1,9 @@
-[gd_scene load_steps=26 format=3 uid="uid://cnm2m7s2pec0k"]
+[gd_scene load_steps=24 format=3 uid="uid://cnm2m7s2pec0k"]
 
 [ext_resource type="Script" uid="uid://1lakxf2ca0fo" path="res://scripts/Entity/Pawn.cs" id="1_y4eut"]
 [ext_resource type="Script" uid="uid://bh6xlp0n5roe6" path="res://scripts/Entity/AI/Profilies/AICombatProfile.cs" id="2_p06bi"]
 [ext_resource type="Script" uid="uid://na4nrs3prgm4" path="res://scripts/Entity/AI/Profilies/AILookProfile.cs" id="3_p3j4k"]
 [ext_resource type="Script" uid="uid://c7hnkuof7yfqy" path="res://scripts/Entity/AI/Profilies/AIMovementProfile.cs" id="4_ijh48"]
-[ext_resource type="Script" uid="uid://crghqd81eht0b" path="res://scripts/Entity/AI/Profilies/AIPatrolProfile.cs" id="5_deh70"]
 [ext_resource type="Script" uid="uid://ccueoke03fjsg" path="res://scripts/Entity/AI/Profilies/AIProfile.cs" id="6_sohst"]
 [ext_resource type="AudioStream" uid="uid://d1i4b4dxh5s0g" path="res://sounds/electric_impact.wav" id="7_yoe7r"]
 [ext_resource type="Script" uid="uid://d0rbe32jfbfpx" path="res://scripts/Entity/AI/Components/AILookController.cs" id="8_8f78k"]
@@ -14,36 +13,26 @@
 [ext_resource type="Script" uid="uid://bn1sb2kjfn32a" path="res://scripts/Entity/AI/AttackStrategies/RangedAttackStrategy.cs" id="12_cwmnl"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="13_wtu6w"]
 
-[sub_resource type="Resource" id="Resource_4aidf"]
+[sub_resource type="Resource" id="Resource_sfg71"]
 script = ExtResource("2_p06bi")
-AimSpreadRadius = 0.0
-PredictionAccuracy = 1.0
 metadata/_custom_type_script = "uid://bh6xlp0n5roe6"
 
-[sub_resource type="Resource" id="Resource_ax7fu"]
+[sub_resource type="Resource" id="Resource_y4eut"]
 script = ExtResource("3_p3j4k")
-MaxHeadYawDegrees = 75.0
-MaxHeadPitchDegrees = 15.0
 metadata/_custom_type_script = "uid://na4nrs3prgm4"
 
-[sub_resource type="Resource" id="Resource_oyrvu"]
+[sub_resource type="Resource" id="Resource_p06bi"]
 script = ExtResource("4_ijh48")
-SlowSpeed = 12.0
-NormalSpeed = 10.0
-FastSpeed = 15.0
+SlowSpeed = 4.5
+NormalSpeed = 6.0
+FastSpeed = 8.0
 metadata/_custom_type_script = "uid://c7hnkuof7yfqy"
 
-[sub_resource type="Resource" id="Resource_a6sgv"]
-script = ExtResource("5_deh70")
-PathWaypointAccuracyRadius = 5.0
-metadata/_custom_type_script = "uid://crghqd81eht0b"
-
-[sub_resource type="Resource" id="Resource_afqxp"]
+[sub_resource type="Resource" id="Resource_p3j4k"]
 script = ExtResource("6_sohst")
-MovementProfile = SubResource("Resource_oyrvu")
-PatrolProfile = SubResource("Resource_a6sgv")
-CombatProfile = SubResource("Resource_4aidf")
-LookProfile = SubResource("Resource_ax7fu")
+MovementProfile = SubResource("Resource_p06bi")
+CombatProfile = SubResource("Resource_sfg71")
+LookProfile = SubResource("Resource_y4eut")
 metadata/_custom_type_script = "uid://ccueoke03fjsg"
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_ypjiq"]
@@ -86,13 +75,12 @@ collision_layer = 3
 collision_mask = 3
 script = ExtResource("1_y4eut")
 _audio = NodePath("AudioStreamPlayer3D")
-Profile = SubResource("Resource_afqxp")
+Profile = SubResource("Resource_p3j4k")
 TargetingSystem = NodePath("AITargetingSystem")
 MovementController = NodePath("AIMovementController")
 LookController = NodePath("AILookController")
 EyesPosition = NodePath("Head/EyesPoint")
 _combatBehaviorNode = NodePath("CombatBehavior")
-Speed = 10.0
 ID = 1
 Faction = 2
 MaxHealth = 225.0

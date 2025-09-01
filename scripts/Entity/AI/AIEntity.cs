@@ -9,6 +9,8 @@ namespace Game.Entity.AI
 {
     public abstract partial class AIEntity : MoveableEntity
     {
+        public enum MovementSpeedType { Slow, Normal, Fast }
+
         [ExportGroup("AI Configuration")]
         [Export] public AIProfile Profile { get; private set; }
 
@@ -69,7 +71,11 @@ namespace Game.Entity.AI
 
         }
 
-        private void InitializeAI() => SetMovementSpeed(Profile.MovementProfile.NormalSpeed);
+        private void InitializeAI()
+        {
+            // Устанавливаем скорость по умолчанию при инициализации
+            SetMovementSpeed(MovementSpeedType.Normal);
+        }
 
         public override void _PhysicsProcess(double delta)
         {
@@ -246,7 +252,6 @@ namespace Game.Entity.AI
         #endregion
 
         #region Validation and Utils (Без существенных изменений)
-        // ... (Код ValidateDependencies, GetMuzzleLineOfFirePoint, GetVisibleTargetPoint, etc. остается здесь)
         private bool ValidateDependencies()
         {
             if (Profile == null) { GD.PushError($"AIProfile not assigned to {Name}!"); return false; }
@@ -259,7 +264,16 @@ namespace Game.Entity.AI
             return true;
         }
 
-        public void SetMovementSpeed(float speed) => Speed = speed;
+        public void SetMovementSpeed(MovementSpeedType speedType)
+        {
+            Speed = speedType switch
+            {
+                MovementSpeedType.Slow => Profile.MovementProfile.SlowSpeed,
+                MovementSpeedType.Normal => Profile.MovementProfile.NormalSpeed,
+                MovementSpeedType.Fast => Profile.MovementProfile.FastSpeed,
+                _ => Profile.MovementProfile.NormalSpeed,
+            };
+        }
 
         public Vector3? GetVisibleTargetPoint(LivingEntity target)
         {

@@ -11,8 +11,16 @@ namespace Game.Entity.AI.States.Squad
         {
             GD.Print($"Squad '{Squad.SquadName}' starts/resumes following its mission path.");
             Squad.CurrentTarget = null;
-            // Сразу же даем команду двигаться к текущей (или следующей) точке,
-            // чтобы не было задержки.
+
+            var speedType = Squad.Task == SquadTask.AssaultPath
+                ? AIEntity.MovementSpeedType.Normal // На штурм идем обычной скоростью
+                : AIEntity.MovementSpeedType.Slow;  // В патруле - медленно
+
+            foreach (var member in Squad.Members)
+            {
+                member.SetMovementSpeed(speedType);
+            }
+
             MoveToNextWaypoint();
         }
 

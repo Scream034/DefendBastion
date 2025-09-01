@@ -24,7 +24,11 @@ namespace Game.Entity.AI.States.Squad
         {
             GD.Print($"Squad '{Squad.SquadName}' is now in PURSUIT mode against {Squad.CurrentTarget.Name}.");
 
-            // Инициализируем счетчики
+            foreach (var member in Squad.Members)
+            {
+                member.SetMovementSpeed(AIEntity.MovementSpeedType.Fast);
+            }
+
             _reevaluateTimer = 1.0f;
             _targetVelocityTimer = Squad.TargetVelocityTrackInterval;
             _gracePeriodTimer = 1.5f;

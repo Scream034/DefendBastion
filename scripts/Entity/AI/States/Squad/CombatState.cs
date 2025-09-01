@@ -267,6 +267,7 @@ namespace Game.Entity.AI.States.Squad
         {
             foreach (var (ai, position) in assignments)
             {
+                ai.SetMovementSpeed(AIEntity.MovementSpeedType.Fast); // На занятие огневых позиций - бегом!
                 ai.ReceiveOrderMoveTo(position);
                 ai.ReceiveOrderAttackTarget(Squad.CurrentTarget);
             }
@@ -274,16 +275,19 @@ namespace Game.Entity.AI.States.Squad
             foreach (var member in Squad.Members.Where(m => !assignments.ContainsKey(m)))
             {
                 GD.PushWarning($"Member {member.Name} did not receive a position, ordering direct assault.");
+                member.SetMovementSpeed(AIEntity.MovementSpeedType.Fast);
                 member.ReceiveOrderMoveTo(Squad.CurrentTarget.GlobalPosition);
                 member.ReceiveOrderAttackTarget(Squad.CurrentTarget);
             }
         }
+
 
         private void ExecuteDirectAssaultTactic()
         {
             GD.PushWarning("Executing direct assault.");
             foreach (var member in Squad.Members)
             {
+                member.SetMovementSpeed(AIEntity.MovementSpeedType.Fast);
                 member.ReceiveOrderMoveTo(Squad.CurrentTarget.GlobalPosition);
                 member.ReceiveOrderAttackTarget(Squad.CurrentTarget);
             }
