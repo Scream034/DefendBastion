@@ -4,8 +4,8 @@
 render_priority = -1
 transparency = 1
 blend_mode = 1
-cull_mode = 1
-diffuse_mode = 3
+diffuse_mode = 1
+specular_mode = 2
 disable_fog = true
 vertex_color_use_as_albedo = true
 vertex_color_is_srgb = true

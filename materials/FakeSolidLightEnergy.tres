@@ -1,0 +1,21 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cqdh3aeo24i5q"]
+
+[resource]
+resource_name = "Energy"
+render_priority = -3
+shading_mode = 2
+diffuse_mode = 2
+specular_mode = 2
+disable_fog = true
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+albedo_color = Color(0.262745, 0.717647, 0.819608, 1)
+metallic = 0.5
+metallic_specular = 0.3
+roughness = 0.3
+emission_enabled = true
+emission = Color(0.2627451, 0.7176471, 0.81960785, 1)
+emission_energy_multiplier = 5.0
+texture_filter = 0
+texture_repeat = false
+disable_receive_shadows = true

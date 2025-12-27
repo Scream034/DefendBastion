@@ -15,7 +15,8 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
     public enum PlayerState
     {
         Normal,
-        InTurret
+        InTurret,
+        Freecam
     }
 
     [ExportGroup("Components")]
@@ -36,6 +37,8 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
     private Vector3 _inputDir;
     private bool _jumpPressed;
 
+    private readonly FreecamController _freecamController = new();
+
     public override void _Ready()
     {
         base._Ready();
@@ -52,8 +55,18 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
     public override void _PhysicsProcess(double delta)
     {
-        // 3. Вызываем базовую логику для применения гравитации
-        base._PhysicsProcess(delta);
+        // В режиме Freecam мы полностью игнорируем стандартную физику
+        if (CurrentState == PlayerState.Freecam)
+        {
+            ProcessFreecam((float)delta);
+            return;
+        }
+
+        // Стандартная физика (гравитация) применяется только если мы НЕ в Freecam и НЕ в турели
+        if (CurrentState != PlayerState.InTurret)
+        {
+            base._PhysicsProcess(delta); // Применяет гравитацию
+        }
 
         SetBodyYaw(_head.Rotation.Y);
 
@@ -64,8 +77,6 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         }
 
         ProcessNormal((float)delta);
-
-        // 5. Финальный вызов MoveAndSlide()
         MoveAndSlide();
     }
 
@@ -76,7 +87,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         if (isDestroyed)
         {
             PlayerInputManager.Instance.SwitchController(null);
-            CurrentTurret?.ExitTurret(); // <-- ИЗМЕНЕНО
+            CurrentTurret?.ExitTurret();
         }
 
         return isDestroyed;
@@ -91,6 +102,19 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
     {
         HandleMovement(delta);
         HandleInteractionUI();
+    }
+
+    private void ProcessFreecam(float delta)
+    {
+        // Делегируем расчет движения контроллеру
+        // Используем GlobalBasis головы, чтобы лететь туда, куда смотрим
+        Vector3 motion = _freecamController.CalculateMovement(_head.GlobalTransform.Basis, delta);
+
+        // Напрямую меняем позицию (Noclip)
+        GlobalPosition += motion;
+
+        // Скрываем UI взаимодействия в режиме полета
+        UI.Instance.HideInteractionText();
     }
 
     private void HandleMovement(in float delta)
@@ -170,8 +194,21 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
     public void HandleInput(in InputEvent @event)
     {
-        // Управление вводом теперь централизовано в PlayerInputManager.
-        // Оставляем только то, что касается движения.
+        // 1. Переключение режима Freecam
+        if (@event.IsActionPressed("freecam"))
+        {
+            ToggleFreecam();
+            return;
+        }
+
+        // 2. Обработка ввода для Freecam
+        if (CurrentState == PlayerState.Freecam)
+        {
+            _freecamController.HandleInput(@event);
+            return; // Прерываем, чтобы не обрабатывать прыжки/движение
+        }
+
+        // 3. Стандартная обработка (если не в турели)
         if (CurrentState == PlayerState.InTurret) return;
 
         var direction = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
@@ -183,8 +220,28 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         }
         else if (@event.IsActionPressed("interact") && _head.CurrentInteractable != null)
         {
-            // Действие взаимодействия все еще инициируется здесь
             _head.CurrentInteractable.Interact(this);
         }
+    }
+
+    private void ToggleFreecam()
+    {
+        if (CurrentState == PlayerState.Normal)
+        {
+            CurrentState = PlayerState.Freecam;
+            Velocity = Vector3.Zero; // Сброс инерции
+
+            // Отключаем коллизию, чтобы пролетать сквозь стены (опционально, но желательно для Freecam)
+            _collisionShape.Disabled = true;
+
+            GD.Print("Freecam Activated");
+        }
+        else if (CurrentState == PlayerState.Freecam)
+        {
+            CurrentState = PlayerState.Normal;
+            _collisionShape.Disabled = false;
+            GD.Print("Freecam Deactivated");
+        }
+        // Из турели в freecam переходить запрещаем (или нужна доп. логика выхода)
     }
 }

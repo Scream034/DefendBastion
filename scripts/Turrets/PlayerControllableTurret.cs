@@ -24,9 +24,9 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
         base._PhysicsProcess(delta);
 
         // Удерживаем игрока в кресле
-        if (PlayerController != null && _controlPoint != null)
+        if (PlayerController != null && ControlPoint != null)
         {
-            PlayerController.GlobalPosition = _controlPoint.GlobalPosition;
+            PlayerController.GlobalPosition = ControlPoint.GlobalPosition;
         }
     }
 

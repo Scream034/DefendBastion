@@ -1,11 +1,10 @@
 #nullable enable
 
-using System;
-using System.Threading.Tasks;
 using Game.Interfaces;
 using Game.Components;
 using Godot;
 using Game.Components.Nodes;
+using Game.Singletons;
 
 namespace Game.Player;
 
@@ -19,11 +18,11 @@ public sealed partial class PlayerHead : Node3D, ICameraController
     [Export] private Shaker3D? _shaker;
 
     [ExportGroup("Mouse look")]
-    [Export] public float Sensitivity { get; set; } = 0.5f;
+    [Export] public float Sensitivity { get; set; } = 1.0f;
     [Export(PropertyHint.Range, "-90, 0, 1")] public float MinPitch = -80f;
     [Export(PropertyHint.Range, "0, 90, 1")] public float MaxPitch = 80f;
     [Export(PropertyHint.Range, "-1, 180, 1")] public float MaxYaw = -1f;
-    
+
     public IInteractable? CurrentInteractable { get; private set; }
 
     // Временное хранилище для лимитов
@@ -44,12 +43,25 @@ public sealed partial class PlayerHead : Node3D, ICameraController
         // Инициализируем оператора, передавая ему все необходимые ссылки и настройки
         if (_cameraOperator != null && Camera != null)
         {
-            _cameraOperator.SensitivityMultiplier = Sensitivity;
+            _cameraOperator.NodeSensitivity = Sensitivity;
             _cameraOperator.MinPitch = MinPitch;
             _cameraOperator.MaxPitch = MaxPitch;
             _cameraOperator.MaxYaw = MaxYaw;
-            // Важно: вращаем сам узел PlayerHead (this), а позицию меняем у дочерней камеры (Camera)
+            // вращаем сам узел PlayerHead (this), а позицию меняем у дочерней камеры (Camera)
             _cameraOperator.Initialize(this, Camera, _shaker);
+            Camera.Fov = GlobalSettings.Instance.FieldOfView;
+
+            // Подписываемся на изменения
+            GlobalSettings.Instance.OnFovChanged += OnFovChanged;
+        }
+    }
+
+    public override void _ExitTree()
+    {
+        // Обязательно отписываемся, чтобы избежать утечек памяти (хотя для автолоадов это не так критично, но это хорошая привычка)
+        if (GlobalSettings.Instance != null)
+        {
+            GlobalSettings.Instance.OnFovChanged -= OnFovChanged;
         }
     }
 
@@ -85,7 +97,7 @@ public sealed partial class PlayerHead : Node3D, ICameraController
         // Вся логика теперь в одной строке - делегируем оператору
         _cameraOperator?.Update(mouseDelta, delta);
     }
-    
+
     public void HandleMouseInput(Vector2 mouseDelta)
     {
         // Вызываем основную версию с актуальным delta
@@ -100,6 +112,14 @@ public sealed partial class PlayerHead : Node3D, ICameraController
     {
         GD.Print($"{Name} Try apply shake: {duration}, {strength}");
         _shaker?.StartShake(duration, strength, false);
+    }
+
+    public void SetSensitivityModifier(float modifier)
+    {
+        if (_cameraOperator != null)
+        {
+            _cameraOperator.DynamicSensitivity = modifier;
+        }
     }
 
     #endregion
@@ -127,14 +147,14 @@ public sealed partial class PlayerHead : Node3D, ICameraController
     public bool SetTempRotationLimits(float minPitch, float maxPitch, float maxYaw)
     {
         if (_cameraOperator == null || _beforeRotationLimits != null) return false;
-        
+
         _beforeRotationLimits = (_cameraOperator.MinPitch, _cameraOperator.MaxPitch, _cameraOperator.MaxYaw);
-        
+
         _cameraOperator.MinPitch = minPitch;
         _cameraOperator.MaxPitch = maxPitch;
         _cameraOperator.MaxYaw = maxYaw;
         _cameraOperator.UpdateRotationLimits(); // Сообщаем оператору об изменениях
-        
+
         return true;
     }
 
@@ -171,7 +191,7 @@ public sealed partial class PlayerHead : Node3D, ICameraController
     private void CheckForInteraction()
     {
         if (_interactionRay == null) return;
-        
+
         if (_interactionRay.IsColliding())
         {
             var collider = _interactionRay.GetCollider();
@@ -192,5 +212,13 @@ public sealed partial class PlayerHead : Node3D, ICameraController
             CurrentInteractable = null;
         }
     }
+
+    private void OnFovChanged(float newFov)
+    {
+        if (Camera != null)
+        {
+            // Здесь можно добавить Tween для плавного изменения, если хочется красоты
+            Camera.Fov = newFov;
+        }
+    }
 }
-#nullable disable

@@ -12,7 +12,7 @@ namespace Game.Entity.AI.Behaviors
         /// <summary>
         /// Конкретное действие атаки, которое выполняет это боевое поведение.
         /// </summary>
-        public IAttackAction Action { get; } // <--- ДОБАВЛЕНО ЭТО СВОЙСТВО
+        public IAttackAction Action { get; }
 
         /// <summary>
         /// Вызывается при входе в состояние атаки. Подготавливает поведение к бою.

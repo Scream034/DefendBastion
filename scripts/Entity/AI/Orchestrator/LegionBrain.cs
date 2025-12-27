@@ -66,18 +66,24 @@ namespace Game.Entity.AI.Orchestrator
 
         public void RegisterSquad(AISquad squad)
         {
-            if (!_squads.ContainsKey(squad.SquadName))
+            if (!_squads.ContainsKey(squad.Name))
             {
-                _squads[squad.SquadName] = squad;
-                GD.Print($"Legion Brain: Squad '{squad.SquadName}' registered.");
+                _squads[squad.Name] = squad;
+                GD.Print($"Legion Brain: Squad '{squad.Name}' registered.");
             }
+#if DEBUG
+            else
+            {
+                GD.PushWarning($"Legion Brain: Attempted to register duplicate squad '{squad.Name}'.");
+            }
+            #endif
         }
 
         private void FinalizeSquadInitialization()
         {
             foreach (var squad in _squads.Values)
             {
-                squad.InitializeMembersFromGroup();
+                squad.InitializeMembers();
             }
         }
 

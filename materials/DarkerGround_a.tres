@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dyuugfohhiwyy"]
+
+[resource]
+render_priority = -2
+shading_mode = 2
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+albedo_color = Color(0.16470589, 0.16470589, 0.16470589, 1)
+metallic_specular = 0.0
+texture_filter = 0
+texture_repeat = false

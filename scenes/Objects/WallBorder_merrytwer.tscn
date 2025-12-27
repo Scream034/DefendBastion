@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=4 uid="uid://cm3tbwblhcjdq"]
 
-[ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/turret/RailGun/Base.tres" id="1_3lwb8"]
-[ext_resource type="Material" uid="uid://vtogbnsqcfxk" path="res://materials/turret/RailGun/BaseDark.tres" id="2_ol453"]
+[ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/Base.tres" id="1_3lwb8"]
+[ext_resource type="Material" uid="uid://vtogbnsqcfxk" path="res://materials/BaseGray.tres" id="2_ol453"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_tcxma"]
 size = Vector3(70.2275, 25, 10.4326)

@@ -101,7 +101,7 @@ namespace Game.Entity.AI
                 return;
             }
 
-            var lofCheck = AITacticalAnalysis.AnalyzeLineOfFire(
+            var (result, aimPoint) = AITacticalAnalysis.AnalyzeLineOfFire(
                            CombatBehavior.Action.MuzzlePoint.GlobalPosition,
                            this,
                            _attackTarget,
@@ -109,7 +109,7 @@ namespace Game.Entity.AI
                        );
 
             // Если путь заблокирован союзником, начинаем считать таймер
-            if (lofCheck.result == LineOfFireResult.BlockedByAlly)
+            if (result == LineOfFireResult.BlockedByAlly)
             {
                 _timeBlockedByAlly += delta;
             }
@@ -130,7 +130,7 @@ namespace Game.Entity.AI
             }
 
             // Логика принятия решений
-            if (lofCheck.result == LineOfFireResult.Clear) // Путь чист!
+            if (result == LineOfFireResult.Clear) // Путь чист!
             {
                 _timeWithoutLoS = 0; // Сбрасываем оба таймера
                 _timeBlockedByAlly = 0;
@@ -143,12 +143,12 @@ namespace Game.Entity.AI
                         _hasMoveOrder = false;
                         Squad?.ReportPositionReached(this);
                     }
-                    FireIfReady(lofCheck.aimPoint.Value);
+                    FireIfReady(aimPoint.Value);
                 }
                 else if (isInFiringEnvelope) // В зоне поражения, но не оптимально
                 {
                     // Стреляем на ходу
-                    FireIfReady(lofCheck.aimPoint.Value);
+                    FireIfReady(aimPoint.Value);
                 }
                 // Если isBeyondMaxRange, мы просто продолжаем двигаться, ничего не делая.
             }
@@ -251,7 +251,7 @@ namespace Game.Entity.AI
         }
         #endregion
 
-        #region Validation and Utils (Без существенных изменений)
+        #region Validation and Utils
         private bool ValidateDependencies()
         {
             if (Profile == null) { GD.PushError($"AIProfile not assigned to {Name}!"); return false; }
@@ -283,14 +283,15 @@ namespace Game.Entity.AI
             var exclude = new Godot.Collections.Array<Rid> { GetRid() };
             return AITacticalAnalysis.GetFirstVisiblePointOfTarget(fromPosition, target, exclude, mask);
         }
-
-        private Vector3? GetMuzzleLineOfFirePoint(LivingEntity target)
-        {
-            var fromPosition = CombatBehavior?.Action?.MuzzlePoint?.GlobalPosition ?? GlobalPosition;
-            var exclude = new Godot.Collections.Array<Rid> { GetRid() };
-            uint mask = Profile.CombatProfile.LineOfSightMask;
-            return AITacticalAnalysis.GetFirstVisiblePointOfTarget(fromPosition, target, exclude, mask);
-        }
         #endregion
     }
 }
+
+
+// Пожалуйста добавь сквадам и ИИ логику:
+// 1. Если установлен режим штурма на пролом, то ИИ плевать на всё кроме своей главной цели.
+// 2. Иначе же он реагирует на получение урона или пролёта рядом снаряда (насчёт последнего не знаю ещё).
+// 3. При найденном снаряде, он начинает пытаться смотреть в точку, если не позволяет профиль, то немедленно поворачивает корпус к направлению и ищет цель. 
+// 4. Далее если цель найдена, то если у него есть право связаться с мозгом сквада, то отдать ему об этом отчёт и далее сквадной решает в зависимости от своих прав и задач.
+// 5. Если право у сквада есть и всё ок для атаки, то они немедленно устраняют цель.
+// 6. Опционально, но интересно было бы, чтобы теперь высший мозг знал, что здесь находится предположительно противник и теперь заранее говорит отрядом на атаку по пути, чтобы они знали об этом месте и поглядывали туда и если что атаковали (Если главная цель того позволяет).

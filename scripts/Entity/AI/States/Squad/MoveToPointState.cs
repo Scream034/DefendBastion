@@ -8,7 +8,7 @@ namespace Game.Entity.AI.States.Squad
     {
         public override void Enter()
         {
-            GD.Print($"Squad '{Squad.SquadName}' moving to {targetPosition}.");
+            GD.Print($"Squad '{Squad.Name}' moving to {targetPosition}.");
             Squad.AssignMarchingFormationMove(targetPosition, lookAtPosition);
         }
 
@@ -16,7 +16,7 @@ namespace Game.Entity.AI.States.Squad
         {
             if (Squad.MembersAtDestination.Count >= Squad.Members.Count)
             {
-                GD.Print($"Squad '{Squad.SquadName}' has reached its destination. Switching to Idle.");
+                GD.Print($"Squad '{Squad.Name}' has reached its destination. Switching to Idle.");
                 Squad.ChangeState(new IdleState(Squad));
             }
         }

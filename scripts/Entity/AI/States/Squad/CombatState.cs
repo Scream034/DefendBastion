@@ -37,7 +37,7 @@ namespace Game.Entity.AI.States.Squad
         public override void Enter()
         {
             IsActive = true;
-            GD.Print($"Squad '{Squad.SquadName}' engaging target {Squad.CurrentTarget.Name}.");
+            GD.Print($"Squad '{Squad.Name}' engaging target {Squad.CurrentTarget.Name}.");
             foreach (var member in Squad.Members) member.ClearOrders();
 
             // Инициализация таймеров
@@ -102,7 +102,7 @@ namespace Game.Entity.AI.States.Squad
 
                 if (membersAtDestination >= Squad.Members.Count)
                 {
-                    GD.Print($"Squad '{Squad.SquadName}' has taken positions. Switching to HOLDING mode.");
+                    GD.Print($"Squad '{Squad.Name}' has taken positions. Switching to HOLDING mode.");
                     _subState = CombatSubState.HoldingPosition;
                     // Инициализируем таймер вращения только сейчас
                     _orientationTimer = Squad.OrientationUpdateInterval;
@@ -146,7 +146,7 @@ namespace Game.Entity.AI.States.Squad
             _membersRequestingReposition.Add(member);
             if (Squad.Members.Count > 1 && _membersRequestingReposition.Count >= Squad.Members.Count * 0.6f)
             {
-                GD.Print($"Squad '{Squad.SquadName}' forces re-evaluation due to member requests.");
+                GD.Print($"Squad '{Squad.Name}' forces re-evaluation due to member requests.");
                 LegionBrain.Instance.RequestTacticalEvaluation(this);
                 _repositionCheckTimer = Squad.RepositionCheckInterval;
             }
@@ -170,7 +170,7 @@ namespace Game.Entity.AI.States.Squad
             _formationLocalOffsets.Clear();
             _orientationTimer = Squad.OrientationUpdateInterval;
 
-            GD.Print($"Squad '{Squad.SquadName}' is re-evaluating combat positions.");
+            GD.Print($"Squad '{Squad.Name}' is re-evaluating combat positions.");
 
             var assignments = FindBestCombatPositions(Squad.CurrentTarget);
 

@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=4 uid="uid://bbsem2yg1e665"]
 
-[ext_resource type="Material" uid="uid://dgx370rssxhh5" path="res://materials/turret/RailGun/Accent.tres" id="1_fg0sn"]
-[ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/turret/RailGun/Base.tres" id="2_ljpum"]
+[ext_resource type="Material" uid="uid://dgx370rssxhh5" path="res://materials/Accent.tres" id="1_fg0sn"]
+[ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/Base.tres" id="2_ljpum"]
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_x04cj"]
 _surfaces = [{

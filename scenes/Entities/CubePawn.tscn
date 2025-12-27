@@ -15,10 +15,28 @@
 
 [sub_resource type="Resource" id="Resource_sfg71"]
 script = ExtResource("2_p06bi")
+TargetEvaluationInterval = 0.5
+RepositionSearchStep = 1.5
+AimSpreadRadius = 2.25
+EnableTargetPrediction = true
+PredictionAccuracy = 0.7
+LineOfSightMask = 3
+EngagementRangeFactor = 0.65
+EnablePostCombatVigilance = true
+VigilanceDuration = 8.0
+AllowVigilanceStrafe = true
 metadata/_custom_type_script = "uid://bh6xlp0n5roe6"
 
 [sub_resource type="Resource" id="Resource_y4eut"]
 script = ExtResource("3_p3j4k")
+LookAtInterestPointWhileMoving = true
+MinGlanceDuration = 1.0
+MaxGlanceDuration = 2.5
+MinLookForwardDuration = 0.8
+MaxLookForwardDuration = 2.0
+EnableHeadRotationLimits = true
+MaxHeadYawDegrees = 90.0
+MaxHeadPitchDegrees = 60.0
 metadata/_custom_type_script = "uid://na4nrs3prgm4"
 
 [sub_resource type="Resource" id="Resource_p06bi"]
@@ -26,6 +44,8 @@ script = ExtResource("4_ijh48")
 SlowSpeed = 4.5
 NormalSpeed = 6.0
 FastSpeed = 8.0
+BodyRotationSpeed = 10.0
+HeadRotationSpeed = 15.0
 metadata/_custom_type_script = "uid://c7hnkuof7yfqy"
 
 [sub_resource type="Resource" id="Resource_p3j4k"]
@@ -99,11 +119,10 @@ attenuation_filter_cutoff_hz = 9000.0
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 3.7
 target_desired_distance = 3.8
-simplify_path = true
-path_search_max_polygons = 256
 avoidance_enabled = true
 height = 3.6
-radius = 1.5
+radius = 2.0
+debug_enabled = true
 
 [node name="AILookController" type="Node" parent="."]
 script = ExtResource("8_8f78k")
@@ -128,25 +147,25 @@ AttackCooldown = 3.0
 MuzzlePoint = NodePath("../Body/MazzlePoint")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.91708463, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.917085, 0)
 shape = SubResource("BoxShape3D_lcrii")
 
 [node name="Head" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5631242, -1.120723)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.563124, -1.12072)
 mesh = SubResource("BoxMesh_lcrii")
 skeleton = NodePath("../CollisionShape3D")
 
 [node name="EyesPoint" type="Marker3D" parent="Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.057192445, -1.1692746)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0571924, -1.16927)
 
 [node name="DetectionArea3D" type="Area3D" parent="Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.13199335, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.131993, 0)
 collision_layer = 0
 collision_mask = 2
 monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Head/DetectionArea3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.043, -0.8744, -251.8775)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.043, -0.8744, -251.878)
 shape = SubResource("BoxShape3D_etufe")
 
 [node name="Body" type="MeshInstance3D" parent="."]
@@ -155,4 +174,4 @@ mesh = SubResource("BoxMesh_ypjiq")
 skeleton = NodePath("../CollisionShape3D")
 
 [node name="MazzlePoint" type="Marker3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15637797, 1.2380412, -1.045194)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.156378, 1.23804, -1.04519)

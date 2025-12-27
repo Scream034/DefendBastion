@@ -1,0 +1,38 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://cc0akktbvt8f5"]
+
+[ext_resource type="Shader" uid="uid://bd5nh4ku6ruaq" path="res://shaders/Windows.gdshader" id="1_0xymv"]
+[ext_resource type="Texture2D" uid="uid://cwv0w6ue4n5ym" path="res://noise/CityFakeLight_a.tres" id="2_w315x"]
+
+[resource]
+render_priority = -1
+shader = ExtResource("1_0xymv")
+shader_parameter/window_tiling = Vector2(30, 30)
+shader_parameter/window_padding = Vector2(0.1, 0.4)
+shader_parameter/edge_softness = 0.05
+shader_parameter/parallax_depth = 0.05
+shader_parameter/emission_color = Color(0.682061, 0.776221, 0.968952, 1)
+shader_parameter/emission_energy = 20.0
+shader_parameter/lit_probability = 0.3
+shader_parameter/min_dark_fraction = 0.2
+shader_parameter/brightness_variation = 1.0
+shader_parameter/color_variation = 0.2
+shader_parameter/size_variation = 0.0
+shader_parameter/panorama_probability = 0.0
+shader_parameter/panorama_max_width = 4
+shader_parameter/panorama_max_height = 4
+shader_parameter/mega_block_probability = 0.05
+shader_parameter/mega_block_size = Vector2i(4, 4)
+shader_parameter/snap_blocks_to_grid = false
+shader_parameter/dim_probability = 0.2
+shader_parameter/dim_min = 0.0
+shader_parameter/dim_flicker_speed = 0.0
+shader_parameter/world_random_scale = 37.0
+shader_parameter/cluster_distance_strength = 0.5
+shader_parameter/tiling_mode = 0
+shader_parameter/pulse_intensity = 0.3
+shader_parameter/pulse_speed = 2.0
+shader_parameter/evening_progress = 1.0
+shader_parameter/fade_start = 400.0
+shader_parameter/fade_end = 1000.0
+shader_parameter/fade_min = 0.05
+shader_parameter/noise_tex = ExtResource("2_w315x")

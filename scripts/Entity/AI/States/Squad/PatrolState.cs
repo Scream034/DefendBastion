@@ -9,7 +9,7 @@ namespace Game.Entity.AI.States.Squad
 
         public override void Enter()
         {
-            GD.Print($"Squad '{Squad.SquadName}' starts/resumes following its mission path.");
+            GD.Print($"Squad '{Squad.Name}' starts/resumes following its mission path.");
             Squad.CurrentTarget = null;
 
             var speedType = Squad.Task == SquadTask.AssaultPath
@@ -45,7 +45,7 @@ namespace Game.Entity.AI.States.Squad
             {
                 if (nextPathIndex >= Squad.PathPoints.Length)
                 {
-                    GD.Print($"Squad '{Squad.SquadName}' has completed its assault path.");
+                    GD.Print($"Squad '{Squad.Name}' has completed its assault path.");
                     // Отдаем финальный приказ и переходим в состояние ожидания
                     var finalPosition = Squad.MissionPath.ToGlobal(Squad.PathPoints[^1]); // ^1 = последний элемент
                     Squad.ChangeState(new MoveToPointState(Squad, finalPosition, null));

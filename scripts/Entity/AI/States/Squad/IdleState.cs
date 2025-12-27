@@ -6,7 +6,7 @@ namespace Game.Entity.AI.States.Squad
     {
         public override void Enter()
         {
-            GD.Print($"Squad '{Squad.SquadName}' is now in Idle state.");
+            GD.Print($"Squad '{Squad.Name}' is now in Idle state.");
             foreach (var member in Squad.Members)
             {
                 member.ClearOrders();

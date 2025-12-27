@@ -59,4 +59,4 @@ process_physics_priority = 1
 current = true
 
 [node name="LOSPoint1" type="Marker3D" parent="Head"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35295475, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.352955, 0)

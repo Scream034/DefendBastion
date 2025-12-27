@@ -1,0 +1,69 @@
+[gd_scene load_steps=2 format=3 uid="uid://v5su20ub4oq"]
+
+[ext_resource type="Script" uid="uid://bxos0yyw3lojj" path="res://scripts/Editor/PromptGeneratorTool.cs" id="1_ah41n"]
+
+[node name="PromptGeneratorTool" type="VBoxContainer" node_paths=PackedStringArray("_selectSourceButton", "_removeSourceButton", "_clearSourcesButton", "_sourcePathsList", "_extensionsLineEdit", "_generateButton", "_logLabel", "_sourceFileDialog", "_saveFileDialog")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ah41n")
+_selectSourceButton = NodePath("ActionButtonsContainer/SelectSourceButton")
+_removeSourceButton = NodePath("ActionButtonsContainer/RemoveSourceButton")
+_clearSourcesButton = NodePath("ActionButtonsContainer/ClearSourcesButton")
+_sourcePathsList = NodePath("SourcePathsList")
+_extensionsLineEdit = NodePath("ExtensionsLineEdit")
+_generateButton = NodePath("GenerateButton")
+_logLabel = NodePath("LogLabel")
+_sourceFileDialog = NodePath("SourceFileDialog")
+_saveFileDialog = NodePath("SaveFileDialog")
+
+[node name="ActionButtonsContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SelectSourceButton" type="Button" parent="ActionButtonsContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Добавить папку"
+
+[node name="RemoveSourceButton" type="Button" parent="ActionButtonsContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Удалить выбранное"
+
+[node name="ClearSourcesButton" type="Button" parent="ActionButtonsContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.45
+text = "Очистить все"
+
+[node name="SourcePathsList" type="ItemList" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ExtensionsLineEdit" type="LineEdit" parent="."]
+layout_mode = 2
+text = "cs, gd, glsl, tscn"
+placeholder_text = "cs, gd, glsl, tscn"
+
+[node name="HSeparator" type="HSeparator" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="GenerateButton" type="Button" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Сгенерировать prompt.md"
+
+[node name="LogLabel" type="RichTextLabel" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SourceFileDialog" type="FileDialog" parent="."]
+title = "Open a Directory"
+file_mode = 2
+
+[node name="SaveFileDialog" type="FileDialog" parent="."]
+filters = PackedStringArray("*.md")

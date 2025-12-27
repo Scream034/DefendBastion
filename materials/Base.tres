@@ -2,6 +2,8 @@
 
 [resource]
 resource_name = "Base"
+diffuse_mode = 2
+specular_mode = 1
 vertex_color_use_as_albedo = true
 vertex_color_is_srgb = true
 albedo_color = Color(0.249454, 0.249442, 0.30856, 1)
@@ -11,7 +13,5 @@ roughness = 0.8
 emission = Color(1, 1, 1, 1)
 emission_energy_multiplier = 0.0
 subsurf_scatter_strength = 1.0
-refraction_enabled = true
 detail_blend_mode = 2
-texture_filter = 0
 texture_repeat = false

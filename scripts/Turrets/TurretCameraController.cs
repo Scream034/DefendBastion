@@ -3,15 +3,32 @@
 using Godot;
 using Game.Interfaces;
 using Game.Projectiles;
-using Game.Singletons;
 using Game.Components;
 using Game.Components.Nodes;
+using Game.Singletons;
 
 namespace Game.Turrets;
 
+/// <summary>
+/// Контроллер камеры для турели. 
+/// Рассчитывает точку прицеливания (raycast из камеры) и передает углы в ControllableTurret.
+/// </summary>
 public partial class TurretCameraController : Node, ICameraController
 {
-    public enum AimingMode { RotationBased, ConvergedTarget }
+    public enum AimingMode
+    {
+        /// <summary>
+        /// Турель просто копирует поворот камеры (как в шутерах от первого лица).
+        /// </summary>
+        RotationBased,
+
+        /// <summary>
+        /// Камера указывает точку в мире, турель сводится на эту точку (как в World of Tanks).
+        /// </summary>
+        ConvergedTarget
+    }
+
+    #region Components & Settings
 
     private CameraOperator? _cameraOperator;
 
@@ -21,56 +38,42 @@ public partial class TurretCameraController : Node, ICameraController
 
     [ExportGroup("Aiming Properties")]
     [Export] public AimingMode Mode { get; private set; } = AimingMode.ConvergedTarget;
-    [Export(PropertyHint.Range, "0.1, 5.0, 0.1")] public float SensitivityMultiplier { get; private set; } = 0.05f;
-    [Export(PropertyHint.Range, "100, 5000, 100")] private float _aimTargetDistance = 2000f;
 
-    [ExportGroup("Turret Rotation Limits (Degrees)", "Turret")]
-    [Export(PropertyHint.Range, "-90, 0, 1")] public float TurretMinPitch { get; private set; } = -20f;
-    [Export(PropertyHint.Range, "0, 90, 1")] public float TurretMaxPitch { get; private set; } = 45f;
-    [Export(PropertyHint.Range, "-1, 180, 1")] public float TurretMaxYaw { get; private set; } = 90f;
+    private float _sensitivityMultiplier = 1.0f;
 
-    [ExportGroup("Camera Rotation Limits (Degrees)", "Camera")]
-    [Export(PropertyHint.Range, "-90, 0, 1")] public float CameraMinPitch { get; private set; } = -89f;
-    [Export(PropertyHint.Range, "0, 90, 1")] public float CameraMaxPitch { get; private set; } = 89f;
-    [Export(PropertyHint.Range, "-1, 180, 1")] public float CameraMaxYaw { get; private set; } = -1f;
+    [Export(PropertyHint.Range, "0.1, 5.0, 0.1")]
+    public float SensitivityMultiplier
+    {
+        get => _sensitivityMultiplier;
+        set
+        {
+            _sensitivityMultiplier = value;
+            if (_cameraOperator != null) _cameraOperator.NodeSensitivity = value;
+        }
+    }
+
+    [Export(PropertyHint.Range, "100, 5000, 100")]
+    private float _aimTargetDistance = 2000f;
+
+    [ExportGroup("Limits")]
+    [ExportSubgroup("Turret Limits")]
+    [Export] public float TurretMinPitch { get; private set; } = -20f;
+    [Export] public float TurretMaxPitch { get; private set; } = 45f;
+    [Export] public float TurretMaxYaw { get; private set; } = 90f;
+
+    [ExportSubgroup("Camera Limits")]
+    [Export] public float CameraMinPitch { get; private set; } = -89f;
+    [Export] public float CameraMaxPitch { get; private set; } = 89f;
+    [Export] public float CameraMaxYaw { get; private set; } = -1f; // -1 = без ограничений
+
+    #endregion
 
     private PlayerControllableTurret? _ownerTurret;
     private PhysicsRayQueryParameters3D _rayQuery = null!;
+
+    // Кэшированные значения в радианах
     private float _turretMinPitchRad, _turretMaxPitchRad, _turretMaxYawRad;
     private bool _isInitialized = false;
-
-    public void Initialize(PlayerControllableTurret owner)
-    {
-        if (_isInitialized) return;
-        _ownerTurret = owner;
-
-        _cameraOperator = new();
-
-#if DEBUG
-        if (_camera == null) GD.PushError("Для TurretCameraController не назначена Camera3D.");
-        if (_shaker == null) GD.PushError("Для TurretCameraController не назначен Shaker3D.");
-#endif
-
-        uint aimCollisionMask = GetCollisionMaskFromProjectileScene();
-        _rayQuery = new() { CollisionMask = aimCollisionMask };
-
-        _turretMinPitchRad = Mathf.DegToRad(TurretMinPitch);
-        _turretMaxPitchRad = Mathf.DegToRad(TurretMaxPitch);
-        _turretMaxYawRad = Mathf.DegToRad(TurretMaxYaw);
-
-        // Инициализируем оператора
-        if (_cameraOperator != null && _camera != null)
-        {
-            _cameraOperator.SensitivityMultiplier = SensitivityMultiplier;
-            _cameraOperator.MinPitch = CameraMinPitch;
-            _cameraOperator.MaxPitch = CameraMaxPitch;
-            _cameraOperator.MaxYaw = CameraMaxYaw;
-            // Здесь и вращаем, и двигаем один и тот же узел - саму камеру
-            _cameraOperator.Initialize(_camera, _camera, _shaker);
-        }
-
-        _isInitialized = true;
-    }
 
     public override void _Ready()
     {
@@ -78,10 +81,50 @@ public partial class TurretCameraController : Node, ICameraController
         SetPhysicsProcess(false);
     }
 
+    /// <summary>
+    /// Инициализация контроллера при посадке в турель.
+    /// </summary>
+    public void Initialize(PlayerControllableTurret owner)
+    {
+        if (_isInitialized) return;
+        _ownerTurret = owner;
+
+        _cameraOperator = new CameraOperator();
+
+#if DEBUG
+        if (_camera == null) GD.PushError($"[{Name}] Camera3D is missing.");
+        if (_shaker == null) GD.PushError($"[{Name}] Shaker3D is missing.");
+#endif
+
+        // Настройка Raycast (исключаем снаряды)
+        uint aimCollisionMask = GetCollisionMaskFromProjectileScene();
+        _rayQuery = new PhysicsRayQueryParameters3D { CollisionMask = aimCollisionMask };
+
+        // Кэшируем радианы для оптимизации
+        _turretMinPitchRad = Mathf.DegToRad(TurretMinPitch);
+        _turretMaxPitchRad = Mathf.DegToRad(TurretMaxPitch);
+        _turretMaxYawRad = Mathf.DegToRad(TurretMaxYaw);
+
+        if (_cameraOperator != null && _camera != null)
+        {
+            _cameraOperator.NodeSensitivity = SensitivityMultiplier;
+            _cameraOperator.MinPitch = CameraMinPitch;
+            _cameraOperator.MaxPitch = CameraMaxPitch;
+            _cameraOperator.MaxYaw = CameraMaxYaw;
+
+            // Связываем оператор с камерой (тряска и поворот применяются к ней)
+            _cameraOperator.Initialize(_camera, _camera, _shaker);
+        }
+
+        _isInitialized = true;
+    }
+
     public override void _PhysicsProcess(double delta)
     {
+        if (_ownerTurret == null) return;
+
         (float targetYaw, float targetPitch) = CalculateAimAngles();
-        _ownerTurret?.SetAimTarget(targetYaw, targetPitch);
+        _ownerTurret.SetAimTarget(targetYaw, targetPitch);
     }
 
     #region Aiming Logic
@@ -98,11 +141,15 @@ public partial class TurretCameraController : Node, ICameraController
 
     private (float, float) CalculateRotationBasedAngles()
     {
+        // В этом режиме турель пытается выровняться параллельно камере
         Basis targetGlobalBasis = _camera!.GlobalTransform.Basis;
         Basis localBasis = _ownerTurret!.GlobalTransform.Basis.Inverse() * targetGlobalBasis;
         Vector3 targetEuler = localBasis.GetEuler();
 
-        float targetYaw = _turretMaxYawRad < 0 ? targetEuler.Y : Mathf.Clamp(targetEuler.Y, -_turretMaxYawRad, _turretMaxYawRad);
+        float targetYaw = _turretMaxYawRad < 0
+            ? targetEuler.Y
+            : Mathf.Clamp(targetEuler.Y, -_turretMaxYawRad, _turretMaxYawRad);
+
         float targetPitch = Mathf.Clamp(targetEuler.X, _turretMinPitchRad, _turretMaxPitchRad);
 
         return (targetYaw, targetPitch);
@@ -111,19 +158,32 @@ public partial class TurretCameraController : Node, ICameraController
     private (float, float) CalculateConvergedAngles()
     {
         var camTransform = _camera!.GlobalTransform;
+
+        // 1. Пускаем луч из камеры вперед
         _rayQuery.From = camTransform.Origin;
+        // Basis.Z смотрит назад, поэтому для "вперед" вычитаем Z
         _rayQuery.To = _rayQuery.From - camTransform.Basis.Z * _aimTargetDistance;
+
         var result = World.DirectSpaceState.IntersectRay(_rayQuery);
         Vector3 targetPoint = result.Count > 0 ? (Vector3)result["position"] : _rayQuery.To;
 
-        Vector3 aimVector = targetPoint - _ownerTurret!.BarrelEnd.GlobalPosition;
+        // 2. Находим вектор от турели к найденной точке
+        Vector3 aimVectorGlobal = targetPoint - _ownerTurret!.GlobalPosition;
 
-        Vector3 localAimVector = _ownerTurret.GlobalTransform.Basis.Inverse() * aimVector;
+        // 3. Переводим вектор в локальную систему координат турели.
+        // Это критически важно: если танк стоит под наклоном, локальные оси тоже наклонены.
+        // Inverse() * Vector позволяет получить координаты вектора относительно базы.
+        Vector3 localAimVector = _ownerTurret.GlobalTransform.Basis.Inverse() * aimVectorGlobal;
+
+        // 4. Вычисляем углы Yaw и Pitch
+        // Atan2(x, z) дает угол на плоскости XZ. -X и -Z используются для коррекции Forward в Godot (-Z).
         float targetYawRad = Mathf.Atan2(-localAimVector.X, -localAimVector.Z);
 
-        var horizontalDist = new Vector2(localAimVector.X, localAimVector.Z).Length();
+        // Расстояние в горизонтальной плоскости (для расчета подъема ствола)
+        float horizontalDist = new Vector2(localAimVector.X, localAimVector.Z).Length();
         float targetPitchRad = Mathf.Atan2(localAimVector.Y, horizontalDist);
 
+        // 5. Ограничиваем углы (Clamp)
         if (_turretMaxYawRad >= 0)
         {
             targetYawRad = Mathf.Clamp(targetYawRad, -_turretMaxYawRad, _turretMaxYawRad);
@@ -132,26 +192,29 @@ public partial class TurretCameraController : Node, ICameraController
 
         return (targetYawRad, targetPitchRad);
     }
-    
+
+    /// <summary>
+    /// Получает маску коллизий из префаба снаряда, чтобы камера "видела" сквозь то же, что и снаряд.
+    /// </summary>
     private uint GetCollisionMaskFromProjectileScene()
     {
         if (_ownerTurret!.ProjectileScene == null)
         {
-            GD.PushWarning($"Турель '{_ownerTurret.Name}' не имеет сцены снаряда. Прицеливание LookAtTarget может работать некорректно.");
+            GD.PushWarning($"[{Name}] В турели '{_ownerTurret.Name}' не назначен снаряд.");
             return 1;
         }
 
         if (_ownerTurret.ProjectileScene.Instantiate() is BaseProjectile projectileInstance)
         {
             uint mask = projectileInstance.CollisionMask;
-            projectileInstance.QueueFree();
+            projectileInstance.QueueFree(); // Сразу удаляем
             return mask;
         }
 
-        GD.PushError($"Сцена '{_ownerTurret.ProjectileScene.ResourcePath}' не содержит узла, наследуемого от BaseProjectile.");
+        GD.PushError($"[{Name}] Сцена снаряда должна наследовать BaseProjectile.");
         return 1;
     }
-    
+
     #endregion
 
     #region ICameraController Implementation
@@ -160,13 +223,18 @@ public partial class TurretCameraController : Node, ICameraController
     {
         if (!_isInitialized)
         {
-            GD.PushError("TurretCameraController не был инициализирован перед активацией!");
+            GD.PushError($"[{Name}] Попытка активации без инициализации!");
             return;
         }
 
+        // Добавляем саму турель и игрока в исключения рейкаста (чтобы не целиться в свою антенну)
         if (_rayQuery.Exclude.Count == 0 && _ownerTurret?.PlayerController != null)
         {
-            _rayQuery.Exclude = [_ownerTurret.GetRid(), _ownerTurret.PlayerController.GetRid()];
+            _rayQuery.Exclude = new Godot.Collections.Array<Rid>
+            {
+                _ownerTurret.GetRid(),
+                _ownerTurret.PlayerController.GetRid()
+            };
         }
 
         SetPhysicsProcess(true);
@@ -183,10 +251,9 @@ public partial class TurretCameraController : Node, ICameraController
 
     public void HandleMouseInput(Vector2 mouseDelta, float delta)
     {
-        // Делегируем всю работу оператору
         _cameraOperator?.Update(mouseDelta, delta);
     }
-    
+
     public void HandleMouseInput(Vector2 mouseDelta)
     {
         HandleMouseInput(mouseDelta, (float)GetProcessDeltaTime());
@@ -201,6 +268,15 @@ public partial class TurretCameraController : Node, ICameraController
         _shaker?.StartShake(duration, strength, true);
     }
 
+    public void SetSensitivityModifier(float modifier)
+    {
+        if (_cameraOperator != null)
+        {
+            _cameraOperator.DynamicSensitivity = modifier;
+        }
+    }
+
     #endregion
 }
+
 #nullable disable

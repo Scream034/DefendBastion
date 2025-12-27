@@ -50,6 +50,13 @@ public interface ICameraController
     /// <param name="duration">Продолжительность тряски.</param>
     /// <param name="strength">Интенсивность тряски.</param>
     void ApplyShake(float duration, float strength);
+
+    /// <summary>
+    /// Устанавливает временный множитель чувствительности (например, для прицеливания).
+    /// 1.0f - стандартная скорость, 0.5f - замедление в 2 раза.
+    /// </summary>
+    /// <param name="modifier">Множитель чувствительности.</param>
+    void SetSensitivityModifier(float modifier);
 }
 
 #nullable disable

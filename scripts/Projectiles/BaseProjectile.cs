@@ -12,8 +12,8 @@ namespace Game.Projectiles;
 /// </summary>
 public partial class BaseProjectile : Area3D
 {
-    [Export(PropertyHint.Range, "1.0, 1000.0, 1.0")]
-    public float Speed = 300f;
+    [Export(PropertyHint.Range, "1.0, 10000.0, 1.0")]
+    public float Speed = 500f;
 
     [Export]
     public float Damage = 10f;

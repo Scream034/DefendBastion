@@ -1,9 +1,9 @@
 [gd_scene load_steps=9 format=3 uid="uid://cfb65dshbc3l4"]
 
-[ext_resource type="Material" uid="uid://dgx370rssxhh5" path="res://materials/turret/RailGun/Accent.tres" id="1_e3idd"]
-[ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/turret/RailGun/Base.tres" id="2_klls3"]
-[ext_resource type="Material" uid="uid://vtogbnsqcfxk" path="res://materials/turret/RailGun/BaseDark.tres" id="3_3sqha"]
-[ext_resource type="Material" uid="uid://j13dik6cqlqh" path="res://materials/Ground.tres" id="4_e3idd"]
+[ext_resource type="Material" uid="uid://dgx370rssxhh5" path="res://materials/Accent.tres" id="1_e3idd"]
+[ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/Base.tres" id="2_klls3"]
+[ext_resource type="Material" uid="uid://vtogbnsqcfxk" path="res://materials/BaseGray.tres" id="3_3sqha"]
+[ext_resource type="Material" uid="uid://j13dik6cqlqh" path="res://materials/DarkGround.tres" id="4_e3idd"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_k60ew"]
 material = ExtResource("1_e3idd")

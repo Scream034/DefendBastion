@@ -22,7 +22,7 @@ namespace Game.Entity.AI.States.Squad
 
         public override void Enter()
         {
-            GD.Print($"Squad '{Squad.SquadName}' is now in PURSUIT mode against {Squad.CurrentTarget.Name}.");
+            GD.Print($"Squad '{Squad.Name}' is now in PURSUIT mode against {Squad.CurrentTarget.Name}.");
 
             foreach (var member in Squad.Members)
             {
