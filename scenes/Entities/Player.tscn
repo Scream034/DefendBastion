@@ -17,10 +17,7 @@ _head = NodePath("Head")
 _collisionShape = NodePath("CollisionShape3D")
 Speed = 7.0
 Faction = 1
-MaxHealth = 250.0
-DamageMultiplier = 0.1
-DamageResistance = 1.0
-Armor = 10.0
+MaxHealth = 1000.0
 SightPoints = [NodePath("Head/LOSPoint1")]
 
 [node name="Shaker3D" type="Node" parent="." node_paths=PackedStringArray("_target")]

@@ -10,6 +10,8 @@ namespace Game.Player;
 
 public sealed partial class PlayerHead : Node3D, ICameraController
 {
+    public static PlayerHead Instance { get; private set; } = null!;
+
     private CameraOperator? _cameraOperator;
 
     [ExportGroup("Components")]
@@ -27,6 +29,11 @@ public sealed partial class PlayerHead : Node3D, ICameraController
 
     // Временное хранилище для лимитов
     private (float, float, float)? _beforeRotationLimits;
+
+    public PlayerHead()
+    {
+        Instance = this;
+    }
 
     public override void _Ready()
     {

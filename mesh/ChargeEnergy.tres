@@ -1,4 +1,4 @@
-[gd_resource type="BoxMesh" load_steps=2 format=3 uid="uid://gub4d5rt65vy"]
+[gd_resource type="BoxMesh" format=3 uid="uid://gub4d5rt65vy"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yqw4q"]
 render_priority = 1

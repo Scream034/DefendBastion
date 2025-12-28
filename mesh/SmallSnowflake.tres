@@ -1,4 +1,4 @@
-[gd_resource type="QuadMesh" load_steps=3 format=3 uid="uid://dg1h52u00q1tl"]
+[gd_resource type="QuadMesh" format=3 uid="uid://dg1h52u00q1tl"]
 
 [ext_resource type="Texture2D" uid="uid://bjy4eb06ee4sr" path="res://textures/SoftSirce_5000x5000_vecteezy.png" id="1_rgx3a"]
 

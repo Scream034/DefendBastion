@@ -141,8 +141,8 @@ public partial class ControllableTurret : ShootingTurret, IContainerEntity
     public override string GetInteractionText()
     {
         return CurrentController == null
-            ? "Нажмите E, чтобы использовать турель"
-            : "Нажмите E, чтобы покинуть турель";
+            ? "Нажмите Е, чтобы использовать турель"
+            : "Нажмите Е, чтобы покинуть турель";
     }
 
     public virtual void EnterTurret(ITurretControllable entity)

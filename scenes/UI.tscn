@@ -1,40 +1,88 @@
-[gd_scene load_steps=4 format=3 uid="uid://cm0epusci4ngu"]
+[gd_scene format=3 uid="uid://cm0epusci4ngu"]
 
-[ext_resource type="Script" uid="uid://b83p5xdhf0qdg" path="res://scripts/UI.cs" id="1_dj8aq"]
+[ext_resource type="Script" uid="uid://ba17xhti84upv" path="res://scripts/ManagerUI.cs" id="1_ro3t7"]
+[ext_resource type="Script" uid="uid://o58w4p0oyrk6" path="res://scripts/UI/PlayerHUD.cs" id="2_5en4g"]
+[ext_resource type="Shader" uid="uid://cfmc3utnjt5w4" path="res://shaders/Test.gdshader" id="2_ro3t7"]
+[ext_resource type="Material" uid="uid://bxsatkj4r33r2" path="res://materials/BaseUI.tres" id="3_75u2n"]
+[ext_resource type="FontFile" uid="uid://dkmogj2xa3py6" path="res://fonts/VT323-Regular.ttf" id="4_3wlde"]
+[ext_resource type="Script" uid="uid://0hh5y8ol8086" path="res://scripts/UI/DataLogger.cs" id="4_ua6yw"]
+[ext_resource type="Script" uid="uid://bv76umugcx0lb" path="res://scripts/UI/HUDInertia.cs" id="7_xpksx"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ll0sn"]
-content_margin_left = 2.0
-content_margin_top = 2.0
-content_margin_right = 2.0
-content_margin_bottom = 2.0
-bg_color = Color(0.101961, 0.101961, 0.101961, 0.0784314)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-corner_detail = 6
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5en4g"]
+shader = ExtResource("2_ro3t7")
+shader_parameter/tint_color = Color(0, 0.48346758, 0.813792, 1)
+shader_parameter/saturation = 0.5050000239875
+shader_parameter/brightness = 0.46000002185
+shader_parameter/contrast = 0.6250000296875
+shader_parameter/noise_amount = 0.03
+shader_parameter/pixelation = 0.70000003325
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dj8aq"]
-content_margin_left = 2.0
-content_margin_top = 2.0
-content_margin_right = 2.0
-content_margin_bottom = 2.0
-bg_color = Color(1, 1, 1, 0.227451)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-corner_detail = 6
+[sub_resource type="Theme" id="Theme_xpksx"]
+default_font = ExtResource("4_3wlde")
 
-[node name="UI" type="CanvasLayer" node_paths=PackedStringArray("Crosshair", "BossProgressBar", "GameStateLabel", "InteractionLabel")]
-script = ExtResource("1_dj8aq")
-Crosshair = NodePath("Control/Crosshair")
-BossProgressBar = NodePath("Control/BossProgressBar")
-GameStateLabel = NodePath("Control/BossProgressBar/GameStateLabel")
-InteractionLabel = NodePath("Control/InteractionLabel")
+[sub_resource type="Animation" id="Animation_ua6yw"]
+resource_name = "Boot"
+length = 3.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(-0.1, 3),
+"transitions": PackedFloat32Array(3, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 0), Color(1, 1, 1, 1)]
+}
 
-[node name="Control" type="Control" parent="."]
+[sub_resource type="Animation" id="Animation_75u2n"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_75u2n"]
+_data = {
+&"Boot": SubResource("Animation_ua6yw"),
+&"RESET": SubResource("Animation_75u2n")
+}
+
+[node name="UI" type="CanvasLayer" unique_id=1895634924 node_paths=PackedStringArray("PlayerHUD")]
+script = ExtResource("1_ro3t7")
+PlayerHUD = NodePath("HUDInertia/PlayerHUD")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1121565737]
+z_index = -10
+material = SubResource("ShaderMaterial_5en4g")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HUDInertia" type="Control" parent="." unique_id=1314166107]
 layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("7_xpksx")
+
+[node name="PlayerHUD" type="Control" parent="HUDInertia" unique_id=1303633290 node_paths=PackedStringArray("_compassLabel", "_interactionLabel", "_animPlayer")]
+modulate = Color(1, 1, 1, 0)
+material = ExtResource("3_75u2n")
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -42,8 +90,39 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme = SubResource("Theme_xpksx")
+script = ExtResource("2_5en4g")
+_compassLabel = NodePath("CompassLabel")
+_interactionLabel = NodePath("InteractionLabel")
+_animPlayer = NodePath("AnimationPlayer")
 
-[node name="Crosshair" type="ColorRect" parent="Control"]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="HUDInertia/PlayerHUD" unique_id=2132834724]
+libraries/ = SubResource("AnimationLibrary_75u2n")
+
+[node name="CompassLabel" type="Label" parent="HUDInertia/PlayerHUD" unique_id=269312096]
+process_priority = -1
+process_physics_priority = -1
+modulate = Color(0.8235294, 1, 1, 0.43529412)
+use_parent_material = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.374
+anchor_right = 0.626
+anchor_bottom = 0.035
+offset_left = 0.151978
+offset_right = -0.152039
+offset_bottom = 0.32
+grow_horizontal = 2
+text = "N | 345"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 4
+uppercase = true
+max_lines_visible = 1
+
+[node name="Crosshair" type="ColorRect" parent="HUDInertia/PlayerHUD" unique_id=1050112461]
+use_parent_material = true
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5
@@ -60,7 +139,8 @@ size_flags_horizontal = 4
 size_flags_vertical = 4
 color = Color(1, 1, 1, 0.364706)
 
-[node name="InteractionLabel" type="Label" parent="Control"]
+[node name="InteractionLabel" type="Label" parent="HUDInertia/PlayerHUD" unique_id=1138779684]
+use_parent_material = true
 layout_mode = 1
 anchors_preset = -1
 anchor_top = 0.817361
@@ -74,38 +154,25 @@ horizontal_alignment = 1
 vertical_alignment = 1
 metadata/_edit_use_anchors_ = true
 
-[node name="BossProgressBar" type="ProgressBar" parent="Control"]
-visible = false
+[node name="TopLeft" type="VBoxContainer" parent="HUDInertia/PlayerHUD" unique_id=1744156421]
+use_parent_material = true
+clip_contents = true
 layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
+anchors_preset = -1
+anchor_right = 0.33333334
 anchor_bottom = 1.0
-offset_top = -27.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_styles/background = SubResource("StyleBoxFlat_ll0sn")
-theme_override_styles/fill = SubResource("StyleBoxFlat_dj8aq")
-value = 20.1
-show_percentage = false
-
-[node name="GameStateLabel" type="Label" parent="Control/BossProgressBar"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/line_spacing = 432
-theme_override_constants/shadow_offset_x = 23
-theme_override_constants/outline_size = 2
-text = "E N E M Y"
+metadata/_edit_use_anchors_ = true
+
+[node name="OSLabel" type="Label" parent="HUDInertia/PlayerHUD/TopLeft" unique_id=1917786512]
+modulate = Color(0.2592937, 0.2592937, 0.2592937, 1)
+use_parent_material = true
+layout_mode = 2
+text = "SYSTEM v4.0.2 - STABLE"
 horizontal_alignment = 1
 vertical_alignment = 1
-uppercase = true
 
-[node name="Version" type="Label" parent="Control"]
-layout_mode = 0
-offset_right = 164.0
-offset_bottom = 41.0
-text = "dev build"
+[node name="DataLogger" type="Control" parent="HUDInertia/PlayerHUD/TopLeft" unique_id=220534254]
+use_parent_material = true
+layout_mode = 2
+script = ExtResource("4_ua6yw")

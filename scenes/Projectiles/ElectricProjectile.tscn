@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://8vtthvh5r3w0"]
+[gd_scene format=3 uid="uid://8vtthvh5r3w0"]
 
 [ext_resource type="Script" uid="uid://bo3dhm2x75atn" path="res://scripts/Projectiles/SimpleImpactProjectile.cs" id="1_xn4kp"]
 [ext_resource type="PackedScene" uid="uid://dgo3h3uf35i4r" path="res://scenes/VFX/ElectricImpactVFX.tscn" id="2_40e65"]
@@ -11,15 +11,14 @@ size = Vector3(0.01, 0.01, 2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_40e65"]
 material = ExtResource("4_40e65")
-size = Vector3(0.05, 0.03, 2.5)
+size = Vector3(0.1, 0.15, 6)
 subdivide_width = 1
 subdivide_height = 1
 subdivide_depth = 2
 
-[node name="ElectricProjectile" type="Area3D" node_paths=PackedStringArray("_audioPlayer")]
+[node name="ElectricProjectile" type="Area3D" unique_id=1824920456 node_paths=PackedStringArray("_audioPlayer")]
 process_priority = 2
 process_physics_priority = 2
-physics_interpolation_mode = 1
 collision_priority = 2.0
 monitorable = false
 priority = 2
@@ -30,16 +29,15 @@ _audioPlayer = NodePath("AudioStreamPlayer3D")
 Speed = 2500.0
 Damage = 50.0
 
-[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="." unique_id=1262801891]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=304870165]
 shape = SubResource("BoxShape3D_40e65")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2072098806]
 process_priority = 1
 process_physics_priority = 1
-physics_interpolation_mode = 1
 cast_shadow = 0
-lod_bias = 10.0
+lod_bias = 0.001
 gi_mode = 0
 mesh = SubResource("BoxMesh_40e65")

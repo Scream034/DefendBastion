@@ -4,10 +4,10 @@ render_mode blend_add, depth_draw_never, cull_disabled, diffuse_lambert, specula
 // Основные цвета электромагнитного снаряда
 uniform vec4 core_color : source_color = vec4(0.4, 0.8, 1.0, 1.0); // Голубое ядро
 uniform vec4 outer_color : source_color = vec4(0.2, 0.4, 1.0, 1.0); // Синяя оболочка
-uniform float energy_intensity : hint_range(1.0, 20.0) = 10.0;
+uniform float energy_intensity : hint_range(1.0, 30.0) = 10.0;
 
 // Электрические импульсы
-uniform float pulse_speed : hint_range(1.0, 20.0) = 15.0;
+uniform float pulse_speed : hint_range(1.0, 30.0) = 15.0;
 uniform float electric_noise_scale : hint_range(0.1, 5.0) = 2.0;
 
 // Трассер

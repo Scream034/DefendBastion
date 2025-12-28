@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3 uid="uid://cnm2m7s2pec0k"]
+[gd_scene format=3 uid="uid://cnm2m7s2pec0k"]
 
 [ext_resource type="Script" uid="uid://1lakxf2ca0fo" path="res://scripts/Entity/Pawn.cs" id="1_y4eut"]
 [ext_resource type="Script" uid="uid://bh6xlp0n5roe6" path="res://scripts/Entity/AI/Profilies/AICombatProfile.cs" id="2_p06bi"]
@@ -15,28 +15,13 @@
 
 [sub_resource type="Resource" id="Resource_sfg71"]
 script = ExtResource("2_p06bi")
-TargetEvaluationInterval = 0.5
-RepositionSearchStep = 1.5
-AimSpreadRadius = 2.25
-EnableTargetPrediction = true
 PredictionAccuracy = 0.7
-LineOfSightMask = 3
 EngagementRangeFactor = 0.65
-EnablePostCombatVigilance = true
-VigilanceDuration = 8.0
-AllowVigilanceStrafe = true
 metadata/_custom_type_script = "uid://bh6xlp0n5roe6"
 
 [sub_resource type="Resource" id="Resource_y4eut"]
 script = ExtResource("3_p3j4k")
-LookAtInterestPointWhileMoving = true
-MinGlanceDuration = 1.0
-MaxGlanceDuration = 2.5
 MinLookForwardDuration = 0.8
-MaxLookForwardDuration = 2.0
-EnableHeadRotationLimits = true
-MaxHeadYawDegrees = 90.0
-MaxHeadPitchDegrees = 60.0
 metadata/_custom_type_script = "uid://na4nrs3prgm4"
 
 [sub_resource type="Resource" id="Resource_p06bi"]
@@ -44,8 +29,6 @@ script = ExtResource("4_ijh48")
 SlowSpeed = 4.5
 NormalSpeed = 6.0
 FastSpeed = 8.0
-BodyRotationSpeed = 10.0
-HeadRotationSpeed = 15.0
 metadata/_custom_type_script = "uid://c7hnkuof7yfqy"
 
 [sub_resource type="Resource" id="Resource_p3j4k"]
@@ -90,7 +73,7 @@ albedo_color = Color(0.0745098, 0, 0.0235294, 1)
 material = SubResource("ORMMaterial3D_ypjiq")
 size = Vector3(2, 3, 2)
 
-[node name="CubePawn" type="CharacterBody3D" node_paths=PackedStringArray("_audio", "TargetingSystem", "MovementController", "LookController", "EyesPosition", "_combatBehaviorNode", "SightPoints")]
+[node name="CubePawn" type="CharacterBody3D" unique_id=980892076 node_paths=PackedStringArray("_audio", "TargetingSystem", "MovementController", "LookController", "EyesPosition", "_combatBehaviorNode", "SightPoints")]
 collision_layer = 3
 collision_mask = 3
 script = ExtResource("1_y4eut")
@@ -107,7 +90,7 @@ MaxHealth = 225.0
 Armor = 1.0
 SightPoints = []
 
-[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="." unique_id=2098523799]
 stream = SubResource("AudioStreamRandomizer_ypjiq")
 attenuation_model = 1
 volume_db = 6.5
@@ -116,62 +99,61 @@ pitch_scale = 1.02
 max_polyphony = 2
 attenuation_filter_cutoff_hz = 9000.0
 
-[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=59761015]
 path_desired_distance = 3.7
 target_desired_distance = 3.8
 avoidance_enabled = true
 height = 3.6
 radius = 2.0
-debug_enabled = true
 
-[node name="AILookController" type="Node" parent="."]
+[node name="AILookController" type="Node" parent="." unique_id=17739630]
 script = ExtResource("8_8f78k")
 
-[node name="AIMovementController" type="Node" parent="." node_paths=PackedStringArray("NavigationAgent", "_headPivot")]
+[node name="AIMovementController" type="Node" parent="." unique_id=910480231 node_paths=PackedStringArray("NavigationAgent", "_headPivot")]
 script = ExtResource("9_b51h5")
 NavigationAgent = NodePath("../NavigationAgent3D")
 _headPivot = NodePath("../Head")
 
-[node name="AITargetingSystem" type="Node" parent="." node_paths=PackedStringArray("_targetDetectionArea")]
+[node name="AITargetingSystem" type="Node" parent="." unique_id=758476781 node_paths=PackedStringArray("_targetDetectionArea")]
 script = ExtResource("10_ngrf4")
 _targetDetectionArea = NodePath("../Head/DetectionArea3D")
 
-[node name="CombatBehavior" type="Node" parent="." node_paths=PackedStringArray("_attackActionNode")]
+[node name="CombatBehavior" type="Node" parent="." unique_id=291497805 node_paths=PackedStringArray("_attackActionNode")]
 script = ExtResource("11_edsyf")
 _attackActionNode = NodePath("../AttackStrategy")
 
-[node name="AttackStrategy" type="Node" parent="." node_paths=PackedStringArray("MuzzlePoint")]
+[node name="AttackStrategy" type="Node" parent="." unique_id=954658756 node_paths=PackedStringArray("MuzzlePoint")]
 script = ExtResource("12_cwmnl")
 _projectileScene = ExtResource("13_wtu6w")
 AttackCooldown = 3.0
 MuzzlePoint = NodePath("../Body/MazzlePoint")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=369183778]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.917085, 0)
 shape = SubResource("BoxShape3D_lcrii")
 
-[node name="Head" type="MeshInstance3D" parent="."]
+[node name="Head" type="MeshInstance3D" parent="." unique_id=929066148]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.563124, -1.12072)
 mesh = SubResource("BoxMesh_lcrii")
 skeleton = NodePath("../CollisionShape3D")
 
-[node name="EyesPoint" type="Marker3D" parent="Head"]
+[node name="EyesPoint" type="Marker3D" parent="Head" unique_id=1950399680]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0571924, -1.16927)
 
-[node name="DetectionArea3D" type="Area3D" parent="Head"]
+[node name="DetectionArea3D" type="Area3D" parent="Head" unique_id=522949093]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.131993, 0)
 collision_layer = 0
 collision_mask = 2
 monitorable = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Head/DetectionArea3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Head/DetectionArea3D" unique_id=1334446858]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.043, -0.8744, -251.878)
 shape = SubResource("BoxShape3D_etufe")
 
-[node name="Body" type="MeshInstance3D" parent="."]
+[node name="Body" type="MeshInstance3D" parent="." unique_id=331172420]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 mesh = SubResource("BoxMesh_ypjiq")
 skeleton = NodePath("../CollisionShape3D")
 
-[node name="MazzlePoint" type="Marker3D" parent="Body"]
+[node name="MazzlePoint" type="Marker3D" parent="Body" unique_id=426264378]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.156378, 1.23804, -1.04519)

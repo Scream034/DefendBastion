@@ -4,6 +4,7 @@ using Game.Interfaces;
 using Game.Turrets;
 using Game.Singletons;
 using System.Threading.Tasks;
+using Game.UI;
 
 namespace Game.Player;
 
@@ -36,6 +37,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
     private IInteractable _lastInteractable;
     private Vector3 _inputDir;
     private bool _jumpPressed;
+    private float _lastIntegrityPercent = 100f; // Для отслеживания изменений
 
     private readonly FreecamController _freecamController = new();
 
@@ -45,6 +47,8 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
         // Устанавливаем голову игрока как стартовый контроллер камеры
         PlayerInputManager.Instance.SwitchController(_head);
+
+        RobotBus.Sys("NEURAL_OS v4.0.2: BOOT SEQUENCE COMPLETE");
 
 #if DEBUG
         if (_head == null) GD.PushError("Для игрока не был назначен PlayerHead.");
@@ -102,6 +106,34 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
     {
         HandleMovement(delta);
         HandleInteractionUI();
+
+        UpdateIntegrityLogic();
+    }
+
+    /// <summary>
+    /// Логика отслеживания прочности и вывода в систему логов.
+    /// </summary>
+    private void UpdateIntegrityLogic()
+    {
+        float currentPercent = (Health / MaxHealth) * 100f;
+
+        if (!Mathf.IsEqualApprox(currentPercent, _lastIntegrityPercent))
+        {
+            float diff = _lastIntegrityPercent - currentPercent;
+
+            if (diff > 0) // Урон
+            {
+                // Просто кидаем сообщение в шину
+                RobotBus.Warn($"HULL BREACH DETECTED: -{diff:F1}%");
+                RobotBus.Sys($"REROUTING POWER TO SECTOR {GD.Randi() % 9}");
+            }
+            else // Ремонт
+            {
+                RobotBus.Sys($"REPAIR SEQUENCE: +{Mathf.Abs(diff):F1}%");
+            }
+
+            _lastIntegrityPercent = currentPercent;
+        }
     }
 
     private void ProcessFreecam(float delta)
@@ -114,7 +146,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         GlobalPosition += motion;
 
         // Скрываем UI взаимодействия в режиме полета
-        UI.Instance.HideInteractionText();
+        ManagerUI.Instance.HideInteractionText();
     }
 
     private void HandleMovement(in float delta)
@@ -150,11 +182,11 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         {
             if (currentInteractable != null)
             {
-                UI.Instance.SetInteractionText(currentInteractable.GetInteractionText());
+                ManagerUI.Instance.SetInteractionText(currentInteractable.GetInteractionText());
             }
             else
             {
-                UI.Instance.HideInteractionText();
+                ManagerUI.Instance.HideInteractionText();
             }
         }
         _lastInteractable = currentInteractable;
@@ -166,9 +198,18 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
         CurrentState = PlayerState.InTurret;
         CurrentTurret = turret;
-        UI.Instance.HideInteractionText();
 
-        GD.Print("Player enter turret");
+        // Переключаем интерфейс на турельный (с глитчами и звуком)
+        if (turret is PlayerControllableTurret playerTurret)
+        {
+            // Находим контроллер камеры, привязанный к этой турели
+            // Обычно он находится в детях или экспортирован
+            var camController = playerTurret.GetNode<TurretCameraController>("TurretCameraController");
+            ManagerUI.Instance.SwitchToTurretMode(playerTurret, camController);
+        }
+
+        RobotBus.Net($"HANDSHAKE SEQUENCE: {turret.Name}");
+        RobotBus.Net("REMOTE_LINK: ESTABLISHED");
     }
 
     public void ExitTurret(Vector3 exitPosition)
@@ -179,10 +220,12 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         CurrentTurret = null;
         CurrentState = PlayerState.Normal;
 
-        // Сообщаем менеджеру, что нужно вернуть управление голове игрока
+        ManagerUI.Instance.SwitchToPlayerMode();
         PlayerInputManager.Instance.SwitchController(_head);
 
-        GD.Print("Player exit turret");
+        // При выходе из турели сбрасываем состояние здоровья для корректных логов
+        _lastIntegrityPercent = Health / MaxHealth * 100f;
+        RobotBus.Net("REMOTE_LINK: TERMINATED");
     }
 
     public bool IsInTurret() => CurrentState == PlayerState.InTurret;
