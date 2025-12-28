@@ -16,7 +16,7 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
     [ExportGroup("Components")]
     [Export] private TurretCameraController _cameraController;
 
-    public Player.Player PlayerController => CurrentController as Player.Player;
+    public Player.LocalPlayer PlayerController => CurrentController as Player.LocalPlayer;
 
     public override void _PhysicsProcess(double delta)
     {

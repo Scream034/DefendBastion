@@ -25,7 +25,7 @@ public partial class PlayerHUD : Control
         _animPlayer.Play("Boot");
     }
 
-    public override void _Process(double delta)
+    public override void _PhysicsProcess(double delta)
     {
         UpdateCompass();
     }
@@ -49,7 +49,7 @@ public partial class PlayerHUD : Control
 
     private void UpdateCompass()
     {
-        float yaw = Mathf.RadToDeg(PlayerHead.Instance.GlobalRotation.Y);
+        float yaw = Mathf.RadToDeg(LocalPlayer.Instance.Head.GlobalRotation.Y);
         float degrees = (360 + (int)Math.Round(yaw)) % 360;
         string[] directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
         int index = (int)Math.Round(degrees / 45) % 8;

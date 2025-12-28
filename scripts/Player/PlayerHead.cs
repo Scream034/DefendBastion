@@ -5,18 +5,22 @@ using Game.Components;
 using Godot;
 using Game.Components.Nodes;
 using Game.Singletons;
+using Game.UI;
+using Game.Entity; // Не забудь подключить неймспейс с RobotBus
 
 namespace Game.Player;
 
 public sealed partial class PlayerHead : Node3D, ICameraController
 {
-    public static PlayerHead Instance { get; private set; } = null!;
-
     private CameraOperator? _cameraOperator;
 
     [ExportGroup("Components")]
     [Export] public Camera3D? Camera { get; private set; }
-    [Export] private RayCast3D? _interactionRay;
+
+    [ExportSubgroup("Raycasts")]
+    [Export] private RayCast3D? _interactionRay; // Короткий луч для рук (E)
+    [Export] private RayCast3D? _scannerRay;     // Длинный луч для глаз (Прицел/UI)
+
     [Export] private Shaker3D? _shaker;
 
     [ExportGroup("Mouse look")]
@@ -30,11 +34,6 @@ public sealed partial class PlayerHead : Node3D, ICameraController
     // Временное хранилище для лимитов
     private (float, float, float)? _beforeRotationLimits;
 
-    public PlayerHead()
-    {
-        Instance = this;
-    }
-
     public override void _Ready()
     {
         Input.MouseMode = Input.MouseModeEnum.Captured;
@@ -42,30 +41,28 @@ public sealed partial class PlayerHead : Node3D, ICameraController
         _cameraOperator = new();
 
 #if DEBUG
-        if (Camera == null) GD.PushError("Для PlayerHead не назначена Camera3D.");
-        if (_interactionRay == null) GD.PushError("Для PlayerHead не был назначен RayCast3D для взаимодействия.");
-        if (_shaker == null) GD.PushError("Для PlayerHead не назначен Shaker3D для тряски камеры.");
+        if (Camera == null) GD.PushError($"[{Name}] Для PlayerHead не назначена Camera3D.");
+        if (_interactionRay == null) GD.PushError($"[{Name}] Для PlayerHead не назначен Interaction RayCast3D.");
+        if (_scannerRay == null) GD.PushWarning($"[{Name}] Scanner RayCast3D не назначен! Прицел не будет реагировать на дистанцию.");
+        if (_shaker == null) GD.PushError($"[{Name}] Для PlayerHead не назначен Shaker3D.");
 #endif
 
-        // Инициализируем оператора, передавая ему все необходимые ссылки и настройки
+        // Инициализируем оператора
         if (_cameraOperator != null && Camera != null)
         {
             _cameraOperator.NodeSensitivity = Sensitivity;
             _cameraOperator.MinPitch = MinPitch;
             _cameraOperator.MaxPitch = MaxPitch;
             _cameraOperator.MaxYaw = MaxYaw;
-            // вращаем сам узел PlayerHead (this), а позицию меняем у дочерней камеры (Camera)
             _cameraOperator.Initialize(this, Camera, _shaker);
-            Camera.Fov = GlobalSettings.Instance.FieldOfView;
 
-            // Подписываемся на изменения
+            Camera.Fov = GlobalSettings.Instance.FieldOfView;
             GlobalSettings.Instance.OnFovChanged += OnFovChanged;
         }
     }
 
     public override void _ExitTree()
     {
-        // Обязательно отписываемся, чтобы избежать утечек памяти (хотя для автолоадов это не так критично, но это хорошая привычка)
         if (GlobalSettings.Instance != null)
         {
             GlobalSettings.Instance.OnFovChanged -= OnFovChanged;
@@ -74,15 +71,64 @@ public sealed partial class PlayerHead : Node3D, ICameraController
 
     public override void _PhysicsProcess(double delta)
     {
-        if (GetParent() is Player)
+        if (GetParent() is LocalPlayer)
         {
             CheckForInteraction();
+            UpdateScannerData(); // <-- Новая логика сканера
         }
         else
         {
             CurrentInteractable = null;
         }
     }
+
+    #region Scanner Logic
+
+    /// <summary>
+    /// Сканирует пространство перед игроком для UI прицела.
+    /// </summary>
+    private void UpdateScannerData()
+    {
+        // Если луча нет, ничего не делаем
+        if (_scannerRay == null) return;
+
+        bool foundTarget = false;
+        string targetInfo = "";
+        float distance;
+
+        // 1. Проверяем коллизию длинного луча
+        if (_scannerRay.IsColliding())
+        {
+            var collisionPoint = _scannerRay.GetCollisionPoint();
+            // Вычисляем точную дистанцию от головы до точки попадания
+            distance = GlobalPosition.DistanceTo(collisionPoint);
+
+            var collider = _scannerRay.GetCollider();
+
+            // 2. Определение "Цели" (Враг/Союзник)
+            // Здесь можно проверять группы, интерфейсы или слои
+            if (collider is LivingEntity entity)
+            {
+                if (entity.IsHostile(LocalPlayer.Instance))
+                {
+                    foundTarget = true;
+                    targetInfo = $"{entity.GetRid()}={entity.ID}";
+                }
+            }
+        }
+        else
+        {
+            // Если луч смотрит в небо/пустоту -> дистанция макс. длина луча или просто большое число
+            distance = _scannerRay.TargetPosition.Length();
+            // TargetPosition.Z обычно отрицательный (вперед), берем длину вектора
+        }
+
+        // 3. Отправляем данные в UI
+        // SmartReticle использует distance для alpha-канала и размера точки
+        RobotBus.PublishScanData(foundTarget, targetInfo, distance);
+    }
+
+    #endregion
 
     #region ICameraController Implementation
 
@@ -101,23 +147,20 @@ public sealed partial class PlayerHead : Node3D, ICameraController
 
     public void HandleMouseInput(Vector2 mouseDelta, float delta)
     {
-        // Вся логика теперь в одной строке - делегируем оператору
         _cameraOperator?.Update(mouseDelta, delta);
     }
 
     public void HandleMouseInput(Vector2 mouseDelta)
     {
-        // Вызываем основную версию с актуальным delta
         HandleMouseInput(mouseDelta, (float)GetProcessDeltaTime());
     }
 
     public Camera3D GetCamera() => Camera!;
 
-    public IOwnerCameraController GetCameraOwner() => GetParent<Player>();
+    public IOwnerCameraController GetCameraOwner() => GetParent<LocalPlayer>();
 
     public void ApplyShake(float duration, float strength)
     {
-        GD.Print($"{Name} Try apply shake: {duration}, {strength}");
         _shaker?.StartShake(duration, strength, false);
     }
 
@@ -138,7 +181,6 @@ public sealed partial class PlayerHead : Node3D, ICameraController
         var tween = GetTree().CreateTween();
         tween.TweenMethod(Callable.From<float>(f =>
         {
-            // Используем новый метод оператора
             _cameraOperator.AddRotation(direction * f);
         }), 0f, strength, recoilTime).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
 
@@ -160,7 +202,7 @@ public sealed partial class PlayerHead : Node3D, ICameraController
         _cameraOperator.MinPitch = minPitch;
         _cameraOperator.MaxPitch = maxPitch;
         _cameraOperator.MaxYaw = maxYaw;
-        _cameraOperator.UpdateRotationLimits(); // Сообщаем оператору об изменениях
+        _cameraOperator.UpdateRotationLimits();
 
         return true;
     }
@@ -184,9 +226,7 @@ public sealed partial class PlayerHead : Node3D, ICameraController
         var originalRotation = Rotation;
         LookAt(position, up ?? Vector3.Up);
         var targetRotation = Rotation;
-        Rotation = originalRotation; // Возвращаем, чтобы не было визуального скачка
-
-        // Делегируем установку поворота оператору
+        Rotation = originalRotation;
         _cameraOperator?.SetRotation(targetRotation);
     }
 
@@ -224,7 +264,6 @@ public sealed partial class PlayerHead : Node3D, ICameraController
     {
         if (Camera != null)
         {
-            // Здесь можно добавить Tween для плавного изменения, если хочется красоты
             Camera.Fov = newFov;
         }
     }

@@ -1,14 +1,14 @@
 shader_type canvas_item;
 
 // Настройки цвета (Tweak these in Inspector)
-uniform vec3 tint_color : source_color = vec3(0.0, 0.6, 1.0); // Голубой
-uniform float saturation : hint_range(0.0, 1.0) = 0.7; // Почти ч/б мир
+uniform vec3 tint_color : source_color = vec3(0.0, 0.48, 0.81); // Голубой
+uniform float saturation : hint_range(0.0, 1.0) = 0.8;
 uniform float brightness : hint_range(0.0, 2.0) = 1.0;
-uniform float contrast : hint_range(0.0, 2.0) = 2.5;
+uniform float contrast : hint_range(0.0, 2.0) = 1.0;
 
 // Настройки шума
 uniform float noise_amount : hint_range(0.0, 1.0) = 0.03;
-uniform float pixelation : hint_range(0.0, 10.0) = 0.5; // 0.0 = нет пикселизации
+uniform float pixelation : hint_range(0.0, 10.0) = 0.8; // 0.0 = нет пикселизации
 
 uniform sampler2D SCREEN_TEXTURE : hint_screen_texture, filter_linear_mipmap;
 

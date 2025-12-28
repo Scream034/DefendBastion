@@ -38,14 +38,17 @@ public static class RobotBus
     // Событие, на которое подпишется UI
     public static event Action<LogEntry>? OnLogMessage;
 
-    public static void Log(LogChannel channel, string message)
-    {
-        OnLogMessage?.Invoke(new LogEntry(channel, message));
-    }
-    
-    // Хелперы для краткости
+    /// <summary>
+    /// Found Target?, Target Name, Distance
+    /// </summary>
+    public static event Action<bool, string, float>? OnTargetScannerUpdate;
+
+    public static void Log(LogChannel channel, string message) => OnLogMessage?.Invoke(new LogEntry(channel, message));
     public static void Sys(string msg) => Log(LogChannel.Kernel, msg);
     public static void Net(string msg) => Log(LogChannel.Network, msg);
     public static void Warn(string msg) => Log(LogChannel.Warning, msg);
     public static void Combat(string msg) => Log(LogChannel.Weapon, msg);
+
+    public static void PublishScanData(bool found, string name = "", float dist = 0f)
+    => OnTargetScannerUpdate?.Invoke(found, name, dist);
 }

@@ -8,8 +8,10 @@ using Game.UI;
 
 namespace Game.Player;
 
-public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITurretControllable
+public sealed partial class LocalPlayer : MoveableEntity, IOwnerCameraController, ITurretControllable
 {
+    public static LocalPlayer Instance { get; private set; } = null!;
+
     [Signal]
     public delegate void OnInteractableDetectedEventHandler(Node3D interactable);
 
@@ -21,7 +23,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
     }
 
     [ExportGroup("Components")]
-    [Export] private PlayerHead _head;
+    [Export] public PlayerHead Head { get; private set; } = null!;
     [Export] private CollisionShape3D _collisionShape;
 
     [ExportGroup("Movement")]
@@ -41,17 +43,22 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
     private readonly FreecamController _freecamController = new();
 
+    public LocalPlayer()
+    {
+        Instance = this;
+    }
+
     public override void _Ready()
     {
         base._Ready();
 
         // Устанавливаем голову игрока как стартовый контроллер камеры
-        PlayerInputManager.Instance.SwitchController(_head);
+        PlayerInputManager.Instance.SwitchController(Head);
 
         RobotBus.Sys("NEURAL_OS v4.0.2: BOOT SEQUENCE COMPLETE");
 
 #if DEBUG
-        if (_head == null) GD.PushError("Для игрока не был назначен PlayerHead.");
+        if (Head == null) GD.PushError("Для игрока не был назначен PlayerHead.");
         if (_collisionShape == null) GD.PushError("Для игрока не был назначен CollisionShape3D.");
         if (World.DefaultGravity <= 0) GD.PushWarning($"Неверное использование гравитации: {World.DefaultGravity}");
 #endif
@@ -72,7 +79,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
             base._PhysicsProcess(delta); // Применяет гравитацию
         }
 
-        SetBodyYaw(_head.Rotation.Y);
+        SetBodyYaw(Head.Rotation.Y);
 
         if (CurrentState == PlayerState.InTurret)
         {
@@ -140,7 +147,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
     {
         // Делегируем расчет движения контроллеру
         // Используем GlobalBasis головы, чтобы лететь туда, куда смотрим
-        Vector3 motion = _freecamController.CalculateMovement(_head.GlobalTransform.Basis, delta);
+        Vector3 motion = _freecamController.CalculateMovement(Head.GlobalTransform.Basis, delta);
 
         // Напрямую меняем позицию (Noclip)
         GlobalPosition += motion;
@@ -163,7 +170,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         }
         _jumpPressed = false;
 
-        Vector3 direction = (_head.Transform.Basis * _inputDir).Normalized();
+        Vector3 direction = (Head.Transform.Basis * _inputDir).Normalized();
         Vector3 targetVelocity = direction * Speed;
 
         float currentAirControl = IsOnFloor() ? 1.0f : AirControl;
@@ -177,7 +184,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
     private void HandleInteractionUI()
     {
-        var currentInteractable = _head.CurrentInteractable;
+        var currentInteractable = Head.CurrentInteractable;
         if (currentInteractable != _lastInteractable)
         {
             if (currentInteractable != null)
@@ -221,7 +228,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         CurrentState = PlayerState.Normal;
 
         ManagerUI.Instance.SwitchToPlayerMode();
-        PlayerInputManager.Instance.SwitchController(_head);
+        PlayerInputManager.Instance.SwitchController(Head);
 
         // При выходе из турели сбрасываем состояние здоровья для корректных логов
         _lastIntegrityPercent = Health / MaxHealth * 100f;
@@ -232,7 +239,7 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
 
     public PlayerHead GetPlayerHead()
     {
-        return _head;
+        return Head;
     }
 
     public void HandleInput(in InputEvent @event)
@@ -261,9 +268,9 @@ public sealed partial class Player : MoveableEntity, IOwnerCameraController, ITu
         {
             _jumpPressed = true;
         }
-        else if (@event.IsActionPressed("interact") && _head.CurrentInteractable != null)
+        else if (@event.IsActionPressed("interact") && Head.CurrentInteractable != null)
         {
-            _head.CurrentInteractable.Interact(this);
+            Head.CurrentInteractable.Interact(this);
         }
     }
 

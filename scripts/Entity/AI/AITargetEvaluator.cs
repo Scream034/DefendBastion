@@ -3,6 +3,7 @@ using Godot;
 using Game.Interfaces;
 using Game.Turrets;
 using Game.Entity.AI.Components;
+using Game.Player;
 
 namespace Game.Entity.AI
 {
@@ -39,7 +40,7 @@ namespace Game.Entity.AI
 
         private static LivingEntity GetEffectiveTarget(LivingEntity potentialTarget, AIEntity evaluator)
         {
-            if (potentialTarget is Player.Player player && player.IsInTurret())
+            if (potentialTarget is LocalPlayer player && player.IsInTurret())
             {
                 var turret = player.CurrentTurret;
                 if (turret != null && turret.IsHostile(evaluator))

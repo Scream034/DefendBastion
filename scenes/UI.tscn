@@ -4,18 +4,20 @@
 [ext_resource type="Script" uid="uid://o58w4p0oyrk6" path="res://scripts/UI/PlayerHUD.cs" id="2_5en4g"]
 [ext_resource type="Shader" uid="uid://cfmc3utnjt5w4" path="res://shaders/Test.gdshader" id="2_ro3t7"]
 [ext_resource type="Material" uid="uid://bxsatkj4r33r2" path="res://materials/BaseUI.tres" id="3_75u2n"]
+[ext_resource type="Script" uid="uid://bbke4cbewkobl" path="res://scripts/UI/InertialHUD.cs" id="3_xpksx"]
 [ext_resource type="FontFile" uid="uid://dkmogj2xa3py6" path="res://fonts/VT323-Regular.ttf" id="4_3wlde"]
 [ext_resource type="Script" uid="uid://0hh5y8ol8086" path="res://scripts/UI/DataLogger.cs" id="4_ua6yw"]
-[ext_resource type="Script" uid="uid://bv76umugcx0lb" path="res://scripts/UI/HUDInertia.cs" id="7_xpksx"]
+[ext_resource type="Script" uid="uid://b7p4wl1iap37i" path="res://scripts/UI/SmartReticle.cs" id="7_24e4x"]
+[ext_resource type="Script" uid="uid://c0au4200qyxe2" path="res://scripts/UI/CockpitDashboard.cs" id="9_ukj8e"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5en4g"]
 shader = ExtResource("2_ro3t7")
-shader_parameter/tint_color = Color(0, 0.48346758, 0.813792, 1)
-shader_parameter/saturation = 0.5050000239875
-shader_parameter/brightness = 0.46000002185
-shader_parameter/contrast = 0.6250000296875
+shader_parameter/tint_color = Color(0, 0.48, 0.81, 1)
+shader_parameter/saturation = 0.800000038
+shader_parameter/brightness = 1.0
+shader_parameter/contrast = 1.0000000475
 shader_parameter/noise_amount = 0.03
-shader_parameter/pixelation = 0.70000003325
+shader_parameter/pixelation = 0.8
 
 [sub_resource type="Theme" id="Theme_xpksx"]
 default_font = ExtResource("4_3wlde")
@@ -71,13 +73,15 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="HUDInertia" type="Control" parent="." unique_id=1314166107]
+physics_interpolation_mode = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("7_xpksx")
+pivot_offset_ratio = Vector2(0.5, 0.5)
+script = ExtResource("3_xpksx")
 
 [node name="PlayerHUD" type="Control" parent="HUDInertia" unique_id=1303633290 node_paths=PackedStringArray("_compassLabel", "_interactionLabel", "_animPlayer")]
 modulate = Color(1, 1, 1, 0)
@@ -88,6 +92,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme = SubResource("Theme_xpksx")
@@ -121,10 +126,11 @@ text_overrun_behavior = 4
 uppercase = true
 max_lines_visible = 1
 
-[node name="Crosshair" type="ColorRect" parent="HUDInertia/PlayerHUD" unique_id=1050112461]
+[node name="Crosshair" type="Control" parent="HUDInertia/PlayerHUD" unique_id=527732434]
+physics_interpolation_mode = 1
 use_parent_material = true
 layout_mode = 1
-anchors_preset = -1
+anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -137,7 +143,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
-color = Color(1, 1, 1, 0.364706)
+script = ExtResource("7_24e4x")
 
 [node name="InteractionLabel" type="Label" parent="HUDInertia/PlayerHUD" unique_id=1138779684]
 use_parent_material = true
@@ -176,3 +182,38 @@ vertical_alignment = 1
 use_parent_material = true
 layout_mode = 2
 script = ExtResource("4_ua6yw")
+
+[node name="CockpitDashboard" type="Control" parent="HUDInertia/PlayerHUD" unique_id=1060029491 node_paths=PackedStringArray("CoordsLabel", "TempLabel")]
+modulate = Color(0.8235294, 1, 1, 0.6)
+layout_mode = 1
+anchor_left = 0.5555556
+anchor_right = 1.0
+anchor_bottom = 0.09876543
+grow_horizontal = 0
+grow_vertical = 2
+script = ExtResource("9_ukj8e")
+CoordsLabel = NodePath("HBoxContainer/CoordsLabel")
+TempLabel = NodePath("HBoxContainer/TempLabel")
+metadata/_edit_use_anchors_ = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HUDInertia/PlayerHUD/CockpitDashboard" unique_id=501351519]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 2
+
+[node name="TempLabel" type="Label" parent="HUDInertia/PlayerHUD/CockpitDashboard/HBoxContainer" unique_id=1787381085]
+custom_minimum_size = Vector2(109, 0)
+layout_mode = 2
+size_flags_vertical = 1
+text = "CORE TEMP: 340 K"
+
+[node name="CoordsLabel" type="Label" parent="HUDInertia/PlayerHUD/CockpitDashboard/HBoxContainer" unique_id=835388421]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+size_flags_vertical = 1
+text = "LOC: 128.25 / -10.04
+WIND: 14 m/s [NW]"
