@@ -230,11 +230,11 @@ public partial class TurretCameraController : Node, ICameraController
         // Добавляем саму турель и игрока в исключения рейкаста (чтобы не целиться в свою антенну)
         if (_rayQuery.Exclude.Count == 0 && _ownerTurret?.PlayerController != null)
         {
-            _rayQuery.Exclude = new Godot.Collections.Array<Rid>
-            {
+            _rayQuery.Exclude =
+            [
                 _ownerTurret.GetRid(),
                 _ownerTurret.PlayerController.GetRid()
-            };
+            ];
         }
 
         SetPhysicsProcess(true);

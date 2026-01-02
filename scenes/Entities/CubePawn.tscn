@@ -64,7 +64,7 @@ material = SubResource("ORMMaterial3D_cti50")
 size = Vector3(0.125, 0.115, 2.465)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_etufe"]
-size = Vector3(100.8, 16, 500.6)
+size = Vector3(100.8, 48.72522, 309.2789)
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_ypjiq"]
 albedo_color = Color(0.0745098, 0, 0.0235294, 1)
@@ -120,6 +120,8 @@ _targetDetectionArea = NodePath("../Head/DetectionArea3D")
 
 [node name="CombatBehavior" type="Node" parent="." unique_id=291497805 node_paths=PackedStringArray("_attackActionNode")]
 script = ExtResource("11_edsyf")
+AttackRange = 50.0
+AttackCooldown = 5.0
 _attackActionNode = NodePath("../AttackStrategy")
 
 [node name="AttackStrategy" type="Node" parent="." unique_id=954658756 node_paths=PackedStringArray("MuzzlePoint")]
@@ -129,7 +131,7 @@ AttackCooldown = 3.0
 MuzzlePoint = NodePath("../Body/MazzlePoint")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=369183778]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.917085, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 shape = SubResource("BoxShape3D_lcrii")
 
 [node name="Head" type="MeshInstance3D" parent="." unique_id=929066148]
@@ -147,7 +149,7 @@ collision_mask = 2
 monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Head/DetectionArea3D" unique_id=1334446858]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.043, -0.8744, -251.878)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.113285795, 11.04485, -154.63535)
 shape = SubResource("BoxShape3D_etufe")
 
 [node name="Body" type="MeshInstance3D" parent="." unique_id=331172420]

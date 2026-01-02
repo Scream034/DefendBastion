@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://0hh5y8ol8086" path="res://scripts/UI/DataLogger.cs" id="4_ua6yw"]
 [ext_resource type="Script" uid="uid://b7p4wl1iap37i" path="res://scripts/UI/SmartReticle.cs" id="7_24e4x"]
 [ext_resource type="Script" uid="uid://c0au4200qyxe2" path="res://scripts/UI/CockpitDashboard.cs" id="9_ukj8e"]
+[ext_resource type="Script" uid="uid://dtpy2gw6s60qf" path="res://scripts/UI/TurretHUD.cs" id="10_aputy"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5en4g"]
 shader = ExtResource("2_ro3t7")
@@ -82,6 +83,8 @@ grow_horizontal = 2
 grow_vertical = 2
 pivot_offset_ratio = Vector2(0.5, 0.5)
 script = ExtResource("3_xpksx")
+VelocityInfluence = 0.6
+ReturnSpeed = 50.0
 
 [node name="PlayerHUD" type="Control" parent="HUDInertia" unique_id=1303633290 node_paths=PackedStringArray("_compassLabel", "_interactionLabel", "_animPlayer")]
 modulate = Color(1, 1, 1, 0)
@@ -217,3 +220,35 @@ layout_mode = 2
 size_flags_vertical = 1
 text = "LOC: 128.25 / -10.04
 WIND: 14 m/s [NW]"
+
+[node name="TurretHUD" type="Control" parent="HUDInertia" unique_id=1065717985 node_paths=PackedStringArray("_animPlayer")]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("10_aputy")
+_animPlayer = NodePath("AnimationPlayer")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="HUDInertia/TurretHUD" unique_id=1307551458]
+libraries/ = SubResource("AnimationLibrary_75u2n")
+
+[node name="Crosshair" type="Control" parent="HUDInertia/TurretHUD" unique_id=149216154]
+physics_interpolation_mode = 1
+use_parent_material = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -1.0
+offset_top = -1.0
+offset_right = 1.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
