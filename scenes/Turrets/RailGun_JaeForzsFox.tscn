@@ -1996,12 +1996,12 @@ Type = 2
 script = ExtResource("3_ddxjo")
 _camera = NodePath("../Camera3D")
 _shaker = NodePath("../Shaker3D")
-TurretMinPitch = -0.25
+TurretMinPitch = -0.3
 TurretMaxPitch = 1.0
 TurretMaxYaw = 80.0
-CameraMinPitch = -5.0
-CameraMaxPitch = 3.0
-CameraMaxYaw = 90.0
+CameraMinPitch = -3.0
+CameraMaxPitch = 2.0
+CameraMaxYaw = 82.0
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=2022989087]
 libraries/ = SubResource("AnimationLibrary_78vft")

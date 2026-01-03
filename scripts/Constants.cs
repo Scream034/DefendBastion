@@ -45,6 +45,16 @@ public static class Constants
     public static readonly StringName SP_TurretReticle_ImpactRing = "impact_ring";
     public static readonly StringName SP_TurretReticle_Frost = "frost_level";
 
+    public static readonly StringName SP_TurretReticle_TurretMinPitch = "turret_min_pitch";
+    public static readonly StringName SP_TurretReticle_TurretMaxPitch = "turret_max_pitch";
+    public static readonly StringName SP_TurretReticle_TurretMaxYaw = "turret_max_yaw";
+    public static readonly StringName SP_TurretReticle_ShowTurretLimits = "show_turret_limits";
+    public static readonly StringName SP_TurretReticle_ColorLimit = "color_limit";
+    public static readonly StringName SP_TurretReticle_TargetYaw = "target_yaw_degrees";
+    public static readonly StringName SP_TurretReticle_TargetPitch = "target_pitch_degrees";
+    public static readonly StringName SP_TurretReticle_ShowTargetMarker = "show_target_marker";
+    public static readonly StringName SP_TurretReticle_ColorTarget = "color_target";
+
     public static readonly StringName SP_GridOverlay_Intensity = "intensity";
     public static readonly StringName SP_GridOverlay_GridColorLarge = "grid_color_large";
     public static readonly StringName SP_GridOverlay_GridColorSmall = "grid_color_small";

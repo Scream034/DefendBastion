@@ -44,9 +44,15 @@ public partial class ControllableTurret : ShootingTurret, IContainerEntity
     /// </summary>
     public virtual ITurretControllable? CurrentController { get; protected set; }
 
-    // Целевые углы вращения (в радианах), устанавливаемые контроллером
-    protected float TargetYawRad;
-    protected float TargetPitchRad;
+    /// <summary>
+    /// Целевой угол поворота башни (Yaw) в радианах.
+    /// </summary>
+    public float TargetYawRad { get; protected set; }
+
+    /// <summary>
+    /// Целевой угол подъёма ствола (Pitch) в радианах.
+    /// </summary>
+    public float TargetPitchRad { get; protected set; }
 
     public override void _Ready()
     {

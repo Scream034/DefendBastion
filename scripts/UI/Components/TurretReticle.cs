@@ -9,15 +9,6 @@ namespace Game.UI.Components;
 
 /// <summary>
 /// Управляет процедурным (шейдерным) прицелом турели.
-/// <para>
-/// Отвечает за:
-/// <list type="bullet">
-/// <item>Визуализацию разброса (Spread) в зависимости от состояния турели.</item>
-/// <item>Логику зума с изменением FOV камеры и эффектом пикселизации.</item>
-/// <item>Анимацию выстрела (сжатие, вспышка, отдача).</item>
-/// <item>Отображение дальномера и температуры (эффект инея).</item>
-/// </list>
-/// </para>
 /// </summary>
 public partial class TurretReticle : Control
 {
@@ -27,13 +18,9 @@ public partial class TurretReticle : Control
     [Export] private ColorRect _reticleRect = null!;
 
     [ExportSubgroup("Layout Geometry")]
-    /// <summary>Расстояние между элементами перекрестия.</summary>
     [Export] public float ReticleGap { get; set; } = 45f;
-    /// <summary>Базовый размер центрального ромба.</summary>
     [Export] public float DiamondBaseSize { get; set; } = 12f;
-    /// <summary>Отступ от краев экрана.</summary>
     [Export] public float EdgeMargin { get; set; } = 40f;
-    /// <summary>Базовое количество пикселей на градус (для шкалы).</summary>
     [Export] public float BasePixelsPerDegree { get; set; } = 12f;
 
     [ExportGroup("Zoom System")]
@@ -43,23 +30,27 @@ public partial class TurretReticle : Control
     [Export] public float ZoomLerpSpeed { get; set; } = 6f;
 
     [ExportSubgroup("Camera Integration")]
-    /// <summary>Поле зрения (FOV) при минимальном зуме (1x).</summary>
     [Export] public float BaseFov { get; set; } = 70f;
-    /// <summary>Поле зрения (FOV) при максимальном зуме.</summary>
     [Export] public float MinFov { get; set; } = 12f;
 
     [ExportSubgroup("Visual Artifacts")]
     [Export] public float MaxPixelsPerDegree { get; set; } = 72f;
-    /// <summary>Уровень зума, при котором начинается заметная пикселизация.</summary>
     [Export] public float ZoomPixelationStart { get; set; } = 2.0f;
     [Export] public float MaxPixelationIntensity { get; set; } = 0.7f;
-    /// <summary>Интервал малых делений шкалы при максимальном зуме.</summary>
     [Export] public int MinorIntervalAtMaxZoom { get; set; } = 1;
+
+    [ExportGroup("Turret Limits Display")]
+    [Export] public bool ShowTurretLimits { get; set; } = true;
+    [Export] public Color LimitColor { get; set; } = new(1f, 0.5f, 0.2f, 0.8f);
+
+    [ExportGroup("Target Marker")]
+    [Export] public bool ShowTargetMarker { get; set; } = true;
+    [Export] public Color TargetMarkerColor { get; set; } = new(1f, 0.9f, 0.3f, 0.8f);
 
     [ExportGroup("Reticle Dynamics")]
     [ExportSubgroup("Spread Values")]
     [Export] public float SpreadIdle { get; set; } = 0f;
-    [Export] public float SpreadShooting { get; set; } = -1.0f; // Отрицательное значение может инвертировать логику в шейдере
+    [Export] public float SpreadShooting { get; set; } = -1.0f;
     [Export] public float SpreadCooldown { get; set; } = 5f;
     [Export] public float SpreadReloading { get; set; } = 25f;
     [Export] public float SpreadNoAmmo { get; set; } = 15f;
@@ -103,7 +94,7 @@ public partial class TurretReticle : Control
     private float _stateTime = 0f;
     private int _currentShaderState = 0;
 
-    // Recoil Timing (replacing Async/Timer)
+    // Recoil Timing
     private float _recoilDelayTimer = 0f;
     private const float RecoilDelayDuration = 0.03f;
 
@@ -125,20 +116,16 @@ public partial class TurretReticle : Control
     private float _frostLevel = 0f;
     private float _impactRing = 0f;
 
+    // Cached turret limits (from CameraController)
+    private float _cachedMinPitch = -20f;
+    private float _cachedMaxPitch = 45f;
+    private float _cachedMaxYaw = 90f;
+
     #endregion
 
     #region Events & Properties
 
-    /// <summary>
-    /// Вызывается при изменении интенсивности прицеливания (разброса).
-    /// </summary>
     public event System.Action<float>? OnAimingIntensityChanged;
-
-    /// <summary>
-    /// Вызывается при изменении зума.
-    /// <param name="currentZoom">Текущий уровень зума.</param>
-    /// <param name="pixelationIntensity">Расчитанная интенсивность пикселизации.</param>
-    /// </summary>
     public event System.Action<float, float>? OnZoomChanged;
 
     public float CurrentZoom => _currentZoom;
@@ -159,7 +146,6 @@ public partial class TurretReticle : Control
             _reticleRect.SetAnchorsPreset(LayoutPreset.FullRect);
             _reticleRect.MouseFilter = MouseFilterEnum.Ignore;
 
-            // Пытаемся сохранить дефолтный интервал из шейдера
             if (_shaderMaterial != null)
             {
                 var interval = _shaderMaterial.GetShaderParameter(Constants.SP_TurretReticle_MinorInterval);
@@ -168,7 +154,6 @@ public partial class TurretReticle : Control
             }
         }
 
-        // Гарантируем чистое состояние при старте
         Deinitialize();
     }
 
@@ -212,16 +197,15 @@ public partial class TurretReticle : Control
 
     #region Public API
 
-    /// <summary>
-    /// Инициализирует прицел для указанной турели и подписывается на события.
-    /// </summary>
     public void Initialize(PlayerControllableTurret turret)
     {
-        // Сначала очищаем старые подписки, если они были
         DisconnectSignals();
 
         _turret = turret;
         ResetInternalState();
+
+        // Получаем лимиты из CameraController
+        CacheTurretLimits();
 
         if (_turret != null)
         {
@@ -237,9 +221,6 @@ public partial class TurretReticle : Control
         SetPhysicsProcess(true);
     }
 
-    /// <summary>
-    /// Отключает прицел, отписывается от событий и скрывает UI.
-    /// </summary>
     public void Deinitialize()
     {
         DisconnectSignals();
@@ -249,38 +230,34 @@ public partial class TurretReticle : Control
         SetPhysicsProcess(false);
     }
 
-    /// <summary>
-    /// Увеличивает зум на один шаг (ZoomStep).
-    /// </summary>
     public void ZoomIn() => SetZoom(_targetZoom + ZoomStep);
-
-    /// <summary>
-    /// Уменьшает зум на один шаг (ZoomStep).
-    /// </summary>
     public void ZoomOut() => SetZoom(_targetZoom - ZoomStep);
-
-    /// <summary>
-    /// Сбрасывает зум к минимальному значению.
-    /// </summary>
     public void ResetZoom() => SetZoom(MinZoom);
 
-    /// <summary>
-    /// Устанавливает конкретное значение зума в пределах допустимого диапазона.
-    /// </summary>
     public void SetZoom(float zoom)
     {
         _targetZoom = Mathf.Clamp(zoom, MinZoom, MaxZoom);
         OnZoomChanged?.Invoke(_targetZoom, CalculatePixelationIntensity(_targetZoom));
     }
 
-    /// <summary>
-    /// Возвращает текущий сглаженный уровень зума (для UI).
-    /// </summary>
     public float GetDisplayZoom() => _displayZoom;
 
     #endregion
 
     #region Logic & Processing
+
+    /// <summary>
+    /// Кэширует лимиты поворота из TurretCameraController.
+    /// </summary>
+    private void CacheTurretLimits()
+    {
+        if (_turret?.CameraController == null) return;
+
+        var camController = _turret.CameraController;
+        _cachedMinPitch = camController.TurretMinPitch;
+        _cachedMaxPitch = camController.TurretMaxPitch;
+        _cachedMaxYaw = camController.TurretMaxYaw;
+    }
 
     private void DisconnectSignals()
     {
@@ -308,7 +285,6 @@ public partial class TurretReticle : Control
         _hasSqueezeTriggered = false;
         _recoilDelayTimer = 0f;
 
-        // Сброс зума
         _currentZoom = MinZoom;
         _targetZoom = MinZoom;
         _displayZoom = MinZoom;
@@ -320,7 +296,6 @@ public partial class TurretReticle : Control
         _currentZoom = Mathf.Lerp(_currentZoom, _targetZoom, dt * ZoomLerpSpeed);
         _displayZoom = Mathf.Lerp(_displayZoom, _targetZoom, dt * ZoomLerpSpeed * 1.5f);
 
-        // Обновляем FOV камеры только если зум изменился существенно
         if (Mathf.Abs(_currentZoom - prevZoom) > 0.001f)
         {
             UpdateCameraFov();
@@ -335,14 +310,12 @@ public partial class TurretReticle : Control
 
         if (_shootSequenceTime < ConvergenceHoldTime)
         {
-            // Фаза 1: Сведение перед выстрелом
             _convergenceTarget = 1.0f;
             float preSqueeze = Mathf.SmoothStep(0, 1, _shootSequenceTime / ConvergenceHoldTime);
             _squeezeOffset = Mathf.Lerp(0, SpreadShooting * 0.3f, preSqueeze);
         }
         else if (!_hasSqueezeTriggered)
         {
-            // Фаза 2: Сжатие в момент готовности
             float squeezeProgress = (_shootSequenceTime - ConvergenceHoldTime) / SqueezeDelay;
             squeezeProgress = Mathf.Clamp(squeezeProgress, 0, 1);
             float eased = 1f - Mathf.Pow(1f - squeezeProgress, 3f);
@@ -355,7 +328,6 @@ public partial class TurretReticle : Control
     {
         if (_turret == null) return;
 
-        // 1. Вращение ромба (при перезарядке)
         if (_turret.CurrentState == ShootingTurret.TurretState.Reloading)
         {
             _targetDiamondRotation += dt * RotationSpeed;
@@ -363,7 +335,6 @@ public partial class TurretReticle : Control
         }
         else
         {
-            // Возврат к ближайшему углу 90 градусов
             float snapAngle = Mathf.Pi / 2f;
             float nearestSnap = Mathf.Round(_targetDiamondRotation / snapAngle) * snapAngle;
             _targetDiamondRotation = Mathf.Lerp(_targetDiamondRotation, nearestSnap, dt * 3f);
@@ -371,10 +342,8 @@ public partial class TurretReticle : Control
         }
         _diamondRotation = Mathf.Lerp(_diamondRotation, _targetDiamondRotation, dt * 8f);
 
-        // 2. Схождение линий (Convergence)
         _convergenceIntensity = Mathf.Lerp(_convergenceIntensity, _convergenceTarget, dt * ConvergenceSpeed);
 
-        // 3. Отдача (с задержкой)
         if (_recoilDelayTimer > 0)
         {
             _recoilDelayTimer -= dt;
@@ -384,14 +353,12 @@ public partial class TurretReticle : Control
             }
         }
 
-        // 4. Затухание смещений
         if (!_isInShootingSequence)
         {
             _squeezeOffset = Mathf.Lerp(_squeezeOffset, 0f, dt * ExpansionSpeed);
         }
         _recoilOffset = Mathf.Lerp(_recoilOffset, 0f, dt * RecoilDecay);
 
-        // 5. Итоговый Spread
         float targetTotal = _targetSpread + _squeezeOffset + _recoilOffset;
         float speed = targetTotal < _currentSpread ? SqueezeSpeed : ExpansionSpeed;
         _currentSpread = Mathf.Lerp(_currentSpread, targetTotal, dt * speed);
@@ -434,6 +401,20 @@ public partial class TurretReticle : Control
         _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_ShotFlash, _shotFlash);
         _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_ImpactRing, _impactRing);
         _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_Frost, _frostLevel);
+
+        // ЛИМИТЫ ПОВОРОТА СТВОЛА
+        _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_TurretMinPitch, _cachedMinPitch);
+        _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_TurretMaxPitch, _cachedMaxPitch);
+        _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_TurretMaxYaw, _cachedMaxYaw);
+        _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_ShowTurretLimits, ShowTurretLimits);
+        _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_ColorLimit, LimitColor);
+
+        float targetYawDeg = Mathf.RadToDeg(_turret.TargetYawRad);
+        float targetPitchDeg = Mathf.RadToDeg(_turret.TargetPitchRad);
+        _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_TargetYaw, targetYawDeg);
+        _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_TargetPitch, targetPitchDeg);
+        _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_ShowTargetMarker, ShowTargetMarker);
+        _shaderMaterial.SetShaderParameter(Constants.SP_TurretReticle_ColorTarget, TargetMarkerColor);
     }
 
     #endregion
@@ -466,10 +447,8 @@ public partial class TurretReticle : Control
         _convergenceIntensity = 0f;
         _convergenceTarget = 0f;
 
-        // Запускаем таймер задержки визуальной отдачи
         _recoilDelayTimer = RecoilDelayDuration;
 
-        // Глитч сильнее при большом зуме
         float glitchMult = 1f + (_currentZoom - MinZoom) / (MaxZoom - MinZoom) * 0.5f;
         SharedHUD.TriggerColoredGlitch(
             new Color(0.3f, 0.9f, 0.85f, 1f),
@@ -495,8 +474,6 @@ public partial class TurretReticle : Control
     {
         if (_turret == null) return;
 
-        // Определение состояния для шейдера и целевого разброса
-        // 0=Idle, 1=Cooldown, 2=Reload, 3=NoAmmo, 4=Broken, 5=Shooting
         if (!_turret.IsAlive || _turret.CurrentState == ShootingTurret.TurretState.Broken)
         {
             _targetSpread = SpreadBroken;
@@ -528,7 +505,6 @@ public partial class TurretReticle : Control
             _currentShaderState = 0;
         }
 
-        // Рассчитываем и сообщаем внешним системам об интенсивности прицеливания (0..1)
         float maxSpread = Mathf.Max(SpreadBroken, SpreadReloading);
         float aimingIntensity = 1.0f - Mathf.Clamp(_targetSpread / maxSpread, 0f, 1f);
         OnAimingIntensityChanged?.Invoke(aimingIntensity);
@@ -550,7 +526,6 @@ public partial class TurretReticle : Control
             return 0f;
 
         float t = (zoom - ZoomPixelationStart) / (MaxZoom - ZoomPixelationStart);
-        // Квадратичное сглаживание (ease-in)
         t = t * t;
         return Mathf.Clamp(t * MaxPixelationIntensity, 0f, MaxPixelationIntensity);
     }
@@ -558,7 +533,6 @@ public partial class TurretReticle : Control
     private float CalculatePixelsPerDegree(float zoom)
     {
         float t = (zoom - MinZoom) / (MaxZoom - MinZoom);
-        // Ease-out для быстрого отклика в начале зума
         t = 1f - Mathf.Pow(1f - t, 2f);
         return Mathf.Lerp(BasePixelsPerDegree, MaxPixelsPerDegree, t);
     }

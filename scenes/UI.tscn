@@ -83,9 +83,13 @@ shader_parameter/pitch_degrees = 0.0
 shader_parameter/zoom_level = 1.0
 shader_parameter/turret_state = 0
 shader_parameter/state_time = 0.0
+shader_parameter/turret_min_pitch = -20.0
+shader_parameter/turret_max_pitch = 45.0
+shader_parameter/turret_max_yaw = 90.0
+shader_parameter/show_turret_limits = true
 shader_parameter/convergence_intensity = 0.0
-shader_parameter/shot_flash = 5.0
-shader_parameter/impact_ring = 6.0
+shader_parameter/shot_flash = 0.0
+shader_parameter/impact_ring = 0.0
 shader_parameter/frost_level = 0.0
 shader_parameter/reticle_gap = 45.0
 shader_parameter/diamond_base_size = 12.0
@@ -107,6 +111,7 @@ shader_parameter/color_flash = Color(0.6, 1, 0.95, 1)
 shader_parameter/color_frost = Color(0.7, 0.9, 1, 0.9)
 shader_parameter/color_minor = Color(0.2, 0.9, 0.8, 0.25)
 shader_parameter/color_medium = Color(0.2, 0.9, 0.8, 0.5)
+shader_parameter/color_limit = Color(1, 0.5, 0.2, 0.8)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_o5ifv"]
 shader = ExtResource("17_o5ifv")
