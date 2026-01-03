@@ -2,14 +2,17 @@
 
 [ext_resource type="Script" uid="uid://ba17xhti84upv" path="res://scripts/ManagerUI.cs" id="1_ro3t7"]
 [ext_resource type="Script" uid="uid://o58w4p0oyrk6" path="res://scripts/UI/PlayerHUD.cs" id="2_5en4g"]
-[ext_resource type="Shader" uid="uid://cfmc3utnjt5w4" path="res://shaders/Test.gdshader" id="2_ro3t7"]
+[ext_resource type="Shader" uid="uid://cfmc3utnjt5w4" path="res://shaders/UIPixelation.gdshader" id="2_ro3t7"]
+[ext_resource type="Shader" uid="uid://dlx6vfd2jsjup" path="res://shaders/UIGridOverlay.gdshader" id="3_7paak"]
 [ext_resource type="Material" uid="uid://bxsatkj4r33r2" path="res://materials/BaseUI.tres" id="3_75u2n"]
 [ext_resource type="Script" uid="uid://bbke4cbewkobl" path="res://scripts/UI/InertialHUD.cs" id="3_xpksx"]
 [ext_resource type="FontFile" uid="uid://dkmogj2xa3py6" path="res://fonts/VT323-Regular.ttf" id="4_3wlde"]
+[ext_resource type="Shader" uid="uid://cuxkvs16ctpqk" path="res://shaders/UITurretReticle.gdshader" id="4_5sqrc"]
 [ext_resource type="Script" uid="uid://0hh5y8ol8086" path="res://scripts/UI/DataLogger.cs" id="4_ua6yw"]
 [ext_resource type="Script" uid="uid://b7p4wl1iap37i" path="res://scripts/UI/SmartReticle.cs" id="7_24e4x"]
 [ext_resource type="Script" uid="uid://c0au4200qyxe2" path="res://scripts/UI/CockpitDashboard.cs" id="9_ukj8e"]
 [ext_resource type="Script" uid="uid://dtpy2gw6s60qf" path="res://scripts/UI/TurretHUD.cs" id="10_aputy"]
+[ext_resource type="Script" uid="uid://d1lwf4d8mm7ja" path="res://scripts/UI/TurretReticle.cs" id="11_aputy"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5en4g"]
 shader = ExtResource("2_ro3t7")
@@ -19,6 +22,45 @@ shader_parameter/brightness = 1.0
 shader_parameter/contrast = 1.0000000475
 shader_parameter/noise_amount = 0.03
 shader_parameter/pixelation = 0.8
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5sqrc"]
+shader = ExtResource("3_7paak")
+shader_parameter/grid_size_large = 40.0
+shader_parameter/grid_size_small = 10.0000002375
+shader_parameter/line_width = 1.0600000266
+shader_parameter/grid_color_large = Color(0.153, 0.6, 0.812, 0.251)
+shader_parameter/grid_color_small = Color(0.098, 0.4, 0.569, 0.15)
+shader_parameter/vignette_color = Color(0, 0, 0, 0.4)
+shader_parameter/vignette_strength = 0.3
+shader_parameter/scanline_intensity = 0.05
+shader_parameter/noise_intensity = 0.02
+shader_parameter/intensity = 1.0
+shader_parameter/time_scale = 3.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ilk7v"]
+shader = ExtResource("4_5sqrc")
+shader_parameter/spread = 0.0
+shader_parameter/diamond_rotation = 0.0
+shader_parameter/yaw_degrees = 0.0
+shader_parameter/pitch_degrees = 0.0
+shader_parameter/turret_state = 0
+shader_parameter/state_time = 0.0
+shader_parameter/reticle_gap = 45.0
+shader_parameter/diamond_base_size = 12.0
+shader_parameter/edge_margin = 40.0
+shader_parameter/pixels_per_degree = 12.0
+shader_parameter/tick_small = 6.0
+shader_parameter/tick_medium = 12.0
+shader_parameter/tick_large = 20.0
+shader_parameter/line_width = 2.0
+shader_parameter/minor_interval = 5
+shader_parameter/medium_interval = 15
+shader_parameter/major_interval = 45
+shader_parameter/color_main = Color(0.2, 0.9, 0.8, 0.9)
+shader_parameter/color_warning = Color(1, 0.3, 0.2, 0.9)
+shader_parameter/color_cooldown = Color(1, 0.7, 0.2, 0.9)
+shader_parameter/color_minor = Color(0.2, 0.9, 0.8, 0.25)
+shader_parameter/color_medium = Color(0.2, 0.9, 0.8, 0.5)
 
 [sub_resource type="Theme" id="Theme_xpksx"]
 default_font = ExtResource("4_3wlde")
@@ -60,13 +102,36 @@ _data = {
 &"RESET": SubResource("Animation_75u2n")
 }
 
-[node name="UI" type="CanvasLayer" unique_id=1895634924 node_paths=PackedStringArray("PlayerHUD")]
+[node name="UI" type="CanvasLayer" unique_id=1895634924 node_paths=PackedStringArray("PlayerHUD", "TurretHUD")]
 script = ExtResource("1_ro3t7")
 PlayerHUD = NodePath("HUDInertia/PlayerHUD")
+TurretHUD = NodePath("HUDInertia/TurretHUD")
 
-[node name="ColorRect" type="ColorRect" parent="." unique_id=1121565737]
+[node name="ColorRectPixels" type="ColorRect" parent="." unique_id=1121565737]
+process_mode = 4
+visible = false
 z_index = -10
 material = SubResource("ShaderMaterial_5en4g")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRectGrid" type="ColorRect" parent="." unique_id=686935584]
+visible = false
+z_index = 1
+material = SubResource("ShaderMaterial_5sqrc")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRectGrid2" type="ColorRect" parent="." unique_id=255343376]
+visible = false
+z_index = 1
+material = SubResource("ShaderMaterial_ilk7v")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -221,7 +286,7 @@ size_flags_vertical = 1
 text = "LOC: 128.25 / -10.04
 WIND: 14 m/s [NW]"
 
-[node name="TurretHUD" type="Control" parent="HUDInertia" unique_id=1065717985 node_paths=PackedStringArray("_animPlayer")]
+[node name="TurretHUD" type="Control" parent="HUDInertia" unique_id=1065717985 node_paths=PackedStringArray("_animPlayer", "_reticle", "_gridOverlay", "_statusLabel")]
 modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
@@ -231,24 +296,37 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("10_aputy")
 _animPlayer = NodePath("AnimationPlayer")
+_reticle = NodePath("Crosshair")
+_gridOverlay = NodePath("../../ColorRectGrid")
+_statusLabel = NodePath("StatusLabel")
+_gridMaxIntensity = 2.0
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="HUDInertia/TurretHUD" unique_id=1307551458]
 libraries/ = SubResource("AnimationLibrary_75u2n")
 
-[node name="Crosshair" type="Control" parent="HUDInertia/TurretHUD" unique_id=149216154]
-physics_interpolation_mode = 1
+[node name="Crosshair" type="Control" parent="HUDInertia/TurretHUD" unique_id=149216154 node_paths=PackedStringArray("_reticleRect")]
 use_parent_material = true
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -1.0
-offset_top = -1.0
-offset_right = 1.0
-offset_bottom = 1.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
+script = ExtResource("11_aputy")
+_reticleRect = NodePath("../../../ColorRectGrid2")
+
+[node name="StatusLabel" type="Label" parent="HUDInertia/TurretHUD" unique_id=1333562906]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5555556
+anchor_top = 0.5925926
+anchor_right = 0.7222222
+anchor_bottom = 0.69135803
+grow_horizontal = 2
+grow_vertical = 2
+text = "STATUS_LABEL"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_use_anchors_ = true

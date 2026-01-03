@@ -148,12 +148,12 @@ volume_db = -1.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1522121474]
 transform = Transform3D(0.671633, -0.223371, 0.706409, -0.626543, 0.337631, 0.70246, -0.395414, -0.914391, 0.086813, 0, 2.7841, 0)
-light_color = Color(0.860369, 0.860369, 0.860369, 1)
+light_color = Color(0.6789434, 0.6789438, 0.6789434, 1)
+light_specular = 2.0
 shadow_enabled = true
 shadow_blur = 2.0
 directional_shadow_blend_splits = true
 directional_shadow_max_distance = 256.0
-sky_mode = 1
 
 [node name="Player" parent="." unique_id=2024668598 instance=ExtResource("9_nthub")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 143.098, 1.49353, 156.935)

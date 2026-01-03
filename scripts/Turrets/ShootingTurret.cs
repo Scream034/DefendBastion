@@ -1,3 +1,5 @@
+#nullable enable
+
 using Godot;
 using Game.Projectiles;
 using System;
@@ -9,24 +11,44 @@ using Game.Entity;
 namespace Game.Turrets;
 
 /// <summary>
-/// Абстрактный базовый класс для стреляющих турелей.
-/// Расширяет BaseTurret, добавляя логику стрельбы, боеприпасов и перезарядки.
-/// Определяет, *как* турель стреляет, но не *когда*.
-/// Поддерживает несколько режимов стрельбы и автоматическую перезарядку.
+/// Базовый класс для стреляющих турелей с поддержкой разных режимов стрельбы,
+/// магазинной системы и состояний (State Machine).
 /// </summary>
 public partial class ShootingTurret : BaseTurret, IShooter
 {
-    #region Classes
+    #region Enums & Events
 
     /// <summary>
-    /// Состояния, в которых может находиться турель.
+    /// Возможные состояния турели.
     /// </summary>
     public enum TurretState
     {
         Idle,           // Готова к действию
-        FiringCooldown, // Между выстрелами
-        Reloading,      // В процессе перезарядки
-        Broken          // Уничтожена
+        Shooting,       // В процессе анимации выстрела
+        FiringCooldown, // Техническая пауза между выстрелами (Cycle Time)
+        Reloading,      // Процесс перезарядки магазина
+        Broken          // Турель уничтожена
+    }
+
+    /// <summary>
+    /// Режим ведения огня.
+    /// </summary>
+    public enum FireMode
+    {
+        /// <summary>
+        /// Один выстрел -> Требуется полная перезарядка (пример: Танковое орудие).
+        /// </summary>
+        Single,
+
+        /// <summary>
+        /// Один клик -> Один выстрел. Перезарядка только когда пуст магазин (пример: Полуавтоматическая пушка).
+        /// </summary>
+        SemiAuto,
+
+        /// <summary>
+        /// Стрельба очередью пока зажата кнопка (пример: Пулемет).
+        /// </summary>
+        FullAuto
     }
 
     public static class Animations
@@ -37,275 +59,328 @@ public partial class ShootingTurret : BaseTurret, IShooter
     }
 
     /// <summary>
-    /// Событие, вызываемое при смене состояния турели.
+    /// Вызывается при изменении состояния (например, для обновления UI прицела).
     /// </summary>
-    public event Action<TurretState> OnStateChanged;
+    public event Action<TurretState>? OnStateChanged;
+
+    /// <summary>
+    /// Вызывается при изменении количества патронов (для UI).
+    /// </summary>
+    public event Action? OnAmmoChanged;
+
+    /// <summary>
+    /// Вызывается в момент фактического выстрела (снаряд вылетел).
+    /// </summary>
+    public event Action? OnShot;
 
     #endregion
 
-    #region Properties
+    #region Export Properties
+
+    [ExportGroup("Firing Settings")]
+    [Export] public FireMode CurrentFireMode { get; private set; } = FireMode.Single;
 
     /// <summary>
-    /// Текущее состояние турели.
+    /// Скорострельность (выстрелов в секунду).
+    /// Влияет на паузу между выстрелами в режиме Auto/SemiAuto.
     /// </summary>
-    public TurretState CurrentState { get; protected set; } = TurretState.Idle;
+    [Export(PropertyHint.Range, "0.1, 60.0, 0.1")]
+    public float FireRate { get; set; } = 1.0f;
 
-    [ExportGroup("Shooting Mechanics")]
-    [Export(PropertyHint.File, "*.tscn,*.scn")]
-    public PackedScene ProjectileScene { get; private set; }
-
-    [ExportGroup("Shooting Effects")]
+    [ExportGroup("Ammo & Magazine")]
     /// <summary>
-    /// Сила тряски камеры при выстреле
+    /// Размер магазина (количество выстрелов до перезарядки).
+    /// Для режима Single должно быть равно 1.
     /// </summary>
-    [Export(PropertyHint.Range, "0, 100, 0.1")] private float _shotShakeStrength = 1f;
-
-    /// <summary>
-    /// Радиус действия тряски в метрах (тряска ощущается только в пределах этого радиуса)
-    /// </summary>
-    [Export(PropertyHint.Range, "1, 100, 1")] private float _shotShakeRadius = 50f;
+    [Export(PropertyHint.Range, "1, 1000, 1")]
+    public int MagazineSize { get; private set; } = 1;
 
     /// <summary>
-    /// Длительность тряски в секундах
+    /// Максимальный общий запас патронов (в резерве + в магазине).
+    /// -1 для бесконечного боезапаса.
     /// </summary>
-    [Export(PropertyHint.Range, "0.05, 1.0, 0.05")] private float _shotShakeDuration = 0.2f;
+    [Export(PropertyHint.Range, "-1, 10000, 1")]
+    public int MaxAmmoCapacity { get; protected set; } = 100;
 
-    [Export(PropertyHint.Range, "-1,10000,1")]
-    public int MaxAmmo { get; protected set; } = 100;
-
-    [Export(PropertyHint.Range, "-1,10000,1")]
+    /// <summary>
+    /// Текущие патроны в магазине (готовые к стрельбе).
+    /// </summary>
+    [Export(PropertyHint.Range, "0, 1000, 1")]
     public int CurrentAmmo { get; protected set; }
 
-    private float _fireRate = 1.0f;
     /// <summary>
-    /// Скорострельность в выстрелах в секунду. Определяет кулдаун между выстрелами.
+    /// Патроны в запасе (из которых наполняется магазин).
     /// </summary>
-    [Export(PropertyHint.Range, "0.1,20,0.1")]
-    public float FireRate
-    {
-        get => _fireRate;
-        set
-        {
-            _fireRate = Mathf.Max(0.1f, value); // Защита от нулевого или отрицательного значения
-            if (_cooldownTimer != null)
-            {
-                _cooldownTimer.WaitTime = 1.0f / _fireRate;
-            }
-        }
-    }
+    [Export(PropertyHint.Range, "0, 10000, 1")]
+    public int ReserveAmmo { get; protected set; }
 
-    /// <summary>
-    /// Точка, откуда вылетают снаряды.
-    /// </summary>
-    [Export]
-    public Marker3D BarrelEnd { get; private set; }
+    [ExportGroup("Components")]
+    [Export(PropertyHint.File, "*.tscn,*.scn")]
+    public PackedScene? ProjectileScene { get; private set; }
 
-    [ExportGroup("Reloading")]
+    [Export] public Marker3D? BarrelEnd { get; private set; }
+
+    [Export] protected AnimationPlayer? AnimationPlayer { get; private set; }
+
+    [ExportGroup("Shooting Effects")]
+    [Export(PropertyHint.Range, "0, 100, 0.1")] private float _shotShakeStrength = 1f;
+    [Export(PropertyHint.Range, "1, 100, 1")] private float _shotShakeRadius = 50f;
+    [Export(PropertyHint.Range, "0.05, 1.0, 0.05")] private float _shotShakeDuration = 0.2f;
+
+    [ExportGroup("Reloading Logic")]
     /// <summary>
-    /// Если true, турель автоматически начнет перезарядку после выстрела последним патроном.
+    /// Автоматически начинать перезарядку, если магазин пуст.
     /// </summary>
     [Export] public bool AutoReload { get; private set; } = true;
 
-    [Export] protected AnimationPlayer AnimationPlayer { get; private set; }
+    #endregion
+
+    #region Runtime State
+
+    public TurretState CurrentState { get; protected set; } = TurretState.Idle;
+    private Timer _cooldownTimer = null!;
+
+    // Публичные геттеры для проверки состояния
+    public bool HasInfiniteAmmo => MaxAmmoCapacity < 0;
+
+    // Есть ли патроны прямо сейчас в стволе
+    public bool HasAmmoInMag => CurrentAmmo > 0 || HasInfiniteAmmo;
+
+    // Полон ли магазин
+    public bool HasFullMagazine => CurrentAmmo >= MagazineSize;
+
+    // Есть ли чем перезарядиться
+    public bool HasReserveAmmo => ReserveAmmo > 0 || HasInfiniteAmmo;
+
+    // Общее количество (для UI)
+    public int TotalAmmoCount => HasInfiniteAmmo ? 999 : (CurrentAmmo + ReserveAmmo);
 
     /// <summary>
-    /// Проверяет, есть ли патроны в турели.
+    /// Может ли турель произвести выстрел прямо сейчас.
     /// </summary>
-    public bool HasAmmo => CurrentAmmo > 0;
+    public bool CanShoot => CurrentState == TurretState.Idle && HasAmmoInMag && IsAlive;
 
     /// <summary>
-    /// Проверяет, бесконечное ли количество патронов в турели.
+    /// Можно ли начать перезарядку.
     /// </summary>
-    public bool HasInfiniteAmmo => MaxAmmo < 0;
-
-    /// <summary>
-    /// Проверяет, полный ли магазин в турели.
-    /// </summary>
-    public bool HasFullAmmo => CurrentAmmo == MaxAmmo;
-
-#if DEBUG
-    /// <summary>
-    /// Проверяет, может ли турель инициировать выстрел в данный момент.
-    /// </summary>
-    public bool CanShoot
-    {
-        get
-        {
-            if (CurrentState == TurretState.Idle && HasAmmo && IsAlive)
-            {
-                return true;
-            }
-            GD.Print($"{Name} Cant shoot: State={CurrentState}, HasAmmo={HasAmmo}, IsAlive={IsAlive}");
-            return false;
-        }
-    }
-#else
-    public bool CanShoot => CurrentState == TurretState.Idle && HasAmmo && IsAlive;
-#endif
+    public bool CanReload => CurrentState == TurretState.Idle
+                             && !HasFullMagazine
+                             && HasReserveAmmo
+                             && IsAlive;
 
     #endregion
 
-    #region Public Getters
-    public Node3D GetShootInitiator() => this;
-    #endregion
+    #region Godot Lifecycle
 
-    private Timer _cooldownTimer;
-
-    #region Godot
     public override void _EnterTree()
     {
         base._EnterTree();
-#if DEBUG
-        // Улучшенные проверки на null
-        if (ProjectileScene == null) GD.PushError($"Для турели '{Name}' не указана сцена снаряда (ProjectileScene)!");
-        if (BarrelEnd == null) GD.PushWarning($"Для турели '{Name}' не указана точка вылета снаряда (BarrelEnd). Снаряды будут появляться в центре турели.");
-#endif
 
-        // Таймер кулдауна между выстрелами
+        // Создаем таймер для контроля скорострельности (Cooldown)
         _cooldownTimer = new Timer
         {
-            Name = "CooldownTimer",
-            WaitTime = 1.0f / FireRate,
-            OneShot = true
+            Name = "FireRateTimer",
+            OneShot = true,
+            ProcessCallback = Timer.TimerProcessCallback.Physics
         };
         AddChild(_cooldownTimer);
         _cooldownTimer.Timeout += OnCooldownFinished;
 
-        AnimationPlayer.AnimationFinished += OnAnimationChanged;
+        if (AnimationPlayer != null)
+        {
+            AnimationPlayer.AnimationFinished += OnAnimationFinished;
+        }
+
+#if DEBUG
+        if (ProjectileScene == null) GD.PushError($"[{Name}] ProjectileScene не назначена!");
+        if (BarrelEnd == null) GD.PushWarning($"[{Name}] BarrelEnd не назначен. Стрельба будет вестись из центра.");
+#endif
     }
 
     public override void _Ready()
     {
         base._Ready();
-        CurrentAmmo = HasInfiniteAmmo ? 1 : MaxAmmo;
+        InitializeAmmo();
     }
+
+    /// <summary>
+    /// Инициализация боезапаса при старте.
+    /// </summary>
+    private void InitializeAmmo()
+    {
+        if (HasInfiniteAmmo)
+        {
+            CurrentAmmo = MagazineSize;
+            ReserveAmmo = 0;
+        }
+        else
+        {
+            // Симулируем "полную загрузку" при спавне
+            // Сначала заполняем магазин
+            CurrentAmmo = Mathf.Min(MagazineSize, MaxAmmoCapacity);
+            // Остальное в резерв
+            ReserveAmmo = Mathf.Max(0, MaxAmmoCapacity - CurrentAmmo);
+        }
+
+        // Устанавливаем время таймера на основе скорострельности
+        _cooldownTimer.WaitTime = 1.0f / FireRate;
+    }
+
     #endregion
 
     #region Shooting Logic
 
     /// <summary>
-    /// Инициирует процесс выстрела в зависимости от текущего режима <see cref="FiringMode"/>.
+    /// Попытка произвести выстрел.
     /// </summary>
-    /// <returns>true, если процесс выстрела был успешно начат, иначе false.</returns>
+    /// <returns>True, если выстрел (или анимация выстрела) началась.</returns>
     public virtual bool Shoot()
     {
-        if (!CanShoot)
-        {
-            return false;
-        }
+        if (!CanShoot) return false;
 
-        SetState(TurretState.FiringCooldown);
-        _cooldownTimer?.Start();
-        AnimationPlayer.Play(Animations.Fire);
+        SetState(TurretState.Shooting);
+
+        if (AnimationPlayer != null && AnimationPlayer.HasAnimation(Animations.Fire))
+        {
+            // Если есть анимация, полагаемся на неё.
+            // В самой анимации должен быть Call Method Track, вызывающий PerformShot().
+            // Или, если анимация простая, PerformShot вызовется по окончании (см. OnAnimationFinished) - 
+            // но лучше вызывать явно в начале анимации для отзывчивости.
+            AnimationPlayer.Play(Animations.Fire);
+
+            // Фолбэк: если в анимации нет вызова PerformShot, можно раскомментировать вызов ниже,
+            // но это может привести к двойным выстрелам, если трек есть. 
+            // Для надежности здесь полагаемся, что метод будет вызван через AnimationPlayer.
+            // Если анимации нет вообще - вызываем вручную.
+        }
+        else
+        {
+            // Если анимации нет, стреляем сразу
+            PerformShot();
+            // Имитируем окончание анимации для перехода в кулдаун
+            OnShootSequenceFinished();
+        }
 
         return true;
     }
 
     /// <summary>
-    /// Вызывает эффект тряски камеры. Может быть вызван из AnimationPlayer.
+    /// Фактическая логика выстрела: трата патрона, спавн снаряда, эффекты.
+    /// Этот метод должен вызываться AnimationPlayer'ом (Call Method Track) или вручную.
     /// </summary>
-    public void TriggerShotShake()
+    public void PerformShot()
     {
-        GlobalEvents.Instance.RequestWorldShake(BarrelEnd.GlobalPosition, _shotShakeStrength, _shotShakeRadius, _shotShakeDuration);
+        // Дополнительная проверка, чтобы не стрелять дважды за одну анимацию (если настроено криво)
+        if (CurrentState != TurretState.Shooting) return;
+
+        ConsumeAmmoInMag();
+        SpawnProjectile();
+        TriggerShotShake();
+
+        OnShot?.Invoke();
     }
 
-    /// <summary>
-    /// Общая логика для совершения выстрела: создание снаряда, расход патрона и проигрывание звука.
-    /// Также проверяет необходимость авто-перезарядки.
-    /// </summary>
-    private void PerformShotLogic()
+    private void SpawnProjectile()
     {
-        ConsumeAmmo();
+        if (ProjectileScene == null) return;
 
-        // NOTE: Используем GlobalTransform точки вылета, если она есть, иначе - самой турели.
-        var spawnPoint = BarrelEnd != null ? BarrelEnd.GlobalTransform : GlobalTransform;
-
-        // Передаем себя (this) как инициатора выстрела.
-        var projectile = CreateProjectile(spawnPoint, this);
-        GD.Print($"{Name} Shooting with {projectile.Name} at: {BarrelEnd.Position}");
+        var spawnTrans = BarrelEnd != null ? BarrelEnd.GlobalTransform : GlobalTransform;
+        CreateProjectile(spawnTrans, this);
     }
 
-    /// <summary>
-    /// Создает (или получает из пула) экземпляр снаряда в указанной точке.
-    /// </summary>
-    public virtual BaseProjectile CreateProjectile(Transform3D spawnPoint, LivingEntity initiator = null)
+    public virtual BaseProjectile CreateProjectile(Transform3D spawnPoint, LivingEntity initiator)
     {
-        // Вместо Instantiate используем наш пул!
-        var projectile = ProjectilePool.Instance.Get(ProjectileScene);
+        // Используем пул объектов для производительности
+        var projectile = ProjectilePool.Instance.Get(ProjectileScene!);
 
         projectile.GlobalTransform = spawnPoint;
-
-        // Добавляем снаряд в корень сцены, чтобы он не зависел от турели.
         Constants.Root.AddChild(projectile);
 
-        // Если инициатор не был передан явно, назначаем им эту турель.
-        var finalInitiator = initiator ?? this;
+        projectile.Initialize(initiator);
 
-        // Инициализируем снаряд после того, как он добавлен в сцену и его позиция установлена
-        projectile.Initialize(finalInitiator);
+#if DEBUG
+        GD.Print($"[{Name}] Projectile Spawned: {projectile.Name}");
+#endif
         return projectile;
     }
 
-    /// <summary>
-    /// Вычитает патроны из турели.
-    /// </summary>
-    /// <returns></returns>
-    public virtual bool ConsumeAmmo(int amount = 1)
+    private void ConsumeAmmoInMag()
     {
-        if (HasInfiniteAmmo) return false;
-        CurrentAmmo = Mathf.Max(0, CurrentAmmo - amount);
-        return true;
+        if (HasInfiniteAmmo) return;
+
+        CurrentAmmo = Mathf.Max(0, CurrentAmmo - 1);
+        OnAmmoChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Эффект тряски камеры.
+    /// </summary>
+    public void TriggerShotShake()
+    {
+        GlobalEvents.Instance.RequestWorldShake(
+            BarrelEnd?.GlobalPosition ?? GlobalPosition,
+            _shotShakeStrength,
+            _shotShakeRadius,
+            _shotShakeDuration
+        );
     }
 
     #endregion
 
     #region Reloading Logic
 
-    /// <summary>
-    /// Начинает процесс перезарядки турели.
-    /// </summary>
     public virtual bool StartReload()
     {
-        // Нельзя перезаряжаться, если мы уже что-то делаем или магазин полон.
-        if (CurrentState != TurretState.Idle || HasFullAmmo || HasInfiniteAmmo)
-        {
-            GD.Print($"{Name} Невозможно начать перезарядку. Состояние: {CurrentState}, Патроны: {CurrentAmmo}/{MaxAmmo} (INF:{HasInfiniteAmmo})");
-            return false;
-        }
+        if (!CanReload) return false;
 
         SetState(TurretState.Reloading);
-        AnimationPlayer.Play(Animations.Reload);
-        GD.Print($"{Name} Перезарядка началась...");
+
+        if (AnimationPlayer != null && AnimationPlayer.HasAnimation(Animations.Reload))
+        {
+            AnimationPlayer.Play(Animations.Reload);
+        }
+        else
+        {
+            // Если анимации нет, перезаряжаемся мгновенно (или добавить таймер)
+            FinishReload();
+        }
+
         return true;
-    }
-    #endregion
-
-    #region State Management & Overrides
-
-    public override async Task<bool> DestroyAsync()
-    {
-        if (IsQueuedForDeletion()) return false;
-
-        // Выполняем специфичную для ShootingTurret логику:
-        SetState(TurretState.Broken);
-        _cooldownTimer.Stop(); // Останавливаем все таймеры
-        AnimationPlayer.Play(Animations.Break);
-
-        // Ждем, пока анимация разрушения ЗАВЕРШИТСЯ.
-        //    ВАЖНО: Использовать сигнал AnimationFinished, а не CurrentAnimationChanged.
-        //    CurrentAnimationChanged сработает в момент НАЧАЛА новой анимации, а не ее конца.
-        await ToSignal(AnimationPlayer, AnimationPlayer.SignalName.AnimationFinished);
-
-        // Теперь, когда анимация проиграна, вызываем метод базового класса,
-        //    чтобы он выполнил свою часть работы (вызвал OnDestroyed и удалил объект).
-        //    Ключевой момент - `await base.DestroyAsync()`.
-        return await base.DestroyAsync();
     }
 
     /// <summary>
-    /// Безопасно изменяет состояние турели и вызывает событие <see cref="OnStateChanged"/>.
+    /// Завершает перезарядку, пересчитывает патроны.
+    /// Вызывается по окончании анимации перезарядки.
     /// </summary>
-    /// <param name="newState">Новое состояние.</param>
+    public void FinishReload()
+    {
+        if (CurrentState != TurretState.Reloading) return;
+
+        int needed = MagazineSize - CurrentAmmo;
+
+        // Сколько реально можем зарядить
+        int toLoad = HasInfiniteAmmo ? needed : Mathf.Min(needed, ReserveAmmo);
+
+        CurrentAmmo += toLoad;
+        if (!HasInfiniteAmmo)
+        {
+            ReserveAmmo -= toLoad;
+        }
+
+        OnAmmoChanged?.Invoke();
+
+        // Возвращаемся в строй
+        SetState(TurretState.Idle);
+
+#if DEBUG
+        GD.Print($"[{Name}] Reloaded. Mag: {CurrentAmmo}, Reserve: {ReserveAmmo}");
+#endif
+    }
+
+    #endregion
+
+    #region State Machine & Event Handlers
+
     private void SetState(TurretState newState)
     {
         if (CurrentState == newState) return;
@@ -315,55 +390,102 @@ public partial class ShootingTurret : BaseTurret, IShooter
     }
 
     /// <summary>
-    /// Установливает турель в режим Idle. (Используется для анимаций)
+    /// Обработчик окончания любой анимации.
     /// </summary>
-    private void IdleState()
+    private void OnAnimationFinished(StringName animName)
     {
-        SetState(TurretState.Idle);
+        if (animName == Animations.Fire)
+        {
+            OnShootSequenceFinished();
+        }
+        else if (animName == Animations.Reload)
+        {
+            FinishReload();
+        }
     }
 
-    #endregion
-
-    #region Signal Handlers
-
     /// <summary>
-    /// Вызывается по окончании таймера скорострельности.
+    /// Логика после завершения цикла выстрела (анимации).
+    /// Решает, переходить ли в Idle, Cooldown или Reload.
     /// </summary>
-    private void OnCooldownFinished()
+    private void OnShootSequenceFinished()
     {
-        // Если мы не в другом состоянии (например, не начали перезарядку), возвращаемся в Idle.
-        if (CurrentState == TurretState.FiringCooldown)
+        // Если это однозарядное орудие (Танк)
+        if (CurrentFireMode == FireMode.Single)
         {
-            SetState(TurretState.Idle);
-
-            // Автоматическая перезарядка, если закончились патроны
-            if (AutoReload && !HasAmmo && !HasInfiniteAmmo)
+            // Сразу пытаемся перезарядиться, если включена авто-перезарядка
+            if (AutoReload && HasReserveAmmo)
             {
-                GD.Print($"{Name} Автоматическая перезарядка началась, т.к. закончились патроны.");
+                SetState(TurretState.Idle);
+                StartReload();
+            }
+        }
+        // Если магазинное орудие (Пулемет, Автопушка)
+        else
+        {
+            if (HasAmmoInMag)
+            {
+                // Если есть патроны, уходим в кулдаун перед следующим выстрелом
+                SetState(TurretState.FiringCooldown);
+                _cooldownTimer.Start(); // WaitTime задан в _Ready на основе FireRate
+            }
+            else if (AutoReload && HasReserveAmmo)
+            {
+                // Магазин пуст, авто-перезарядка
+                SetState(TurretState.Idle);
                 StartReload();
             }
         }
     }
 
-    private void OnAnimationChanged(StringName animationName)
+    /// <summary>
+    /// Обработчик таймера скорострельности.
+    /// </summary>
+    private void OnCooldownFinished()
     {
-#if DEBUG
-        GD.Print($"{Name} Анимация закончилась: {animationName}");
-#endif
-        if (CurrentState == TurretState.Reloading && animationName == Animations.Reload)
-        {
-            OnReloadFinished();
-        }
+        if (CurrentState != TurretState.FiringCooldown) return;
+
+        // Кулдаун прошел, готовы стрелять снова
+        SetState(TurretState.Idle);
+
+        // Если это FullAuto и кнопка всё еще зажата, контроллер (Player/AI) 
+        // вызовет Shoot() снова в своем _Process, так как IsIdle теперь true.
     }
 
-    /// <summary>
-    /// Вызывается при окончании анимации перезарядки.
-    /// </summary>
-    private void OnReloadFinished()
+    public override async Task<bool> DestroyAsync()
     {
-        CurrentAmmo = MaxAmmo; // Пополняем патроны В КОНЦЕ
-        SetState(TurretState.Idle);
-        GD.Print($"{Name} Перезарядка завершена!");
+        if (IsQueuedForDeletion()) return false;
+
+        SetState(TurretState.Broken);
+        _cooldownTimer?.Stop();
+
+        if (AnimationPlayer != null && AnimationPlayer.HasAnimation(Animations.Break))
+        {
+            AnimationPlayer.Play(Animations.Break);
+            await ToSignal(AnimationPlayer, AnimationPlayer.SignalName.AnimationFinished);
+        }
+
+        return await base.DestroyAsync();
+    }
+
+    #endregion
+
+    #region External API
+
+    public Node3D GetShootInitiator() => this;
+
+    /// <summary>
+    /// Добавляет патроны в резерв (подбор боеприпасов).
+    /// </summary>
+    public void AddAmmo(int amount)
+    {
+        if (HasInfiniteAmmo) return;
+
+        // Не превышаем общий лимит
+        int maxReserve = MaxAmmoCapacity - MagazineSize;
+        ReserveAmmo = Mathf.Min(ReserveAmmo + amount, maxReserve);
+
+        OnAmmoChanged?.Invoke();
     }
 
     #endregion

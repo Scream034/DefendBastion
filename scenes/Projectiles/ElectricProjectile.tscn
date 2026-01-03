@@ -41,3 +41,13 @@ cast_shadow = 0
 lod_bias = 0.001
 gi_mode = 0
 mesh = SubResource("BoxMesh_40e65")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1978450627]
+process_priority = 1
+process_physics_priority = 1
+light_color = Color(0.70980394, 1, 1, 1)
+light_energy = 8.0
+light_volumetric_fog_energy = 10.0
+light_specular = 1.0
+omni_range = 7.0
+omni_attenuation = -1.0

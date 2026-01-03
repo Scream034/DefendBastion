@@ -1,4 +1,4 @@
-[gd_scene load_steps=40 format=4 uid="uid://h4e5iifitbua"]
+[gd_scene format=4 uid="uid://h4e5iifitbua"]
 
 [ext_resource type="Script" uid="uid://dkvis5pabe152" path="res://scripts/Turrets/PlayerControllableTurret.cs" id="1_lbqb5"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="2_6xwvg"]
@@ -63,7 +63,7 @@ tracks/2/keys = {
 
 [sub_resource type="Animation" id="Animation_5qgl3"]
 resource_name = "Fire"
-length = 5.4
+length = 2.65
 markers = [{
 "color": Color(0, 0.846722, 0.846722, 1),
 "name": &"Выстрел",
@@ -376,10 +376,10 @@ tracks/24/path = NodePath("Turret/Base:mesh:surface_3/material:emission_energy_m
 tracks/24/interp = 1
 tracks/24/loop_wrap = true
 tracks/24/keys = {
-"times": PackedFloat32Array(0, 1.93333, 2.06667, 2.63888, 4.4),
-"transitions": PackedFloat32Array(1.4, 1, 0.8, 1.4, 0.8),
+"times": PackedFloat32Array(0, 1.93333, 2.06667, 2.63888),
+"transitions": PackedFloat32Array(1.4, 1, 0.8, 1.4),
 "update": 0,
-"values": [0.0, 85.0, 0.0, 2.0, 0.0]
+"values": [0.0, 85.0, 0.0, 2.0]
 }
 tracks/25/type = "value"
 tracks/25/imported = false
@@ -388,10 +388,10 @@ tracks/25/path = NodePath("Turret/Base:mesh:surface_3/material:emission")
 tracks/25/interp = 1
 tracks/25/loop_wrap = true
 tracks/25/keys = {
-"times": PackedFloat32Array(0, 1.93333, 2.63979, 5),
-"transitions": PackedFloat32Array(1.4, 0.01, 1.4, 1),
+"times": PackedFloat32Array(0, 1.93333, 2.63979),
+"transitions": PackedFloat32Array(1.4, 0.01, 1.4),
 "update": 0,
-"values": [Color(0, 0, 0, 1), Color(0.591088, 0.627804, 1, 1), Color(0.212305, 0.212305, 0.212305, 1), Color(0.258824, 0.258824, 0.321569, 1)]
+"values": [Color(0, 0, 0, 1), Color(0.591088, 0.627804, 1, 1), Color(0.212305, 0.212305, 0.212305, 1)]
 }
 tracks/26/type = "value"
 tracks/26/imported = false
@@ -400,10 +400,10 @@ tracks/26/path = NodePath("Turret/Base:mesh:surface_3/material:albedo_color")
 tracks/26/interp = 1
 tracks/26/loop_wrap = true
 tracks/26/keys = {
-"times": PackedFloat32Array(0, 1.93333, 2.63979, 5),
-"transitions": PackedFloat32Array(1.4, 0.01, 2, 1),
+"times": PackedFloat32Array(0, 1.93333, 2.63979),
+"transitions": PackedFloat32Array(1.4, 0.01, 2),
 "update": 0,
-"values": [Color(0.258824, 0.258824, 0.321569, 1), Color(0.591088, 0.627804, 1, 1), Color(0.2, 0.2, 0.2, 1), Color(0.258824, 0.258824, 0.321569, 1)]
+"values": [Color(0.258824, 0.258824, 0.321569, 1), Color(0.591088, 0.627804, 1, 1), Color(0.2, 0.2, 0.2, 1)]
 }
 tracks/27/type = "value"
 tracks/27/imported = false
@@ -508,17 +508,14 @@ tracks/35/path = NodePath(".")
 tracks/35/interp = 1
 tracks/35/loop_wrap = true
 tracks/35/keys = {
-"times": PackedFloat32Array(1.999, 2, 5.4),
-"transitions": PackedFloat32Array(1, 1, 1),
+"times": PackedFloat32Array(1.999, 2),
+"transitions": PackedFloat32Array(1, 1),
 "values": [{
 "args": [],
 "method": &"TriggerShotShake"
 }, {
 "args": [],
-"method": &"PerformShotLogic"
-}, {
-"args": [],
-"method": &"IdleState"
+"method": &"PerformShot"
 }]
 }
 tracks/36/type = "value"
@@ -536,310 +533,190 @@ tracks/36/keys = {
 tracks/37/type = "value"
 tracks/37/imported = false
 tracks/37/enabled = true
-tracks/37/path = NodePath("Turret/Base/SmokeParticlesL:amount_ratio")
+tracks/37/path = NodePath("Turret/Barrel/BarrelEnd/LightSmokeParticles:emitting")
 tracks/37/interp = 1
 tracks/37/loop_wrap = true
 tracks/37/keys = {
-"times": PackedFloat32Array(2.76667, 4.06667, 5.4),
-"transitions": PackedFloat32Array(0.1, 0.8, 0.1),
-"update": 0,
-"values": [0.0, 1.0, 0.0]
-}
-tracks/38/type = "value"
-tracks/38/imported = false
-tracks/38/enabled = true
-tracks/38/path = NodePath("Turret/Base/SmokeParticlesR:amount_ratio")
-tracks/38/interp = 1
-tracks/38/loop_wrap = true
-tracks/38/keys = {
-"times": PackedFloat32Array(2.76667, 4.06667, 5.4),
-"transitions": PackedFloat32Array(0.1, 0.8, 0.1),
-"update": 0,
-"values": [0.0, 1.0, 0.0]
-}
-tracks/39/type = "value"
-tracks/39/imported = false
-tracks/39/enabled = true
-tracks/39/path = NodePath("Turret/Base/SmokeParticlesL:emitting")
-tracks/39/interp = 1
-tracks/39/loop_wrap = true
-tracks/39/keys = {
-"times": PackedFloat32Array(2.73334),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [true]
-}
-tracks/40/type = "value"
-tracks/40/imported = false
-tracks/40/enabled = true
-tracks/40/path = NodePath("Turret/Base/SmokeParticlesR:emitting")
-tracks/40/interp = 1
-tracks/40/loop_wrap = true
-tracks/40/keys = {
-"times": PackedFloat32Array(2.73334),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [true]
-}
-tracks/41/type = "value"
-tracks/41/imported = false
-tracks/41/enabled = true
-tracks/41/path = NodePath("Turret/Base/SmokeParticlesL:speed_scale")
-tracks/41/interp = 1
-tracks/41/loop_wrap = true
-tracks/41/keys = {
-"times": PackedFloat32Array(2.76667, 4.06833),
-"transitions": PackedFloat32Array(0.5, 0.8),
-"update": 0,
-"values": [2.0, 0.9]
-}
-tracks/42/type = "value"
-tracks/42/imported = false
-tracks/42/enabled = true
-tracks/42/path = NodePath("Turret/Base/SmokeParticlesR:speed_scale")
-tracks/42/interp = 1
-tracks/42/loop_wrap = true
-tracks/42/keys = {
-"times": PackedFloat32Array(2.76667, 4.06833),
-"transitions": PackedFloat32Array(0.5, 0.8),
-"update": 0,
-"values": [2.0, 0.9]
-}
-tracks/43/type = "value"
-tracks/43/imported = false
-tracks/43/enabled = true
-tracks/43/path = NodePath("Turret/Base/SmokeParticlesL:process_material:direction")
-tracks/43/interp = 1
-tracks/43/loop_wrap = true
-tracks/43/keys = {
-"times": PackedFloat32Array(2.73334, 4.04429),
-"transitions": PackedFloat32Array(4, 0.8),
-"update": 0,
-"values": [Vector3(0, 0, -2), Vector3(0, -0.2, -1)]
-}
-tracks/44/type = "value"
-tracks/44/imported = false
-tracks/44/enabled = true
-tracks/44/path = NodePath("Turret/Base/SmokeParticlesR:process_material:direction")
-tracks/44/interp = 1
-tracks/44/loop_wrap = true
-tracks/44/keys = {
-"times": PackedFloat32Array(2.73334, 4.04429),
-"transitions": PackedFloat32Array(4, 0.8),
-"update": 0,
-"values": [Vector3(0, 0, -2), Vector3(0, -0.2, -1)]
-}
-tracks/45/type = "value"
-tracks/45/imported = false
-tracks/45/enabled = true
-tracks/45/path = NodePath("Turret/Base/SmokeParticlesR:explosiveness")
-tracks/45/interp = 1
-tracks/45/loop_wrap = true
-tracks/45/keys = {
-"times": PackedFloat32Array(2.73334, 4.04429),
-"transitions": PackedFloat32Array(0.5, 0.8),
-"update": 0,
-"values": [0.2, 0.0]
-}
-tracks/46/type = "value"
-tracks/46/imported = false
-tracks/46/enabled = true
-tracks/46/path = NodePath("Turret/Base/SmokeParticlesL:explosiveness")
-tracks/46/interp = 1
-tracks/46/loop_wrap = true
-tracks/46/keys = {
-"times": PackedFloat32Array(2.73334, 4.04429),
-"transitions": PackedFloat32Array(0.5, 0.8),
-"update": 0,
-"values": [0.2, 0.0]
-}
-tracks/47/type = "value"
-tracks/47/imported = false
-tracks/47/enabled = true
-tracks/47/path = NodePath("Turret/Barrel/BarrelEnd/LightSmokeParticles:emitting")
-tracks/47/interp = 1
-tracks/47/loop_wrap = true
-tracks/47/keys = {
 "times": PackedFloat32Array(1.9),
 "transitions": PackedFloat32Array(1),
 "update": 1,
 "values": [true]
 }
-tracks/48/type = "value"
-tracks/48/imported = false
-tracks/48/enabled = true
-tracks/48/path = NodePath("Turret/FakeLight/ChargeParticlesLT:emitting")
-tracks/48/interp = 1
-tracks/48/loop_wrap = true
-tracks/48/keys = {
+tracks/38/type = "value"
+tracks/38/imported = false
+tracks/38/enabled = true
+tracks/38/path = NodePath("Turret/FakeLight/ChargeParticlesLT:emitting")
+tracks/38/interp = 1
+tracks/38/loop_wrap = true
+tracks/38/keys = {
 "times": PackedFloat32Array(-0.01, 0, 2.11),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 1,
 "values": [true, true, false]
 }
-tracks/49/type = "value"
-tracks/49/imported = false
-tracks/49/enabled = true
-tracks/49/path = NodePath("Turret/FakeLight/ChargeParticlesLD:emitting")
-tracks/49/interp = 1
-tracks/49/loop_wrap = true
-tracks/49/keys = {
+tracks/39/type = "value"
+tracks/39/imported = false
+tracks/39/enabled = true
+tracks/39/path = NodePath("Turret/FakeLight/ChargeParticlesLD:emitting")
+tracks/39/interp = 1
+tracks/39/loop_wrap = true
+tracks/39/keys = {
 "times": PackedFloat32Array(-0.01, 0, 2.11),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 1,
 "values": [true, true, false]
 }
-tracks/50/type = "value"
-tracks/50/imported = false
-tracks/50/enabled = true
-tracks/50/path = NodePath("Turret/FakeLight/ChargeParticlesRT:emitting")
-tracks/50/interp = 1
-tracks/50/loop_wrap = true
-tracks/50/keys = {
+tracks/40/type = "value"
+tracks/40/imported = false
+tracks/40/enabled = true
+tracks/40/path = NodePath("Turret/FakeLight/ChargeParticlesRT:emitting")
+tracks/40/interp = 1
+tracks/40/loop_wrap = true
+tracks/40/keys = {
 "times": PackedFloat32Array(0, 2.11),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
 "values": [true, false]
 }
-tracks/51/type = "value"
-tracks/51/imported = false
-tracks/51/enabled = true
-tracks/51/path = NodePath("Turret/FakeLight/ChargeParticlesRD:emitting")
-tracks/51/interp = 1
-tracks/51/loop_wrap = true
-tracks/51/keys = {
+tracks/41/type = "value"
+tracks/41/imported = false
+tracks/41/enabled = true
+tracks/41/path = NodePath("Turret/FakeLight/ChargeParticlesRD:emitting")
+tracks/41/interp = 1
+tracks/41/loop_wrap = true
+tracks/41/keys = {
 "times": PackedFloat32Array(0, 2.11),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
 "values": [true, false]
 }
-tracks/52/type = "value"
-tracks/52/imported = false
-tracks/52/enabled = true
-tracks/52/path = NodePath("Turret/Base/ChargeParticlesL:emitting")
-tracks/52/interp = 1
-tracks/52/loop_wrap = true
-tracks/52/keys = {
+tracks/42/type = "value"
+tracks/42/imported = false
+tracks/42/enabled = true
+tracks/42/path = NodePath("Turret/Base/ChargeParticlesL:emitting")
+tracks/42/interp = 1
+tracks/42/loop_wrap = true
+tracks/42/keys = {
 "times": PackedFloat32Array(0, 2.1107),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
 "values": [true, false]
 }
-tracks/53/type = "value"
-tracks/53/imported = false
-tracks/53/enabled = true
-tracks/53/path = NodePath("Turret/Base/ChargeParticlesR:emitting")
-tracks/53/interp = 1
-tracks/53/loop_wrap = true
-tracks/53/keys = {
+tracks/43/type = "value"
+tracks/43/imported = false
+tracks/43/enabled = true
+tracks/43/path = NodePath("Turret/Base/ChargeParticlesR:emitting")
+tracks/43/interp = 1
+tracks/43/loop_wrap = true
+tracks/43/keys = {
 "times": PackedFloat32Array(0, 2.1107),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
 "values": [true, false]
 }
-tracks/54/type = "value"
-tracks/54/imported = false
-tracks/54/enabled = true
-tracks/54/path = NodePath("Turret/Barrel/BarrelEnd/ChargeParticlesB:emitting")
-tracks/54/interp = 1
-tracks/54/loop_wrap = true
-tracks/54/keys = {
+tracks/44/type = "value"
+tracks/44/imported = false
+tracks/44/enabled = true
+tracks/44/path = NodePath("Turret/Barrel/BarrelEnd/ChargeParticlesB:emitting")
+tracks/44/interp = 1
+tracks/44/loop_wrap = true
+tracks/44/keys = {
 "times": PackedFloat32Array(0, 2.21444),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
 "values": [true, false]
 }
-tracks/55/type = "value"
-tracks/55/imported = false
-tracks/55/enabled = true
-tracks/55/path = NodePath("Turret/FakeLight:visible")
-tracks/55/interp = 1
-tracks/55/loop_wrap = true
-tracks/55/keys = {
+tracks/45/type = "value"
+tracks/45/imported = false
+tracks/45/enabled = true
+tracks/45/path = NodePath("Turret/FakeLight:visible")
+tracks/45/interp = 1
+tracks/45/loop_wrap = true
+tracks/45/keys = {
 "times": PackedFloat32Array(0, 2.16667),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
 "values": [true, false]
 }
-tracks/56/type = "value"
-tracks/56/imported = false
-tracks/56/enabled = true
-tracks/56/path = NodePath("Turret/FakeLight:transparency")
-tracks/56/interp = 1
-tracks/56/loop_wrap = true
-tracks/56/keys = {
+tracks/46/type = "value"
+tracks/46/imported = false
+tracks/46/enabled = true
+tracks/46/path = NodePath("Turret/FakeLight:transparency")
+tracks/46/interp = 1
+tracks/46/loop_wrap = true
+tracks/46/keys = {
 "times": PackedFloat32Array(0, 2.16667),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
 "values": [0.0, 1.0]
 }
-tracks/57/type = "value"
-tracks/57/imported = false
-tracks/57/enabled = true
-tracks/57/path = NodePath("Turret/Barrel/BarrelEnd/ChargeParticlesB/FakeLightFx:scale")
-tracks/57/interp = 1
-tracks/57/loop_wrap = true
-tracks/57/keys = {
+tracks/47/type = "value"
+tracks/47/imported = false
+tracks/47/enabled = true
+tracks/47/path = NodePath("Turret/Barrel/BarrelEnd/ChargeParticlesB/FakeLightFx:scale")
+tracks/47/interp = 1
+tracks/47/loop_wrap = true
+tracks/47/keys = {
 "times": PackedFloat32Array(1.83333, 1.96667, 2.13333),
 "transitions": PackedFloat32Array(4, 1, 1),
 "update": 0,
 "values": [Vector3(0.1, 0.1, 0.1), Vector3(7, 7, 7), Vector3(0, 0, 0)]
 }
-tracks/58/type = "value"
-tracks/58/imported = false
-tracks/58/enabled = true
-tracks/58/path = NodePath("Turret/Barrel/BarrelEnd/ChargeParticlesB/FakeLightFx:visible")
-tracks/58/interp = 1
-tracks/58/loop_wrap = true
-tracks/58/keys = {
+tracks/48/type = "value"
+tracks/48/imported = false
+tracks/48/enabled = true
+tracks/48/path = NodePath("Turret/Barrel/BarrelEnd/ChargeParticlesB/FakeLightFx:visible")
+tracks/48/interp = 1
+tracks/48/loop_wrap = true
+tracks/48/keys = {
 "times": PackedFloat32Array(1.83333, 2.13333),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
 "values": [true, false]
 }
-tracks/59/type = "value"
-tracks/59/imported = false
-tracks/59/enabled = true
-tracks/59/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:visible")
-tracks/59/interp = 1
-tracks/59/loop_wrap = true
-tracks/59/keys = {
+tracks/49/type = "value"
+tracks/49/imported = false
+tracks/49/enabled = true
+tracks/49/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:visible")
+tracks/49/interp = 1
+tracks/49/loop_wrap = true
+tracks/49/keys = {
 "times": PackedFloat32Array(0, 2),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
 "values": [true, false]
 }
-tracks/60/type = "value"
-tracks/60/imported = false
-tracks/60/enabled = true
-tracks/60/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:strength")
-tracks/60/interp = 1
-tracks/60/loop_wrap = true
-tracks/60/keys = {
+tracks/50/type = "value"
+tracks/50/imported = false
+tracks/50/enabled = true
+tracks/50/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:strength")
+tracks/50/interp = 1
+tracks/50/loop_wrap = true
+tracks/50/keys = {
 "times": PackedFloat32Array(0, 2),
 "transitions": PackedFloat32Array(5, 1),
 "update": 0,
 "values": [25.0, 200.0]
 }
-tracks/61/type = "value"
-tracks/61/imported = false
-tracks/61/enabled = true
-tracks/61/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:directionality")
-tracks/61/interp = 1
-tracks/61/loop_wrap = true
-tracks/61/keys = {
+tracks/51/type = "value"
+tracks/51/imported = false
+tracks/51/enabled = true
+tracks/51/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:directionality")
+tracks/51/interp = 1
+tracks/51/loop_wrap = true
+tracks/51/keys = {
 "times": PackedFloat32Array(0, 2),
 "transitions": PackedFloat32Array(100, 1),
 "update": 0,
 "values": [0.0, 1.0]
 }
-tracks/62/type = "value"
-tracks/62/imported = false
-tracks/62/enabled = true
-tracks/62/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:radius")
-tracks/62/interp = 1
-tracks/62/loop_wrap = true
-tracks/62/keys = {
+tracks/52/type = "value"
+tracks/52/imported = false
+tracks/52/enabled = true
+tracks/52/path = NodePath("Turret/Barrel/BarrelEnd/GPUParticlesAttractorBox3D:radius")
+tracks/52/interp = 1
+tracks/52/loop_wrap = true
+tracks/52/keys = {
 "times": PackedFloat32Array(0, 2),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
@@ -1617,11 +1494,172 @@ tracks/63/keys = {
 "values": [true]
 }
 
+[sub_resource type="Animation" id="Animation_2nxjb"]
+resource_name = "Reload"
+length = 2.7
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Turret/Base/SmokeParticlesL:amount_ratio")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0.03337, 1.33337, 2.6667),
+"transitions": PackedFloat32Array(0.1, 0.8, 0.1),
+"update": 0,
+"values": [0.0, 1.0, 0.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Turret/Base/SmokeParticlesR:amount_ratio")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0.03337, 1.33337, 2.6667),
+"transitions": PackedFloat32Array(0.1, 0.8, 0.1),
+"update": 0,
+"values": [0.0, 1.0, 0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Turret/Base/SmokeParticlesL:emitting")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Turret/Base/SmokeParticlesR:emitting")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Turret/Base/SmokeParticlesL:speed_scale")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0.03337, 1.335),
+"transitions": PackedFloat32Array(0.5, 0.8),
+"update": 0,
+"values": [2.0, 0.9]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Turret/Base/SmokeParticlesR:speed_scale")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0.03337, 1.335),
+"transitions": PackedFloat32Array(0.5, 0.8),
+"update": 0,
+"values": [2.0, 0.9]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Turret/Base/SmokeParticlesL:process_material:direction")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 1.31099),
+"transitions": PackedFloat32Array(4, 0.8),
+"update": 0,
+"values": [Vector3(0, 0, -2), Vector3(0, -0.2, -1)]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Turret/Base/SmokeParticlesR:process_material:direction")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0, 1.31099),
+"transitions": PackedFloat32Array(4, 0.8),
+"update": 0,
+"values": [Vector3(0, 0, -2), Vector3(0, -0.2, -1)]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Turret/Base/SmokeParticlesR:explosiveness")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 1.31099),
+"transitions": PackedFloat32Array(0.5, 0.8),
+"update": 0,
+"values": [0.2, 0.0]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Turret/Base/SmokeParticlesL:explosiveness")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 1.31099),
+"transitions": PackedFloat32Array(0.5, 0.8),
+"update": 0,
+"values": [0.2, 0.0]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("Turret/Base:mesh:surface_3/material:emission_energy_multiplier")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 1.6667),
+"transitions": PackedFloat32Array(1, 0.8),
+"update": 0,
+"values": [2.0, 0.0]
+}
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("Turret/Base:mesh:surface_3/material:emission")
+tracks/11/interp = 1
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0, 2.2667),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(0.212305, 0.212305, 0.212305, 1), Color(0.258824, 0.258824, 0.321569, 1)]
+}
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("Turret/Base:mesh:surface_3/material:albedo_color")
+tracks/12/interp = 1
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0, 2.2667),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(0.2, 0.2, 0.2, 1), Color(0.258824, 0.258824, 0.321569, 1)]
+}
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_78vft"]
 _data = {
 &"Break": SubResource("Animation_s7gp7"),
 &"Fire": SubResource("Animation_5qgl3"),
-&"RESET": SubResource("Animation_yqw4q")
+&"RESET": SubResource("Animation_yqw4q"),
+&"Reload": SubResource("Animation_2nxjb")
 }
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_eufrt"]
@@ -1936,7 +1974,7 @@ points = PackedVector3Array(0.516593, 0, 0.627405, -0.516596, 0, 0.627405, 0.341
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_0s56n"]
 points = PackedVector3Array(1.66893e-06, -0.580433, 0.60823, 1.66893e-06, 0.580219, 0.60823, 0.516393, -0.569162, 0.627222, -0.000394344, -0.758541, 2.17947, -0.516786, -0.569162, 0.627222, 1.66893e-06, 0.580219, 4.64929, 0.516393, 0.569079, 0.627222, -0.516786, 0.569079, 0.627222, 1.56779, -0.000107229, 1.64926, 2.0228, -0.241123, 4.55908, 0.17068, -0.753168, 2.17947, -0.171073, -0.753168, 2.17947, -0.000394344, -0.758541, 2.97003, -2.0228, -0.241123, 4.55908, -1.56818, -0.000107229, 1.64926, 0.516789, 0.567375, 4.65009, 0.516393, 0.569079, 2.8727, -0.516786, 0.569079, 2.8727, -0.517182, 0.567375, 4.65009, 2.0228, 0.240909, 4.55908, -2.0228, 0.240909, 4.55908, 2.02161, -0.241123, 4.65009, 0.17068, -0.753168, 2.97003, -0.171073, -0.753168, 2.97003, 0.516789, -0.567589, 4.65009, 1.66893e-06, -0.580433, 4.64929, -0.517182, -0.567589, 4.65009, -2.022, -0.241123, 4.65009, 1.48621, 0.357158, 4.65009, 1.48621, 0.357289, 4.55908, -1.4866, 0.357289, 4.55908, -1.4866, 0.357158, 4.65009, 2.02161, 0.240909, 4.65009, -2.022, 0.240909, 4.65009)
 
-[node name="RailGun_Jaeforzs" type="CharacterBody3D" node_paths=PackedStringArray("_cameraController", "TurretYaw", "TurretPitch", "BarrelEnd", "AnimationPlayer", "SightPoints")]
+[node name="RailGun_Jaeforzs" type="CharacterBody3D" unique_id=2114885680 node_paths=PackedStringArray("_cameraController", "TurretYaw", "TurretPitch", "BarrelEnd", "AnimationPlayer", "SightPoints")]
 collision_layer = 7
 collision_mask = 2
 script = ExtResource("1_lbqb5")
@@ -1944,21 +1982,17 @@ _cameraController = NodePath("TurretCameraController")
 TurretYaw = NodePath("Turret")
 TurretPitch = NodePath("Turret/Barrel")
 ProjectileScene = ExtResource("2_6xwvg")
-_shotShakeStrength = 20.0
-MaxAmmo = -1
-FireRate = 20.0
 BarrelEnd = NodePath("Turret/Barrel/BarrelEnd")
-AutoReload = false
 AnimationPlayer = NodePath("AnimationPlayer")
-Faction = 1
+_shotShakeStrength = 20.0
 SightPoints = [NodePath("Turret/LoSPoint1")]
 
-[node name="Shaker3D" type="Node" parent="." node_paths=PackedStringArray("_target")]
+[node name="Shaker3D" type="Node" parent="." unique_id=1920017918 node_paths=PackedStringArray("_target")]
 script = ExtResource("3_s7gp7")
 _target = NodePath("../Camera3D")
 Type = 2
 
-[node name="TurretCameraController" type="Node" parent="." node_paths=PackedStringArray("_camera", "_shaker")]
+[node name="TurretCameraController" type="Node" parent="." unique_id=1410150691 node_paths=PackedStringArray("_camera", "_shaker")]
 script = ExtResource("3_ddxjo")
 _camera = NodePath("../Camera3D")
 _shaker = NodePath("../Shaker3D")
@@ -1969,27 +2003,25 @@ CameraMinPitch = -5.0
 CameraMaxPitch = 3.0
 CameraMaxYaw = 90.0
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
-libraries = {
-&"": SubResource("AnimationLibrary_78vft")
-}
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=2022989087]
+libraries/ = SubResource("AnimationLibrary_78vft")
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.65661e-10, 1.4129, 0.893818)
+[node name="Camera3D" type="Camera3D" parent="." unique_id=2008606812]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.656613e-10, 1.4128969, 0.8938179)
 current = true
 fov = 71.5487
 
-[node name="Turret" type="Node3D" parent="."]
+[node name="Turret" type="Node3D" parent="." unique_id=133280739]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.711318, 0.00108547)
 
-[node name="Barrel" type="MeshInstance3D" parent="Turret"]
+[node name="Barrel" type="MeshInstance3D" parent="Turret" unique_id=1038941818]
 transform = Transform3D(0.5, 5.96046e-08, -2.98023e-08, -5.96046e-08, 0.5, -3.55272e-15, 2.98023e-08, 7.10543e-15, 0.5, 0, 0.039, -1.285)
 mesh = SubResource("ArrayMesh_2nxjb")
 
-[node name="BarrelEnd" type="Marker3D" parent="Turret/Barrel"]
+[node name="BarrelEnd" type="Marker3D" parent="Turret/Barrel" unique_id=280771778]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00824786, 0.00173065, -6.53243)
 
-[node name="FireAudio" type="AudioStreamPlayer3D" parent="Turret/Barrel/BarrelEnd"]
+[node name="FireAudio" type="AudioStreamPlayer3D" parent="Turret/Barrel/BarrelEnd" unique_id=1792408449]
 transform = Transform3D(1.19209e-07, 2, 1.50996e-07, 3.25841e-07, 1.50996e-07, -2, -2, 1.19209e-07, -3.25841e-07, -0.00824817, 0.409822, 2.14453)
 stream = ExtResource("6_ca4b8")
 volume_db = 1.0
@@ -1997,7 +2029,7 @@ unit_size = 20.0
 max_db = 6.0
 panning_strength = 1.5
 
-[node name="ChargeParticlesB" type="GPUParticles3D" parent="Turret/Barrel/BarrelEnd"]
+[node name="ChargeParticlesB" type="GPUParticles3D" parent="Turret/Barrel/BarrelEnd" unique_id=2013601498]
 transform = Transform3D(2.5, -2.84217e-14, -2.84217e-14, 2.84217e-14, 2.5, -3.38813e-21, 2.84217e-14, 0, 2.5, -5.89322e-05, 0.000105619, -0.0511703)
 cast_shadow = 0
 emitting = false
@@ -2014,7 +2046,7 @@ draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_rw2m1")
 draw_pass_1 = ExtResource("7_6ktbg")
 
-[node name="SpotLightB" type="SpotLight3D" parent="Turret/Barrel/BarrelEnd/ChargeParticlesB"]
+[node name="SpotLightB" type="SpotLight3D" parent="Turret/Barrel/BarrelEnd/ChargeParticlesB" unique_id=1547386129]
 transform = Transform3D(1, -8.47032e-22, 8.88178e-15, 8.47032e-22, 1, -1.05879e-21, -8.88178e-15, 1.05879e-21, 1, -6.98492e-10, 0, 0.023309)
 light_color = Color(0.262745, 0.717647, 0.819608, 1)
 light_energy = 0.0
@@ -2026,11 +2058,11 @@ spot_range = 90.0
 spot_attenuation = 3.0
 spot_angle = 89.99
 
-[node name="FakeLightFx" type="MeshInstance3D" parent="Turret/Barrel/BarrelEnd/ChargeParticlesB"]
+[node name="FakeLightFx" type="MeshInstance3D" parent="Turret/Barrel/BarrelEnd/ChargeParticlesB" unique_id=154028057]
 transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)
 mesh = ExtResource("7_6ktbg")
 
-[node name="LightSmokeParticles" type="GPUParticles3D" parent="Turret/Barrel/BarrelEnd"]
+[node name="LightSmokeParticles" type="GPUParticles3D" parent="Turret/Barrel/BarrelEnd" unique_id=1648828077]
 cast_shadow = 0
 emitting = false
 amount = 256
@@ -2043,23 +2075,23 @@ fixed_fps = 31
 process_material = SubResource("ParticleProcessMaterial_6xwvg")
 draw_pass_1 = ExtResource("9_lrb7t")
 
-[node name="GPUParticlesAttractorBox3D" type="GPUParticlesAttractorSphere3D" parent="Turret/Barrel/BarrelEnd"]
+[node name="GPUParticlesAttractorBox3D" type="GPUParticlesAttractorSphere3D" parent="Turret/Barrel/BarrelEnd" unique_id=2005844678]
 visible = false
 strength = 25.0
 attenuation = 0.1
 
-[node name="ColliderRTBarrel" type="RemoteTransform3D" parent="Turret/Barrel"]
+[node name="ColliderRTBarrel" type="RemoteTransform3D" parent="Turret/Barrel" unique_id=351600281]
 transform = Transform3D(3.57143, -4.25747e-07, 2.12874e-07, 4.25747e-07, 3.57143, 5.07531e-14, -2.12874e-07, -2.53765e-14, 3.57143, -0.00139305, -1.66064e-10, -0.00591969)
 remote_path = NodePath("../../../CSBarrel")
 update_scale = false
 
-[node name="FakeLight" type="MeshInstance3D" parent="Turret"]
+[node name="FakeLight" type="MeshInstance3D" parent="Turret" unique_id=1537389681]
 transform = Transform3D(0.51, 0, 0, 0, 0.51, 0, 0, 0, 0.51, -0.004, 0.037, -1.286)
 visible = false
 transparency = 1.0
 mesh = SubResource("ArrayMesh_yj6mr")
 
-[node name="ChargeParticlesLT" type="GPUParticles3D" parent="Turret/FakeLight"]
+[node name="ChargeParticlesLT" type="GPUParticles3D" parent="Turret/FakeLight" unique_id=2129777208]
 transform = Transform3D(3.38715, -0.158864, -0.313559, 1.52737, 0.360982, -0.116714, 1.46329, -0.0090621, 0.847636, -0.897649, 0.268044, 2.62724)
 cast_shadow = 0
 emitting = false
@@ -2074,7 +2106,7 @@ draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
 
-[node name="SpotLightLT" type="SpotLight3D" parent="Turret/FakeLight/ChargeParticlesLT"]
+[node name="SpotLightLT" type="SpotLight3D" parent="Turret/FakeLight/ChargeParticlesLT" unique_id=1295330538]
 transform = Transform3D(-0.866025, -0.0130885, 0.499829, 0, 0.999657, 0.0261769, -0.5, 0.0226699, -0.865729, 0.0351224, 0.0767269, -0.00555947)
 light_color = Color(0.262745, 0.717647, 0.819608, 1)
 light_energy = 0.0
@@ -2085,7 +2117,7 @@ spot_range = 20.0
 spot_attenuation = 1.5
 spot_angle = 90.0
 
-[node name="ChargeParticlesLD" type="GPUParticles3D" parent="Turret/FakeLight"]
+[node name="ChargeParticlesLD" type="GPUParticles3D" parent="Turret/FakeLight" unique_id=49374945]
 transform = Transform3D(3.38634, 0.159045, -0.313522, -1.52822, 0.360907, 0.117369, 1.46427, 0.00885476, 0.84756, -0.898, -0.268, 2.627)
 cast_shadow = 0
 emitting = false
@@ -2100,7 +2132,7 @@ draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
 
-[node name="SpotLightLD" type="SpotLight3D" parent="Turret/FakeLight/ChargeParticlesLD"]
+[node name="SpotLightLD" type="SpotLight3D" parent="Turret/FakeLight/ChargeParticlesLD" unique_id=471838032]
 transform = Transform3D(-0.866025, -0.0130885, 0.499829, 0, 0.999657, 0.0261769, -0.5, 0.0226699, -0.865729, 0.0351224, 0.0767269, -0.00555947)
 light_color = Color(0.262745, 0.717647, 0.819608, 1)
 light_energy = 0.0
@@ -2111,7 +2143,7 @@ spot_range = 20.0
 spot_attenuation = 1.5
 spot_angle = 90.0
 
-[node name="ChargeParticlesRT" type="GPUParticles3D" parent="Turret/FakeLight"]
+[node name="ChargeParticlesRT" type="GPUParticles3D" parent="Turret/FakeLight" unique_id=1243977968]
 transform = Transform3D(3.38672, 0.158955, 0.313551, -1.52837, 0.360941, -0.116714, -1.46323, -0.0090999, 0.847639, 0.898, 0.268044, 2.62724)
 cast_shadow = 0
 emitting = false
@@ -2126,7 +2158,7 @@ draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
 
-[node name="SpotLightRT" type="SpotLight3D" parent="Turret/FakeLight/ChargeParticlesRT"]
+[node name="SpotLightRT" type="SpotLight3D" parent="Turret/FakeLight/ChargeParticlesRT" unique_id=1721744791]
 transform = Transform3D(-0.866025, -0.0130885, 0.499829, 0, 0.999657, 0.0261769, -0.5, 0.0226699, -0.865729, 0.0351224, 0.0767269, -0.00555947)
 light_color = Color(0.262745, 0.717647, 0.819608, 1)
 light_energy = 0.0
@@ -2137,7 +2169,7 @@ spot_range = 20.0
 spot_attenuation = 1.5
 spot_angle = 90.0
 
-[node name="ChargeParticlesRD" type="GPUParticles3D" parent="Turret/FakeLight"]
+[node name="ChargeParticlesRD" type="GPUParticles3D" parent="Turret/FakeLight" unique_id=403511417]
 transform = Transform3D(3.38634, -0.159045, 0.313522, 1.52822, 0.360907, 0.117369, -1.46427, 0.00885476, 0.84756, 0.898, -0.268, 2.627)
 cast_shadow = 0
 emitting = false
@@ -2152,7 +2184,7 @@ draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
 
-[node name="SpotLightRD" type="SpotLight3D" parent="Turret/FakeLight/ChargeParticlesRD"]
+[node name="SpotLightRD" type="SpotLight3D" parent="Turret/FakeLight/ChargeParticlesRD" unique_id=367137737]
 transform = Transform3D(-0.866025, -0.0130885, 0.499829, 0, 0.999657, 0.0261769, -0.5, 0.0226699, -0.865729, 0.0351224, 0.0767269, -0.00555947)
 light_color = Color(0.262745, 0.717647, 0.819608, 1)
 light_energy = 0.0
@@ -2163,11 +2195,11 @@ spot_range = 20.0
 spot_attenuation = 1.5
 spot_angle = 90.0
 
-[node name="Base" type="MeshInstance3D" parent="Turret"]
+[node name="Base" type="MeshInstance3D" parent="Turret" unique_id=1517130772]
 transform = Transform3D(0.5, 3.99946e-05, -9.32205e-05, -4.00041e-05, 0.5, -5.07831e-05, 9.32164e-05, 5.07905e-05, 0.5, 0, 0.0390652, -1.28599)
 mesh = SubResource("ArrayMesh_nml7b")
 
-[node name="ChargeParticlesL" type="GPUParticles3D" parent="Turret/Base"]
+[node name="ChargeParticlesL" type="GPUParticles3D" parent="Turret/Base" unique_id=846233268]
 transform = Transform3D(2.26049, -2.28511e-11, -1.23613, -1.45519e-11, 8.9921, -5.82077e-11, 1.30509, 0, 2.14104, 0.730627, 0.025, 1.19474)
 cast_shadow = 0
 emitting = false
@@ -2182,7 +2214,7 @@ draw_order = 1
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
 
-[node name="SpotLightL" type="SpotLight3D" parent="Turret/Base/ChargeParticlesL"]
+[node name="SpotLightL" type="SpotLight3D" parent="Turret/Base/ChargeParticlesL" unique_id=382870327]
 transform = Transform3D(0.985071, 0.0171167, -0.171293, -0.0173252, 0.99985, 0.000277692, 0.171272, 0.00269414, 0.98522, -0.0113716, -0.00160833, 0.0877049)
 light_color = Color(0.262745, 0.717647, 0.819608, 1)
 light_energy = 0.0
@@ -2193,7 +2225,7 @@ spot_range = 100.0
 spot_attenuation = 2.2
 spot_angle = 70.0
 
-[node name="ChargeParticlesR" type="GPUParticles3D" parent="Turret/Base"]
+[node name="ChargeParticlesR" type="GPUParticles3D" parent="Turret/Base" unique_id=622812505]
 transform = Transform3D(2.26049, 0, 1.23613, 0, 8.9921, 0, -1.30509, 0, 2.14104, -0.731, 0.025, 1.195)
 cast_shadow = 0
 emitting = false
@@ -2208,7 +2240,7 @@ draw_order = 1
 process_material = SubResource("ParticleProcessMaterial_yqw4q")
 draw_pass_1 = ExtResource("7_6ktbg")
 
-[node name="SpotLightR" type="SpotLight3D" parent="Turret/Base/ChargeParticlesR"]
+[node name="SpotLightR" type="SpotLight3D" parent="Turret/Base/ChargeParticlesR" unique_id=1284812851]
 transform = Transform3D(0.985071, 0.0171167, -0.171293, -0.0173252, 0.99985, 0.000277692, 0.171272, 0.00269414, 0.98522, -0.0113716, -0.00160833, 0.0877049)
 light_color = Color(0.262745, 0.717647, 0.819608, 1)
 light_energy = 0.0
@@ -2219,7 +2251,7 @@ spot_range = 100.0
 spot_attenuation = 2.2
 spot_angle = 70.0
 
-[node name="SmokeParticlesL" type="GPUParticles3D" parent="Turret/Base"]
+[node name="SmokeParticlesL" type="GPUParticles3D" parent="Turret/Base" unique_id=2110745291]
 transform = Transform3D(1.03179, -0.105289, -0.279707, 0.138427, 1.31308, -0.0102481, 1.15156, -0.0635043, 0.251848, 0.831762, -0.00246831, 0.911548)
 cast_shadow = 0
 amount = 333
@@ -2233,7 +2265,7 @@ draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_lbqb5")
 draw_pass_1 = ExtResource("15_iswaq")
 
-[node name="SmokeParticlesR" type="GPUParticles3D" parent="Turret/Base"]
+[node name="SmokeParticlesR" type="GPUParticles3D" parent="Turret/Base" unique_id=1934279698]
 transform = Transform3D(0.793955, 0.221845, 0.785887, -0.16733, 1.30096, -0.115857, -1.0639, -0.0390589, 0.604704, -0.826761, 0.00785182, 0.952307)
 cast_shadow = 0
 amount = 333
@@ -2247,44 +2279,44 @@ draw_order = 2
 process_material = SubResource("ParticleProcessMaterial_lbqb5")
 draw_pass_1 = ExtResource("15_iswaq")
 
-[node name="ControlPoint" type="Marker3D" parent="Turret/Base"]
+[node name="ControlPoint" type="Marker3D" parent="Turret/Base" unique_id=1834553117]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00400887, -0.412916, 5.4763)
 
-[node name="ExitPoint" type="Marker3D" parent="Turret/Base"]
+[node name="ExitPoint" type="Marker3D" parent="Turret/Base" unique_id=1666248141]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00337072, -0.256887, 6.20199)
 
-[node name="ChargeAudio" type="AudioStreamPlayer3D" parent="Turret/Base"]
+[node name="ChargeAudio" type="AudioStreamPlayer3D" parent="Turret/Base" unique_id=1720362311]
 transform = Transform3D(-0.000372627, 2, 0.00015993, -0.000202837, 0.000159892, -2, -2, -0.000372643, 0.000202807, 0.00307624, 0.802955, 2.71482)
 stream = ExtResource("10_m6r46")
 attenuation_model = 2
 unit_size = 13.0
 panning_strength = 1.2
 
-[node name="CameraRT" type="RemoteTransform3D" parent="Turret/Base"]
+[node name="CameraRT" type="RemoteTransform3D" parent="Turret/Base" unique_id=1491336553]
 transform = Transform3D(3.57143, -0.000285744, 0.000665831, 0.000285676, 3.57143, 0.000362791, -0.000665861, -0.000362736, 3.57143, 0.000706357, 1.32547, 4.35731)
 remote_path = NodePath("../../../Camera3D")
 update_rotation = false
 update_scale = false
 
-[node name="ColliderRTBase" type="RemoteTransform3D" parent="Turret/Base"]
+[node name="ColliderRTBase" type="RemoteTransform3D" parent="Turret/Base" unique_id=76286371]
 remote_path = NodePath("../../../CSBase")
 update_scale = false
 
-[node name="LoSPoint1" type="Marker3D" parent="Turret"]
+[node name="LoSPoint1" type="Marker3D" parent="Turret" unique_id=541075874]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18785, -0.999852)
 
-[node name="Stand" type="MeshInstance3D" parent="."]
+[node name="Stand" type="MeshInstance3D" parent="." unique_id=704614127]
 transform = Transform3D(0.5, 0.000161857, 0.000467975, -0.000160173, 0.499997, -0.00179827, -0.000468554, 0.00179812, 0.499997, 0, 0, 0)
 mesh = SubResource("ArrayMesh_wga54")
 
-[node name="CSStand" type="CollisionShape3D" parent="."]
+[node name="CSStand" type="CollisionShape3D" parent="." unique_id=2061142748]
 transform = Transform3D(0.5, 0.000161857, 0.000467975, -0.000160173, 0.499997, -0.00179827, -0.000468554, 0.00179812, 0.499997, 0, 0, 0)
 shape = SubResource("ConvexPolygonShape3D_2nxjb")
 
-[node name="CSBarrel" type="CollisionShape3D" parent="."]
-transform = Transform3D(0.5, 3.97904e-14, 4.9738e-14, -3.97904e-14, 0.5, -1.5416e-20, -4.9738e-14, 1.5416e-20, 0.5, -0.000696525, 0.750318, -1.28687)
+[node name="CSBarrel" type="CollisionShape3D" parent="." unique_id=62304570]
+transform = Transform3D(0.5, 3.979038e-14, 4.973797e-14, -3.979038e-14, 0.5, -2.8460296e-21, -4.973797e-14, 1.5415994e-20, 0.5, -0.0006965248, 0.750318, -1.2868743)
 shape = SubResource("ConvexPolygonShape3D_s7gp7")
 
-[node name="CSBase" type="CollisionShape3D" parent="."]
-transform = Transform3D(0.5, 3.99946e-05, -9.32205e-05, -4.00041e-05, 0.5, -5.0783e-05, 9.32164e-05, 5.07905e-05, 0.5, 0, 0.750383, -1.2849)
+[node name="CSBase" type="CollisionShape3D" parent="." unique_id=47824102]
+transform = Transform3D(0.5, 3.99946e-05, -9.32205e-05, -4.00041e-05, 0.5, -5.07831e-05, 9.32164e-05, 5.07905e-05, 0.5, 0, 0.7503832, -1.2849045)
 shape = SubResource("ConvexPolygonShape3D_0s56n")
