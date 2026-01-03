@@ -17,6 +17,10 @@ public static class Constants
     public const string ActionJump = "jump";
     public const string ActionInteract = "interact";
     public const string ActionFreecamToggle = "freecam";
+    public const string ActionFreecamUp = "freecam_up";
+    public const string ActionFreecamDown = "freecam_down";
+    public const string ActionFreecamBoost = "freecam_boost";
+    public const string ActionFreecamSlow = "freecam_slow";
     public const string ActionZoomIn = "zoom_in";
     public const string ActionZoomOut = "zoom_out";
 

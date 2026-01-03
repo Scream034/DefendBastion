@@ -45,18 +45,18 @@ public sealed class FreecamController
         
         // Получаем множитель скорости (Boost/Slow)
         float speedMultiplier = 1.0f;
-        if (Input.IsActionPressed("freecam_boost")) speedMultiplier = 2.0f;
-        if (Input.IsActionPressed("freecam_slow")) speedMultiplier = 0.5f;
+        if (Input.IsActionPressed(Constants.ActionFreecamBoost)) speedMultiplier = 2.0f;
+        if (Input.IsActionPressed(Constants.ActionFreecamSlow)) speedMultiplier = 0.5f;
 
         float finalSpeed = _currentSpeed * speedMultiplier;
 
         // 1. Вертикальное движение (ось Y) - Minecraft style (Q/E)
-        float verticalAxis = Input.GetAxis("freecam_down", "freecam_up");
+        float verticalAxis = Input.GetAxis(Constants.ActionFreecamDown, Constants.ActionFreecamUp);
         velocity.Y = verticalAxis;
 
         // 2. Горизонтальное движение (плоскость XZ)
         // Получаем ввод WASD
-        var inputDir = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
+        var inputDir = Input.GetVector(Constants.ActionMoveLeft, Constants.ActionMoveRight, Constants.ActionMoveForward, Constants.ActionMoveBackward);
 
         if (inputDir != Vector2.Zero)
         {
