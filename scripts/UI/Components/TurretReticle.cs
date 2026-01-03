@@ -125,9 +125,6 @@ public partial class TurretReticle : Control
     private float _frostLevel = 0f;
     private float _impactRing = 0f;
 
-    // Rangefinder
-    private float _targetDistanceDisplay = 0f;
-
     #endregion
 
     #region Events & Properties
@@ -199,12 +196,12 @@ public partial class TurretReticle : Control
     {
         if (_turret == null || !Visible) return;
 
-        if (Input.IsActionJustPressed("zoom_in"))
+        if (Input.IsActionJustPressed(Constants.ActionZoomIn))
         {
             ZoomIn();
             GetViewport().SetInputAsHandled();
         }
-        else if (Input.IsActionJustPressed("zoom_out"))
+        else if (Input.IsActionJustPressed(Constants.ActionZoomOut))
         {
             ZoomOut();
             GetViewport().SetInputAsHandled();
@@ -275,11 +272,6 @@ public partial class TurretReticle : Control
         _targetZoom = Mathf.Clamp(zoom, MinZoom, MaxZoom);
         OnZoomChanged?.Invoke(_targetZoom, CalculatePixelationIntensity(_targetZoom));
     }
-
-    /// <summary>
-    /// Возвращает текущую отображаемую дистанцию дальномера.
-    /// </summary>
-    public float GetDisplayDistance() => _targetDistanceDisplay;
 
     /// <summary>
     /// Возвращает текущий сглаженный уровень зума (для UI).
@@ -403,9 +395,6 @@ public partial class TurretReticle : Control
         float targetTotal = _targetSpread + _squeezeOffset + _recoilOffset;
         float speed = targetTotal < _currentSpread ? SqueezeSpeed : ExpansionSpeed;
         _currentSpread = Mathf.Lerp(_currentSpread, targetTotal, dt * speed);
-
-        // 6. Дальномер
-        _targetDistanceDisplay = Mathf.Lerp(_targetDistanceDisplay, LocalPlayer.Instance.Head.GetScannerDistance(), dt * 8f);
     }
 
     private void ProcessVisualEffects(float dt)
