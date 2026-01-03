@@ -6,59 +6,57 @@ using Godot;
 using Game.Components.Nodes;
 using Game.Singletons;
 using Game.UI;
-using Game.Entity; // Не забудь подключить неймспейс с RobotBus
+using Game.Entity;
 
 namespace Game.Player;
 
+/// <summary>
+/// Управляет "головой" игрока: камерой, определением взаимодействия (Raycast) и сканированием окружения.
+/// Реализует интерфейс контроллера камеры для передачи ввода мыши.
+/// </summary>
 public sealed partial class PlayerHead : Node3D, ICameraController
 {
-    private CameraOperator? _cameraOperator;
+    #region Configuration
 
     [ExportGroup("Components")]
-    [Export] public Camera3D? Camera { get; private set; }
+    [Export] public Camera3D Camera { get; private set; } = null!;
 
-    [ExportSubgroup("Raycasts")]
-    [Export] private RayCast3D? _interactionRay; // Короткий луч для рук (E)
-    [Export] private RayCast3D? _scannerRay;     // Длинный луч для глаз (Прицел/UI)
+    [ExportSubgroup("Sensors")]
+    /// <summary>Луч для взаимодействия с объектами (руки/дистанция действия).</summary>
+    [Export] private RayCast3D _interactionRay = null!;
+    /// <summary>Луч для сканирования дальних объектов (глаза/информация UI).</summary>
+    [Export] private RayCast3D _scannerRay = null!;
 
-    [Export] private Shaker3D? _shaker;
+    [ExportSubgroup("Feedback")]
+    [Export] private Shaker3D _shaker = null!;
 
-    [ExportGroup("Mouse look")]
+    [ExportGroup("Camera Control")]
     [Export] public float Sensitivity { get; set; } = 1.0f;
     [Export(PropertyHint.Range, "-90, 0, 1")] public float MinPitch = -80f;
     [Export(PropertyHint.Range, "0, 90, 1")] public float MaxPitch = 80f;
     [Export(PropertyHint.Range, "-1, 180, 1")] public float MaxYaw = -1f;
 
+    #endregion
+
+    #region State
+
     public IInteractable? CurrentInteractable { get; private set; }
 
-    // Временное хранилище для лимитов
-    private (float, float, float)? _beforeRotationLimits;
+    private CameraOperator? _cameraOperator;
+
+    // Хранилище для восстановления ограничений вращения (Memento pattern lite)
+    private (float minP, float maxP, float maxY)? _rotationLimitsBackup;
+
+    #endregion
+
+    #region Lifecycle
 
     public override void _Ready()
     {
         Input.MouseMode = Input.MouseModeEnum.Captured;
 
-        _cameraOperator = new();
-
-#if DEBUG
-        if (Camera == null) GD.PushError($"[{Name}] Для PlayerHead не назначена Camera3D.");
-        if (_interactionRay == null) GD.PushError($"[{Name}] Для PlayerHead не назначен Interaction RayCast3D.");
-        if (_scannerRay == null) GD.PushWarning($"[{Name}] Scanner RayCast3D не назначен! Прицел не будет реагировать на дистанцию.");
-        if (_shaker == null) GD.PushError($"[{Name}] Для PlayerHead не назначен Shaker3D.");
-#endif
-
-        // Инициализируем оператора
-        if (_cameraOperator != null && Camera != null)
-        {
-            _cameraOperator.NodeSensitivity = Sensitivity;
-            _cameraOperator.MinPitch = MinPitch;
-            _cameraOperator.MaxPitch = MaxPitch;
-            _cameraOperator.MaxYaw = MaxYaw;
-            _cameraOperator.Initialize(this, Camera, _shaker);
-
-            Camera.Fov = GlobalSettings.Instance.FieldOfView;
-            GlobalSettings.Instance.OnFovChanged += OnFovChanged;
-        }
+        ValidateDependencies();
+        InitializeCameraOperator();
     }
 
     public override void _ExitTree()
@@ -71,10 +69,11 @@ public sealed partial class PlayerHead : Node3D, ICameraController
 
     public override void _PhysicsProcess(double delta)
     {
+        // Обрабатываем сенсоры только если голова принадлежит локальному игроку
         if (GetParent() is LocalPlayer)
         {
-            CheckForInteraction();
-            UpdateScannerData(); // <-- Новая логика сканера
+            ProcessInteractionRay();
+            ProcessScannerRay();
         }
         else
         {
@@ -82,50 +81,95 @@ public sealed partial class PlayerHead : Node3D, ICameraController
         }
     }
 
-    #region Scanner Logic
+    #endregion
+
+    #region Logic Implementation
+
+    private void ValidateDependencies()
+    {
+#if DEBUG
+        if (Camera == null) GD.PushError($"[{Name}] Camera3D не назначена!");
+        if (_interactionRay == null) GD.PushError($"[{Name}] Interaction RayCast3D не назначен!");
+        if (_scannerRay == null) GD.PushWarning($"[{Name}] Scanner RayCast3D не назначен! Дальномер не будет работать.");
+        if (_shaker == null) GD.PushError($"[{Name}] Shaker3D не назначен!");
+#endif
+    }
+
+    private void InitializeCameraOperator()
+    {
+        _cameraOperator = new CameraOperator
+        {
+            NodeSensitivity = Sensitivity,
+            MinPitch = MinPitch,
+            MaxPitch = MaxPitch,
+            MaxYaw = MaxYaw
+        };
+
+        if (Camera != null)
+        {
+            _cameraOperator.Initialize(this, Camera, _shaker);
+            Camera.Fov = GlobalSettings.Instance.FieldOfView;
+            GlobalSettings.Instance.OnFovChanged += OnFovChanged;
+        }
+    }
+
+    private void ProcessInteractionRay()
+    {
+        if (_interactionRay == null) return;
+
+        if (_interactionRay.IsColliding() && _interactionRay.GetCollider() is IInteractable interactable)
+        {
+            if (interactable != CurrentInteractable)
+            {
+                CurrentInteractable = interactable;
+            }
+        }
+        else
+        {
+            CurrentInteractable = null;
+        }
+    }
 
     /// <summary>
-    /// Сканирует пространство перед игроком для UI прицела.
+    /// Логика сканера: определяет дистанцию и тип сущности перед игроком.
+    /// Данные отправляются в RobotBus для UI.
     /// </summary>
-    private void UpdateScannerData()
+    private void ProcessScannerRay()
     {
-        // Если луча нет, ничего не делаем
         if (_scannerRay == null) return;
 
         bool foundTarget = false;
         string targetInfo = "";
         float distance;
 
-        // 1. Проверяем коллизию длинного луча
         if (_scannerRay.IsColliding())
         {
             var collisionPoint = _scannerRay.GetCollisionPoint();
-            // Вычисляем точную дистанцию от головы до точки попадания
             distance = GlobalPosition.DistanceTo(collisionPoint);
 
             var collider = _scannerRay.GetCollider();
 
-            // 2. Определение "Цели" (Враг/Союзник)
-            // Здесь можно проверять группы, интерфейсы или слои
-            if (collider is LivingEntity entity)
+            // Идентификация цели
+            if (collider is LivingEntity entity && entity.IsHostile(LocalPlayer.Instance))
             {
-                if (entity.IsHostile(LocalPlayer.Instance))
-                {
-                    foundTarget = true;
-                    targetInfo = $"{entity.GetRid()}={entity.ID}";
-                }
+                foundTarget = true;
+                // Осторожно: String Interpolation в PhysicsProcess создает мусор (GC pressure).
+                // В идеале GetRid() и ID должны кэшироваться или передаваться как объекты, а не строки.
+                targetInfo = $"{entity.GetRid()}={entity.ID}";
             }
         }
         else
         {
-            // Если луч смотрит в небо/пустоту -> дистанция макс. длина луча или просто большое число
+            // Берем длину вектора TargetPosition как макс. дальность
             distance = _scannerRay.TargetPosition.Length();
-            // TargetPosition.Z обычно отрицательный (вперед), берем длину вектора
         }
 
-        // 3. Отправляем данные в UI
-        // SmartReticle использует distance для alpha-канала и размера точки
         RobotBus.PublishScanData(foundTarget, targetInfo, distance);
+    }
+
+    private void OnFovChanged(float newFov)
+    {
+        if (Camera != null) Camera.Fov = newFov;
     }
 
     #endregion
@@ -174,31 +218,43 @@ public sealed partial class PlayerHead : Node3D, ICameraController
 
     #endregion
 
+    #region Head Control API
+
+    /// <summary>
+    /// Добавляет процедурную отдачу (рывок камеры вверх/в сторону с возвратом).
+    /// </summary>
     public async void AddRecoilAsync(Vector3 direction, float strength, float recoilTime = 0.1f)
     {
         if (_cameraOperator == null) return;
 
-        var tween = GetTree().CreateTween();
-        tween.TweenMethod(Callable.From<float>(f =>
-        {
-            _cameraOperator.AddRotation(direction * f);
-        }), 0f, strength, recoilTime).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+        // Фаза удара
+        var tween = CreateTween();
+        tween.TweenMethod(Callable.From<float>(val => _cameraOperator.AddRotation(direction * val)),
+            0f, strength, recoilTime)
+            .SetTrans(Tween.TransitionType.Quad)
+            .SetEase(Tween.EaseType.Out);
 
         await ToSignal(tween, Tween.SignalName.Finished);
 
-        var returnTween = GetTree().CreateTween();
-        returnTween.TweenMethod(Callable.From<float>(f =>
-        {
-            _cameraOperator.AddRotation(-direction * f);
-        }), 0f, strength, recoilTime * 2).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.In);
+        // Фаза возврата (в 2 раза медленнее)
+        var returnTween = CreateTween();
+        returnTween.TweenMethod(Callable.From<float>(val => _cameraOperator.AddRotation(-direction * val)),
+            0f, strength, recoilTime * 2f)
+            .SetTrans(Tween.TransitionType.Quad)
+            .SetEase(Tween.EaseType.In);
     }
 
+    /// <summary>
+    /// Временно переопределяет лимиты вращения камеры (например, при посадке в транспорт).
+    /// </summary>
     public bool SetTempRotationLimits(float minPitch, float maxPitch, float maxYaw)
     {
-        if (_cameraOperator == null || _beforeRotationLimits != null) return false;
+        if (_cameraOperator == null || _rotationLimitsBackup != null) return false;
 
-        _beforeRotationLimits = (_cameraOperator.MinPitch, _cameraOperator.MaxPitch, _cameraOperator.MaxYaw);
+        // Сохраняем текущие значения
+        _rotationLimitsBackup = (_cameraOperator.MinPitch, _cameraOperator.MaxPitch, _cameraOperator.MaxYaw);
 
+        // Применяем новые
         _cameraOperator.MinPitch = minPitch;
         _cameraOperator.MaxPitch = maxPitch;
         _cameraOperator.MaxYaw = maxYaw;
@@ -207,26 +263,34 @@ public sealed partial class PlayerHead : Node3D, ICameraController
         return true;
     }
 
+    /// <summary>
+    /// Восстанавливает стандартные лимиты вращения.
+    /// </summary>
     public bool RestoreRotationLimits()
     {
-        if (_cameraOperator == null || _beforeRotationLimits == null) return false;
+        if (_cameraOperator == null || _rotationLimitsBackup == null) return false;
 
-        var (minP, maxP, maxY) = _beforeRotationLimits.Value;
+        var (minP, maxP, maxY) = _rotationLimitsBackup.Value;
         _cameraOperator.MinPitch = minP;
         _cameraOperator.MaxPitch = maxP;
         _cameraOperator.MaxYaw = maxY;
         _cameraOperator.UpdateRotationLimits();
 
-        _beforeRotationLimits = null;
+        _rotationLimitsBackup = null;
         return true;
     }
 
-    public void TryRotateHeadTowards(Vector3 position, Vector3? up = null)
+    public void TryRotateHeadTowards(Vector3 globalPosition, Vector3? up = null)
     {
+        // Трюк: используем LookAt Node3D, чтобы вычислить кватернион, 
+        // затем извлекаем вращение и применяем к оператору, возвращая Node3D в исходное состояние.
+        // Это нужно, так как CameraOperator хранит свои углы (yaw/pitch) отдельно.
+
         var originalRotation = Rotation;
-        LookAt(position, up ?? Vector3.Up);
+        LookAt(globalPosition, up ?? Vector3.Up);
         var targetRotation = Rotation;
         Rotation = originalRotation;
+
         _cameraOperator?.SetRotation(targetRotation);
     }
 
@@ -235,36 +299,19 @@ public sealed partial class PlayerHead : Node3D, ICameraController
         TryRotateHeadTowards(target.GlobalPosition, up);
     }
 
-    private void CheckForInteraction()
+    public float GetScannerDistance()
     {
-        if (_interactionRay == null) return;
+        if (_scannerRay == null) return 0f;
 
-        if (_interactionRay.IsColliding())
-        {
-            var collider = _interactionRay.GetCollider();
-            if (collider is IInteractable interactable)
-            {
-                if (interactable != CurrentInteractable)
-                {
-                    CurrentInteractable = interactable;
-                }
-            }
-            else
-            {
-                CurrentInteractable = null;
-            }
-        }
-        else
-        {
-            CurrentInteractable = null;
-        }
+        return _scannerRay.IsColliding()
+            ? GlobalPosition.DistanceTo(_scannerRay.GetCollisionPoint())
+            : _scannerRay.TargetPosition.Length();
     }
 
-    private void OnFovChanged(float newFov)
+    public float GetScannerMaxDistance()
     {
-        if (Camera != null)
-        {
-            Camera.Fov = newFov;
-        }
+        return _scannerRay != null ? _scannerRay.TargetPosition.Length() : 0f;
     }
+
+    #endregion
 }

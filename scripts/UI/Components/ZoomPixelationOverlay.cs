@@ -23,9 +23,9 @@ public partial class ZoomPixelationOverlay : ColorRect
     {
         MouseFilter = MouseFilterEnum.Ignore;
         SetAnchorsPreset(LayoutPreset.FullRect);
-        
+
         _material = Material as ShaderMaterial;
-        
+
         Visible = false;
         UpdateShader();
     }
@@ -33,12 +33,12 @@ public partial class ZoomPixelationOverlay : ColorRect
     public override void _Process(double delta)
     {
         float dt = (float)delta;
-        
+
         _currentIntensity = Mathf.Lerp(_currentIntensity, _targetIntensity, dt * LerpSpeed);
-        
+
         // Показываем только при заметной пикселизации
         Visible = _currentIntensity > 0.01f;
-        
+
         if (Visible)
             UpdateShader();
     }
@@ -66,10 +66,10 @@ public partial class ZoomPixelationOverlay : ColorRect
     private void UpdateShader()
     {
         if (_material == null) return;
-        
-        _material.SetShaderParameter("pixelation_intensity", _currentIntensity);
-        _material.SetShaderParameter("zoom_level", _currentZoom);
-        _material.SetShaderParameter("min_pixel_size", MinPixelSize);
-        _material.SetShaderParameter("max_pixel_size", MaxPixelSize);
+
+        _material.SetShaderParameter(Constants.SP_PixelationOverlay_Intensity, _currentIntensity);
+        _material.SetShaderParameter(Constants.SP_PixelationOverlay_ZoomLevel, _currentZoom);
+        _material.SetShaderParameter(Constants.SP_PixelationOverlay_MinPixelSize, MinPixelSize);
+        _material.SetShaderParameter(Constants.SP_PixelationOverlay_MaxPixelSize, MaxPixelSize);
     }
 }

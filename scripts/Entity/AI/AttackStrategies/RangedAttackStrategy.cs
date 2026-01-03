@@ -1,6 +1,5 @@
 using Godot;
 using Game.Projectiles;
-using Game.Singletons;
 
 namespace Game.Entity.AI.AttackStrategies;
 
@@ -84,7 +83,7 @@ public partial class RangedAttackStrategy : Node, IAttackAction
         projectile.RayQueryParams?.Exclude.Add(attacker.GetRid());
         projectile.GlobalTransform = spawnTransform;
 
-        Constants.Root.AddChild(projectile); // Используем централизованный контейнер
+        GetTree().Root.AddChild(projectile); // Используем централизованный контейнер
 
         projectile.Initialize(attacker);
 

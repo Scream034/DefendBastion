@@ -30,11 +30,11 @@ public sealed partial class ManagerUI : CanvasLayer
     /// <summary>
     /// Переключает интерфейс в режим боевой турели.
     /// </summary>
-    public void SwitchToTurretMode(PlayerControllableTurret turret, TurretCameraController cameraController)
+    public void SwitchToTurretMode(PlayerControllableTurret turret)
     {
         PlayerHUD?.HideHUD();
         // Запускаем процедуру подключения
-        TurretHUD?.ShowHUD(turret, cameraController);
+        TurretHUD?.ShowHUD(turret);
     }
 
     /// <summary>

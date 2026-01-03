@@ -294,7 +294,7 @@ public partial class ShootingTurret : BaseTurret, IShooter
         var projectile = ProjectilePool.Instance.Get(ProjectileScene!);
 
         projectile.GlobalTransform = spawnPoint;
-        Constants.Root.AddChild(projectile);
+        GetTree().Root.AddChild(projectile);
 
         projectile.Initialize(initiator);
 

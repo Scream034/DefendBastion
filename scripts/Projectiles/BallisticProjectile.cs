@@ -1,4 +1,3 @@
-using Game.Singletons;
 using Godot;
 
 namespace Game.Projectiles;

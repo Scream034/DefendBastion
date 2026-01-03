@@ -170,16 +170,6 @@ public sealed partial class TemperatureSensorEmitter : Node
 
     private void ProcessDamageBasedHeating(float dt)
     {
-        // КЛЮЧЕВАЯ ФОРМУЛА:
-        // integrity = 1.0 (100% HP) → HealthyTemp (310K, холодно)
-        // integrity = 0.0 (0% HP)   → CriticalDamageTemp (720K, горячо)
-        //
-        // Lerp(a, b, t) = a + (b - a) * t
-        // Lerp(HealthyTemp, CriticalDamageTemp, 1 - integrity)
-        //
-        // При integrity = 1.0: Lerp(310, 720, 0.0) = 310 ✓
-        // При integrity = 0.0: Lerp(310, 720, 1.0) = 720 ✓
-        
         float damageRatio = 1.0f - _currentIntegrity;  // 0 при полном HP, 1 при 0 HP
         _targetTemp = Mathf.Lerp(HealthyTemp, CriticalDamageTemp, damageRatio);
         

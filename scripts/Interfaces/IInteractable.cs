@@ -1,5 +1,3 @@
-using Game.Entity;
-
 namespace Game.Interfaces;
 
 /// <summary>

@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using Game.Singletons;
 using Godot;
 
 namespace Game;
@@ -61,7 +60,7 @@ public partial class World : Node3D
 
     public static async Task<PhysicsDirectSpaceState3D> GetRealDirectSpaceStateAsync()
     {
-        await Constants.Tree.ToSignal(Constants.Tree, SceneTree.SignalName.PhysicsFrame);
+        await Instance.GetTree().ToSignal(Instance.GetTree(), SceneTree.SignalName.PhysicsFrame);
         return Real.DirectSpaceState;
     }
 
@@ -71,7 +70,7 @@ public partial class World : Node3D
     /// <param name="world"></param>
     public static async Task UpdateStateAsync(World3D world)
     {
-        await Constants.Tree.ToSignal(Constants.Tree, SceneTree.SignalName.PhysicsFrame);
+        await Instance.GetTree().ToSignal(Instance.GetTree(), SceneTree.SignalName.PhysicsFrame);
 
         DirectSpaceState = world.DirectSpaceState;
         Real = world;

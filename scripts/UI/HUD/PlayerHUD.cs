@@ -30,7 +30,7 @@ public partial class PlayerHUD : Control
     public void ShowHUD()
     {
         Visible = true;
-        _animPlayer.Play("Boot");
+        _animPlayer.Play(Constants.AnimPlayer_HUD_Boot);
         SharedHUD.SetLoggerPreset(LoggerPreset.Full);
         SharedHUD.SetLoggerVisible(true);
 

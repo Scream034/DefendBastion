@@ -23,7 +23,6 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-Constants="*res://scripts/Singletons/Constants.cs"
 GlobalSettings="*res://scripts/Singletons/GlobalSettings.cs"
 GlobalEvents="*res://scripts/Singletons/GlobalEvents.cs"
 PlayerInputManager="*res://scripts/Singletons/PlayerInputManager.cs"

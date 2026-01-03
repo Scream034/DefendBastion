@@ -5,7 +5,6 @@ using Game.Interfaces;
 using Game.Projectiles;
 using Game.Components;
 using Game.Components.Nodes;
-using Game.Singletons;
 
 namespace Game.Turrets;
 

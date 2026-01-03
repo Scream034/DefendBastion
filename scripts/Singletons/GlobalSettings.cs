@@ -1,7 +1,6 @@
 #nullable enable
 
 using Godot;
-using System;
 
 namespace Game.Singletons;
 

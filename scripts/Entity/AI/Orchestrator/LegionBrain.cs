@@ -1,6 +1,5 @@
 using Game.Entity.AI.Components;
 using Game.Entity.AI.States.Squad;
-using Game.Singletons;
 using Godot;
 using System.Collections.Generic;
 
@@ -22,7 +21,7 @@ namespace Game.Entity.AI.Orchestrator
 
         public override void _Ready()
         {
-            Constants.Tree.CreateTimer(0.1).Timeout += FinalizeSquadInitialization;
+            GetTree().CreateTimer(0.1).Timeout += FinalizeSquadInitialization;
 
             // Подписываемся на глобальные события
             AISignals.Instance.EnemySighted += OnEnemySighted;

@@ -1,7 +1,6 @@
 using Godot;
 using Game.VFX;
 using System.Threading.Tasks;
-using Game.Singletons;
 
 namespace Game.Projectiles;
 
@@ -71,10 +70,9 @@ public partial class SimpleImpactProjectile : BaseProjectile
         if (_impactVfx != null)
         {
             var vfxInstance = _impactVfx.Instantiate<Node3D>();
-            Constants.Root.AddChild(vfxInstance);
+            _audioPlayer.GetTree().Root.AddChild(vfxInstance);
             vfxInstance.GlobalPosition = hitPosition;
 
-            // --- НАЧАЛО ИСПРАВЛЕНИЯ ---
             // Проверяем, не является ли нормаль попадания почти вертикальной.
             // Используем скалярное произведение, чтобы определить коллинеарность с вектором Vector3.Up.
             // Mathf.Abs(hitNormal.Dot(Vector3.Up)) будет близко к 1, если векторы параллельны.
@@ -92,7 +90,6 @@ public partial class SimpleImpactProjectile : BaseProjectile
             }
 
             vfxInstance.LookAt(hitPosition + hitNormal, upVector);
-            // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
             if (vfxInstance is BaseVfx3D baseVfx)
             {

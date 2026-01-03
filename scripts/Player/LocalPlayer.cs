@@ -1,3 +1,5 @@
+#nullable enable
+
 using Godot;
 using Game.Entity;
 using Game.Interfaces;
@@ -8,40 +10,77 @@ using Game.UI;
 
 namespace Game.Player;
 
+/// <summary>
+/// Основной класс управляемого игрока.
+/// Реализует движение, взаимодействие с миром, вход в турели и режим свободной камеры.
+/// </summary>
 public sealed partial class LocalPlayer : MoveableEntity, IOwnerCameraController, ITurretControllable
 {
+    #region Singleton
     public static LocalPlayer Instance { get; private set; } = null!;
+    #endregion
+
+    #region Constants & Input
+
+    #endregion
+
+    #region Signals
 
     [Signal]
     public delegate void OnInteractableDetectedEventHandler(Node3D interactable);
 
-    public enum PlayerState
-    {
-        Normal,
-        InTurret,
-        Freecam
-    }
+    #endregion
+
+    #region Configuration
 
     [ExportGroup("Components")]
     [Export] public PlayerHead Head { get; private set; } = null!;
-    [Export] private CollisionShape3D _collisionShape;
+    [Export] private CollisionShape3D _collisionShape = null!;
 
-    [ExportGroup("Movement")]
-    [Export(PropertyHint.Range, "0.0, 1.0, 0.05")] public float AirControl = 0.1f;
+    [ExportGroup("Movement Settings")]
+    [ExportSubgroup("Air Physics")]
+    [Export(PropertyHint.Range, "0.0, 1.0, 0.05")] public float AirControl { get; private set; } = 0.1f;
 
+    [ExportGroup("Debug & Tools")]
+    [Export] private bool _enableDebugLogs = true;
+
+    #endregion
+
+    #region State Definitions
+
+    public enum PlayerState
+    {
+        /// <summary>Стандартное передвижение пешком.</summary>
+        Normal,
+        /// <summary>Игрок управляет турелью (физика отключена).</summary>
+        InTurret,
+        /// <summary>Свободный полет камеры (Noclip).</summary>
+        Freecam
+    }
+
+    /// <summary>Текущее состояние игрока.</summary>
     public PlayerState CurrentState { get; private set; } = PlayerState.Normal;
 
-    /// <summary>
-    /// Публичное свойство для доступа к текущей турели, в которой находится игрок.
-    /// </summary>
-    public ControllableTurret CurrentTurret { get; private set; }
+    /// <summary>Ссылка на турель, которой в данный момент управляет игрок.</summary>
+    public ControllableTurret? CurrentTurret { get; private set; }
 
-    private IInteractable _lastInteractable;
+    #endregion
+
+    #region Internal Fields
+
+    private IInteractable? _lastInteractable;
     private Vector3 _inputDir;
     private bool _jumpPressed;
-    private float _lastIntegrityPercent = 100f; // Для отслеживания изменений
 
+    // Состояние для отслеживания изменений здоровья (Observer pattern implementation inside Loop)
+    private float _lastIntegrityPercent = 100f;
+
+    // Контроллер свободной камеры (предполагается, что класс существует в контексте проекта)
     private readonly FreecamController _freecamController = new();
+
+    #endregion
+
+    #region Lifecycle
 
     public LocalPlayer()
     {
@@ -52,43 +91,34 @@ public sealed partial class LocalPlayer : MoveableEntity, IOwnerCameraController
     {
         base._Ready();
 
-        // Устанавливаем голову игрока как стартовый контроллер камеры
-        PlayerInputManager.Instance.SwitchController(Head);
-
-        RobotBus.Sys("NEURAL_OS v4.0.2: BOOT SEQUENCE COMPLETE");
-
-#if DEBUG
-        if (Head == null) GD.PushError("Для игрока не был назначен PlayerHead.");
-        if (_collisionShape == null) GD.PushError("Для игрока не был назначен CollisionShape3D.");
-        if (World.DefaultGravity <= 0) GD.PushWarning($"Неверное использование гравитации: {World.DefaultGravity}");
-#endif
+        ValidateDependencies();
+        InitializeSystem();
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        // В режиме Freecam мы полностью игнорируем стандартную физику
-        if (CurrentState == PlayerState.Freecam)
+        float dt = (float)delta;
+
+        switch (CurrentState)
         {
-            ProcessFreecam((float)delta);
-            return;
+            case PlayerState.Normal:
+                ProcessNormalState(dt);
+                break;
+
+            case PlayerState.InTurret:
+                ProcessTurretState();
+                break;
+
+            case PlayerState.Freecam:
+                ProcessFreecamState(dt);
+                break;
         }
 
-        // Стандартная физика (гравитация) применяется только если мы НЕ в Freecam и НЕ в турели
-        if (CurrentState != PlayerState.InTurret)
+        // Обновляем вращение тела по Y только если мы не в свободном полете
+        if (CurrentState != PlayerState.Freecam)
         {
-            base._PhysicsProcess(delta); // Применяет гравитацию
+            UpdateBodyRotation();
         }
-
-        SetBodyYaw(Head.Rotation.Y);
-
-        if (CurrentState == PlayerState.InTurret)
-        {
-            Velocity = Vector3.Zero;
-            return;
-        }
-
-        ProcessNormal((float)delta);
-        MoveAndSlide();
     }
 
     public override async Task<bool> DestroyAsync()
@@ -104,87 +134,143 @@ public sealed partial class LocalPlayer : MoveableEntity, IOwnerCameraController
         return isDestroyed;
     }
 
-    public void SetBodyYaw(in float yaw)
-    {
-        _collisionShape.Rotation = _collisionShape.Rotation with { Y = yaw };
-    }
+    #endregion
 
-    private void ProcessNormal(float delta)
-    {
-        HandleMovement(delta);
-        HandleInteractionUI();
+    #region State Processing Logic
 
-        UpdateIntegrityLogic();
+    /// <summary>
+    /// Логика стандартного состояния: физика, гравитация, движение, взаимодействие.
+    /// </summary>
+    private void ProcessNormalState(float delta)
+    {
+        // Базовая физика (гравитация) из MoveableEntity
+        base._PhysicsProcess(delta);
+
+        HandleMovementPhysics(delta);
+        HandleInteractionRaycast();
+        MonitorHullIntegrity();
+
+        MoveAndSlide();
     }
 
     /// <summary>
-    /// Логика отслеживания прочности и вывода в систему логов.
+    /// Логика состояния в турели: игрок зафиксирован, физика отключена.
     /// </summary>
-    private void UpdateIntegrityLogic()
+    private void ProcessTurretState()
     {
-        float currentPercent = (Health / MaxHealth) * 100f;
-
-        if (!Mathf.IsEqualApprox(currentPercent, _lastIntegrityPercent))
-        {
-            float diff = _lastIntegrityPercent - currentPercent;
-
-            if (diff > 0) // Урон
-            {
-                // Просто кидаем сообщение в шину
-                RobotBus.Warn($"HULL BREACH DETECTED: -{diff:F1}%");
-                RobotBus.Sys($"REROUTING POWER TO SECTOR {GD.Randi() % 9}");
-            }
-            else // Ремонт
-            {
-                RobotBus.Sys($"REPAIR SEQUENCE: +{Mathf.Abs(diff):F1}%");
-            }
-
-            _lastIntegrityPercent = currentPercent;
-        }
+        Velocity = Vector3.Zero;
+        // Здесь можно добавить обновление специфичного UI, если требуется каждый кадр
     }
 
-    private void ProcessFreecam(float delta)
+    /// <summary>
+    /// Логика свободной камеры: полет сквозь стены, игнорирование гравитации.
+    /// </summary>
+    private void ProcessFreecamState(float delta)
     {
-        // Делегируем расчет движения контроллеру
-        // Используем GlobalBasis головы, чтобы лететь туда, куда смотрим
+        // Вычисляем движение на основе базиса камеры (куда смотрим - туда летим)
         Vector3 motion = _freecamController.CalculateMovement(Head.GlobalTransform.Basis, delta);
-
-        // Напрямую меняем позицию (Noclip)
         GlobalPosition += motion;
 
-        // Скрываем UI взаимодействия в режиме полета
         ManagerUI.Instance.HideInteractionText();
     }
 
-    private void HandleMovement(in float delta)
+    #endregion
+
+    #region Input Handling
+
+    /// <summary>
+    /// Централизованный обработчик ввода. Маршрутизирует события в зависимости от состояния.
+    /// </summary>
+    public void HandleInput(in InputEvent @event)
     {
-        // 4. Упрощаем метод движения. Гравитация уже применена в base._PhysicsProcess.
+        // Глобальные переключатели
+        if (@event.IsActionPressed(Constants.ActionFreecamToggle))
+        {
+            ToggleFreecam();
+            return;
+        }
+
+        // Ввод в зависимости от состояния
+        switch (CurrentState)
+        {
+            case PlayerState.Freecam:
+                _freecamController.HandleInput(@event);
+                break;
+
+            case PlayerState.Normal:
+                HandleNormalInput(@event);
+                break;
+
+            case PlayerState.InTurret:
+                // Ввод в турели обрабатывается самой турелью через PlayerInputManager
+                break;
+        }
+    }
+
+    private void HandleNormalInput(InputEvent @event)
+    {
+        // Вектор движения
+        var direction = Input.GetVector(Constants.ActionMoveLeft, Constants.ActionMoveRight, Constants.ActionMoveForward, Constants.ActionMoveBackward);
+        _inputDir = new Vector3(direction.X, 0, direction.Y).Normalized();
+
+        // Действия
+        if (@event.IsActionPressed(Constants.ActionJump))
+        {
+            _jumpPressed = true;
+        }
+        else if (@event.IsActionPressed(Constants.ActionInteract))
+        {
+            TryInteract();
+        }
+    }
+
+    #endregion
+
+    #region Movement & Physics Implementation
+
+    private void HandleMovementPhysics(float delta)
+    {
         Vector3 velocity = Velocity;
 
-        // Используем метод Jump() из базового класса
+        // Обработка прыжка
         if (_jumpPressed)
         {
             Jump();
-            // Обновляем локальную `velocity`, т.к. Jump() изменил свойство `Velocity`
+            // Получаем обновленный Y после прыжка
             velocity.Y = Velocity.Y;
+            _jumpPressed = false;
         }
-        _jumpPressed = false;
 
+        // Расчет целевой скорости
         Vector3 direction = (Head.Transform.Basis * _inputDir).Normalized();
         Vector3 targetVelocity = direction * Speed;
 
-        float currentAirControl = IsOnFloor() ? 1.0f : AirControl;
+        // Расчет инерции (земля vs воздух)
+        float currentControl = IsOnFloor() ? 1.0f : AirControl;
         float lerpSpeed = direction.IsZeroApprox() ? Deceleration : Acceleration;
 
-        velocity.X = Mathf.Lerp(velocity.X, targetVelocity.X, lerpSpeed * currentAirControl * delta);
-        velocity.Z = Mathf.Lerp(velocity.Z, targetVelocity.Z, lerpSpeed * currentAirControl * delta);
+        velocity.X = Mathf.Lerp(velocity.X, targetVelocity.X, lerpSpeed * currentControl * delta);
+        velocity.Z = Mathf.Lerp(velocity.Z, targetVelocity.Z, lerpSpeed * currentControl * delta);
 
         Velocity = velocity;
     }
 
-    private void HandleInteractionUI()
+    private void UpdateBodyRotation()
+    {
+        if (_collisionShape != null)
+        {
+            _collisionShape.Rotation = _collisionShape.Rotation with { Y = Head.Rotation.Y };
+        }
+    }
+
+    #endregion
+
+    #region Interaction System
+
+    private void HandleInteractionRaycast()
     {
         var currentInteractable = Head.CurrentInteractable;
+
         if (currentInteractable != _lastInteractable)
         {
             if (currentInteractable != null)
@@ -199,6 +285,21 @@ public sealed partial class LocalPlayer : MoveableEntity, IOwnerCameraController
         _lastInteractable = currentInteractable;
     }
 
+    private void TryInteract()
+    {
+        if (Head.CurrentInteractable != null)
+        {
+            Head.CurrentInteractable.Interact(this);
+        }
+    }
+
+    #endregion
+
+    #region Public API (Turret & Camera Control)
+
+    /// <summary>
+    /// Вход игрока в управляемую турель.
+    /// </summary>
     public void EnterTurret(ControllableTurret turret)
     {
         if (CurrentState != PlayerState.Normal) return;
@@ -206,72 +307,66 @@ public sealed partial class LocalPlayer : MoveableEntity, IOwnerCameraController
         CurrentState = PlayerState.InTurret;
         CurrentTurret = turret;
 
-        // Переключаем интерфейс на турельный (с глитчами и звуком)
+        // Переключаем UI и эффекты
         if (turret is PlayerControllableTurret playerTurret)
         {
-            // Находим контроллер камеры, привязанный к этой турели
-            // Обычно он находится в детях или экспортирован
-            var camController = playerTurret.GetNode<TurretCameraController>("TurretCameraController");
-            ManagerUI.Instance.SwitchToTurretMode(playerTurret, camController);
+            ManagerUI.Instance.SwitchToTurretMode(playerTurret);
         }
 
         RobotBus.Net($"HANDSHAKE SEQUENCE: {turret.Name}");
         RobotBus.Net("REMOTE_LINK: ESTABLISHED");
     }
 
+    /// <summary>
+    /// Выход из турели в указанную позицию.
+    /// </summary>
     public void ExitTurret(Vector3 exitPosition)
     {
         if (CurrentState != PlayerState.InTurret) return;
 
+        // Телепортация в точку выхода
         GlobalPosition = exitPosition;
+        Velocity = Vector3.Zero; // Сброс инерции
+
         CurrentTurret = null;
         CurrentState = PlayerState.Normal;
 
+        // Восстановление управления
         ManagerUI.Instance.SwitchToPlayerMode();
         PlayerInputManager.Instance.SwitchController(Head);
 
-        // При выходе из турели сбрасываем состояние здоровья для корректных логов
-        _lastIntegrityPercent = Health / MaxHealth * 100f;
+        // Синхронизация состояния здоровья для логов (чтобы не спамило разницу после выхода)
+        SynchronizeHullIntegrity();
+
         RobotBus.Net("REMOTE_LINK: TERMINATED");
     }
 
     public bool IsInTurret() => CurrentState == PlayerState.InTurret;
 
-    public PlayerHead GetPlayerHead()
+    public PlayerHead GetPlayerHead() => Head;
+
+    #endregion
+
+    #region Helpers & Systems
+
+    private void InitializeSystem()
     {
-        return Head;
+        // Активируем управление головой
+        PlayerInputManager.Instance.SwitchController(Head);
+
+        if (_enableDebugLogs)
+        {
+            RobotBus.Sys("NEURAL_OS v4.0.2: BOOT SEQUENCE COMPLETE");
+        }
     }
 
-    public void HandleInput(in InputEvent @event)
+    private void ValidateDependencies()
     {
-        // 1. Переключение режима Freecam
-        if (@event.IsActionPressed("freecam"))
-        {
-            ToggleFreecam();
-            return;
-        }
-
-        // 2. Обработка ввода для Freecam
-        if (CurrentState == PlayerState.Freecam)
-        {
-            _freecamController.HandleInput(@event);
-            return; // Прерываем, чтобы не обрабатывать прыжки/движение
-        }
-
-        // 3. Стандартная обработка (если не в турели)
-        if (CurrentState == PlayerState.InTurret) return;
-
-        var direction = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
-        _inputDir = new Vector3(direction.X, 0, direction.Y).Normalized();
-
-        if (@event.IsActionPressed("jump"))
-        {
-            _jumpPressed = true;
-        }
-        else if (@event.IsActionPressed("interact") && Head.CurrentInteractable != null)
-        {
-            Head.CurrentInteractable.Interact(this);
-        }
+#if DEBUG
+        if (Head == null) GD.PushError($"[{nameof(LocalPlayer)}] PlayerHead не назначен!");
+        if (_collisionShape == null) GD.PushError($"[{nameof(LocalPlayer)}] CollisionShape3D не назначен!");
+        if (World.DefaultGravity <= 0) GD.PushWarning($"[{nameof(LocalPlayer)}] Гравитация странная: {World.DefaultGravity}");
+#endif
     }
 
     private void ToggleFreecam()
@@ -279,19 +374,48 @@ public sealed partial class LocalPlayer : MoveableEntity, IOwnerCameraController
         if (CurrentState == PlayerState.Normal)
         {
             CurrentState = PlayerState.Freecam;
-            Velocity = Vector3.Zero; // Сброс инерции
+            Velocity = Vector3.Zero;
+            _collisionShape.Disabled = true; // Отключаем коллизию для пролета сквозь стены
 
-            // Отключаем коллизию, чтобы пролетать сквозь стены (опционально, но желательно для Freecam)
-            _collisionShape.Disabled = true;
-
-            GD.Print("Freecam Activated");
+            if (_enableDebugLogs) GD.Print("SYS: Freecam Activated");
         }
         else if (CurrentState == PlayerState.Freecam)
         {
             CurrentState = PlayerState.Normal;
             _collisionShape.Disabled = false;
-            GD.Print("Freecam Deactivated");
+
+            if (_enableDebugLogs) GD.Print("SYS: Freecam Deactivated");
         }
-        // Из турели в freecam переходить запрещаем (или нужна доп. логика выхода)
+        // Выход в Freecam из турели запрещен дизайном (нужно сначала выйти из турели)
     }
+
+    private void MonitorHullIntegrity()
+    {
+        float currentPercent = Health / MaxHealth * 100f;
+
+        if (!Mathf.IsEqualApprox(currentPercent, _lastIntegrityPercent))
+        {
+            float diff = _lastIntegrityPercent - currentPercent;
+
+            if (diff > 0) // Урон
+            {
+                RobotBus.Warn($"HULL BREACH DETECTED: -{diff:F1}%");
+                // Эффект "перенаправления энергии" для атмосферы
+                RobotBus.Sys($"REROUTING POWER TO SECTOR {GD.Randi() % 9}");
+            }
+            else // Ремонт
+            {
+                RobotBus.Sys($"REPAIR SEQUENCE: +{Mathf.Abs(diff):F1}%");
+            }
+
+            _lastIntegrityPercent = currentPercent;
+        }
+    }
+
+    private void SynchronizeHullIntegrity()
+    {
+        _lastIntegrityPercent = Health / MaxHealth * 100f;
+    }
+
+    #endregion
 }
