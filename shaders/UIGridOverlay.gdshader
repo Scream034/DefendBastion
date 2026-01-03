@@ -15,7 +15,7 @@ uniform float vignette_strength : hint_range(0.0, 1.0) = 0.3;
 uniform float scanline_intensity : hint_range(0.0, 0.2) = 0.05;
 uniform float noise_intensity : hint_range(0.0, 0.1) = 0.02;
 
-// НОВОЕ: Интенсивность (управляется из кода)
+// Интенсивность (управляется из кода)
 uniform float intensity : hint_range(0.0, 1.0) = 1.0;
 
 // Анимация

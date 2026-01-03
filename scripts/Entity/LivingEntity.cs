@@ -117,4 +117,10 @@ public abstract partial class LivingEntity : CharacterBody3D, ICharacter, IFacti
         if (other == null) return false;
         return FactionManager.AreFactionsHostile(Faction, other.Faction);
     }
+
+    public float GetIntegrityPercent()
+    {
+        if (MaxHealth <= 0) return 100f;
+        return Health / MaxHealth * 100f;
+    }
 }

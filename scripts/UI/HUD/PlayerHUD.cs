@@ -15,10 +15,6 @@ public partial class PlayerHUD : Control
     [Export] private Label _interactionLabel = null!;
     [Export] private AnimationPlayer _animPlayer = null!;
 
-    private float _targetIntegrity = 100f;
-    private Color _baseColor = new(0, 1, 1, 0.8f);
-    private Color _warningColor = new(1, 0.2f, 0.2f, 1.0f);
-
     public override void _Ready()
     {
         _interactionLabel.Visible = false;

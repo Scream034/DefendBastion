@@ -5,6 +5,7 @@ uniform float spread : hint_range(-20.0, 100.0) = 0.0;
 uniform float diamond_rotation : hint_range(-6.28, 6.28) = 0.0;
 uniform float yaw_degrees : hint_range(-360.0, 360.0) = 0.0;
 uniform float pitch_degrees : hint_range(-90.0, 90.0) = 0.0;
+uniform float zoom_level : hint_range(1.0, 10.0) = 1.0;
 
 uniform int turret_state : hint_range(0, 5) = 0;
 uniform float state_time = 0.0;
@@ -31,13 +32,12 @@ uniform int minor_interval : hint_range(1, 15) = 5;
 uniform int medium_interval : hint_range(5, 30) = 15;
 uniform int major_interval : hint_range(15, 90) = 45;
 
-// === ЦВЕТА (Улучшенная палитра) ===
+// === ЦВЕТА ===
 uniform vec4 color_main : source_color = vec4(0.2, 0.9, 0.8, 0.9);
 uniform vec4 color_warning : source_color = vec4(1.0, 0.3, 0.2, 0.9);
 uniform vec4 color_cooldown : source_color = vec4(0.4, 0.75, 1.0, 0.9);
-// Новый цвет выстрела - насыщенный циановый с лёгкой желтизной
 uniform vec4 color_shooting : source_color = vec4(0.4, 1.0, 0.9, 1.0);
-uniform vec4 color_flash : source_color = vec4(0.6, 1.0, 0.95, 1.0);      // Яркий циан для вспышки
+uniform vec4 color_flash : source_color = vec4(0.6, 1.0, 0.95, 1.0);
 uniform vec4 color_frost : source_color = vec4(0.7, 0.9, 1.0, 0.9);
 uniform vec4 color_minor : source_color = vec4(0.2, 0.9, 0.8, 0.25);
 uniform vec4 color_medium : source_color = vec4(0.2, 0.9, 0.8, 0.5);
@@ -488,6 +488,34 @@ void fragment() {
             float h_line = draw_line(p, corners[i], corners[i] + vec2(dirs[i].x * size, 0.0), 1.5);
             float v_line = draw_line(p, corners[i], corners[i] + vec2(0.0, dirs[i].y * size), 1.5);
             final_color = mix(final_color, bracket_color, max(h_line, v_line));
+        }
+    }
+
+    // 9. ИНДИКАТОР ЗУМА (центральное кольцо)
+    if (zoom_level > 1.1) {
+        float zoom_ring_radius = reticle_gap - 10.0;
+        float zoom_progress = (zoom_level - 1.0) / 5.0; // Для 1x-6x
+        
+        // Частичное кольцо, заполняющееся при зуме
+        vec2 rp = p - center;
+        float angle = atan(rp.y, rp.x);
+        float normalized_angle = (angle + 3.14159) / 6.28318; // 0 to 1
+        
+        if (normalized_angle < zoom_progress) {
+            float ring = draw_circle(p, center, zoom_ring_radius, 2.0);
+            vec4 zoom_ring_color = state_color;
+            zoom_ring_color.a *= 0.5;
+            final_color = mix(final_color, zoom_ring_color, ring);
+        }
+        
+        // Метки зума
+        for (int i = 1; i <= 5; i++) {
+            float mark_angle = float(i) / 5.0 * 6.28318 - 3.14159;
+            vec2 mark_pos = center + vec2(cos(mark_angle), sin(mark_angle)) * zoom_ring_radius;
+            float mark = draw_filled_circle(p, mark_pos, 2.0);
+            
+            vec4 mark_color = (float(i) <= zoom_progress * 5.0) ? state_color : color_minor;
+            final_color = mix(final_color, mark_color, mark);
         }
     }
     

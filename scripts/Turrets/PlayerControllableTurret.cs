@@ -14,7 +14,7 @@ namespace Game.Turrets;
 public partial class PlayerControllableTurret : ControllableTurret, IOwnerCameraController
 {
     [ExportGroup("Components")]
-    [Export] private TurretCameraController _cameraController;
+    [Export] public TurretCameraController CameraController { get; private set; }
 
     public Player.LocalPlayer PlayerController => CurrentController as Player.LocalPlayer;
 
@@ -49,10 +49,10 @@ public partial class PlayerControllableTurret : ControllableTurret, IOwnerCamera
         base.EnterTurret(entity);
 
         // Передаем контроллеру все необходимые ему компоненты и параметры
-        _cameraController.Initialize(this);
+        CameraController.Initialize(this);
 
         // Сообщаем менеджеру, что нужно переключиться на камеру турели
-        PlayerInputManager.Instance.SwitchController(_cameraController);
+        PlayerInputManager.Instance.SwitchController(CameraController);
     }
 
     public void HandleInput(in InputEvent @event)

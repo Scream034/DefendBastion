@@ -7,9 +7,8 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_w7kh3"]
 
 [node name="Player" type="CharacterBody3D" unique_id=2031266845 node_paths=PackedStringArray("Head", "_collisionShape", "SightPoints")]
-process_priority = 1
-process_physics_priority = 1
-physics_interpolation_mode = 1
+process_priority = 3
+process_physics_priority = 3
 collision_layer = 7
 collision_mask = 3
 script = ExtResource("1_vm2lv")
@@ -34,8 +33,8 @@ autostart = true
 shape = SubResource("CapsuleShape3D_w7kh3")
 
 [node name="Head" type="Node3D" parent="." unique_id=390730385 node_paths=PackedStringArray("Camera", "_interactionRay", "_scannerRay", "_shaker")]
-process_priority = 1
-process_physics_priority = 1
+process_priority = 2
+process_physics_priority = 2
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 script = ExtResource("2_vm2lv")
 Camera = NodePath("Camera3D")

@@ -11,10 +11,15 @@
 [ext_resource type="Script" uid="uid://d4mbb78awh1j5" path="res://scripts/UI/HUD/SharedHUD.cs" id="6_ilk7v"]
 [ext_resource type="Script" uid="uid://b7p4wl1iap37i" path="res://scripts/UI/Components/SmartReticle.cs" id="7_24e4x"]
 [ext_resource type="Script" uid="uid://c0au4200qyxe2" path="res://scripts/UI/Components/CockpitDashboard.cs" id="9_ukj8e"]
+[ext_resource type="Script" uid="uid://cbog5gfcsytne" path="res://scripts/UI/Components/TemperatureSensorEmitter.cs" id="10_4dthu"]
 [ext_resource type="Script" uid="uid://dtpy2gw6s60qf" path="res://scripts/UI/HUD/TurretHUD.cs" id="10_aputy"]
 [ext_resource type="Script" uid="uid://d1lwf4d8mm7ja" path="res://scripts/UI/Components/TurretReticle.cs" id="11_aputy"]
+[ext_resource type="Shader" uid="uid://n2cq3lpdus0f" path="res://shaders/DigitalZoom.gdshader" id="11_mhjpf"]
+[ext_resource type="Script" uid="uid://i6embhov8dk7" path="res://scripts/UI/Components/ZoomPixelationOverlay.cs" id="12_s2m3y"]
 [ext_resource type="Shader" uid="uid://cb4uqpofl1fcv" path="res://shaders/UIGlitch.gdshader" id="14_ilk7v"]
 [ext_resource type="Script" uid="uid://d3h5yfxc8ldsw" path="res://scripts/UI/Components/GlitchOverlay.cs" id="15_flkkw"]
+[ext_resource type="Script" uid="uid://5tbvqkr8dmc1" path="res://scripts/UI/Components/SensorDataPanel.cs" id="16_hu0pd"]
+[ext_resource type="Shader" uid="uid://byciuvbpsuuoo" path="res://shaders/DottedOutline.gdshader" id="17_o5ifv"]
 
 [sub_resource type="Theme" id="Theme_xpksx"]
 default_font = ExtResource("4_3wlde")
@@ -56,12 +61,26 @@ _data = {
 &"RESET": SubResource("Animation_75u2n")
 }
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_s2m3y"]
+shader = ExtResource("11_mhjpf")
+shader_parameter/pixelation_intensity = 0.0
+shader_parameter/min_pixel_size = 1.0
+shader_parameter/max_pixel_size = 16.0
+shader_parameter/zoom_level = 1.0
+shader_parameter/scanline_intensity = 0.3
+shader_parameter/vignette_intensity = 0.4
+shader_parameter/chromatic_aberration = 1.0
+shader_parameter/noise_intensity = 0.05
+shader_parameter/tint_color = Color(0.2, 0.9, 0.8, 1)
+shader_parameter/tint_strength = 0.1
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ilk7v"]
 shader = ExtResource("4_5sqrc")
 shader_parameter/spread = 0.0
 shader_parameter/diamond_rotation = 0.0
 shader_parameter/yaw_degrees = 0.0
 shader_parameter/pitch_degrees = 0.0
+shader_parameter/zoom_level = 1.0
 shader_parameter/turret_state = 0
 shader_parameter/state_time = 0.0
 shader_parameter/convergence_intensity = 0.0
@@ -88,6 +107,23 @@ shader_parameter/color_flash = Color(0.6, 1, 0.95, 1)
 shader_parameter/color_frost = Color(0.7, 0.9, 1, 0.9)
 shader_parameter/color_minor = Color(0.2, 0.9, 0.8, 0.25)
 shader_parameter/color_medium = Color(0.2, 0.9, 0.8, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_o5ifv"]
+shader = ExtResource("17_o5ifv")
+shader_parameter/rect_size = Vector2(200, 150)
+shader_parameter/border_width = 1.0
+shader_parameter/dash_length = 7.6050001237375
+shader_parameter/gap_length = 8.0
+shader_parameter/animation_speed = 22.78000108205
+shader_parameter/corner_cut = 12.0
+shader_parameter/border_color = Color(0.2, 0.9, 0.8, 0.7)
+shader_parameter/background_color = Color(0, 0.05, 0.08, 0.4)
+shader_parameter/corner_accent_color = Color(0.3, 1, 0.9, 1)
+shader_parameter/glow_intensity = 0.3
+shader_parameter/pulse_intensity = 0.1
+shader_parameter/pulse_speed = 10.0
+shader_parameter/alert_level = 0.0
+shader_parameter/alert_color = Color(1, 0.3, 0.2, 0.8)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5sqrc"]
 shader = ExtResource("3_7paak")
@@ -195,7 +231,7 @@ text_overrun_behavior = 4
 uppercase = true
 max_lines_visible = 1
 
-[node name="Crosshair" type="Control" parent="HUDInertia/PlayerHUD" unique_id=527732434]
+[node name="Reticle" type="Control" parent="HUDInertia/PlayerHUD" unique_id=527732434]
 physics_interpolation_mode = 1
 use_parent_material = true
 layout_mode = 1
@@ -229,7 +265,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 metadata/_edit_use_anchors_ = true
 
-[node name="CockpitDashboard" type="Control" parent="HUDInertia/PlayerHUD" unique_id=1060029491 node_paths=PackedStringArray("CoordsLabel", "TempLabel")]
+[node name="CockpitDashboard" type="Control" parent="HUDInertia/PlayerHUD" unique_id=1060029491 node_paths=PackedStringArray("_coordsLabel", "_tempLabel", "_tempSensor")]
 modulate = Color(0.8235294, 1, 1, 0.6)
 layout_mode = 1
 anchor_left = 0.5555556
@@ -238,8 +274,9 @@ anchor_bottom = 0.09876543
 grow_horizontal = 0
 grow_vertical = 2
 script = ExtResource("9_ukj8e")
-CoordsLabel = NodePath("HBoxContainer/CoordsLabel")
-TempLabel = NodePath("HBoxContainer/TempLabel")
+_coordsLabel = NodePath("HBoxContainer/CoordsLabel")
+_tempLabel = NodePath("HBoxContainer/TempLabel")
+_tempSensor = NodePath("TemperatureSensorEmitter")
 metadata/_edit_use_anchors_ = true
 
 [node name="HBoxContainer" type="HBoxContainer" parent="HUDInertia/PlayerHUD/CockpitDashboard" unique_id=501351519]
@@ -264,7 +301,11 @@ size_flags_vertical = 1
 text = "LOC: 128.25 / -10.04
 WIND: 14 m/s [NW]"
 
-[node name="TurretHUD" type="Control" parent="HUDInertia" unique_id=1065717985 node_paths=PackedStringArray("_animPlayer", "_reticle", "_gridOverlay", "_distanceLabel", "_ammoLabel", "_statusLabel")]
+[node name="TemperatureSensorEmitter" type="Node" parent="HUDInertia/PlayerHUD/CockpitDashboard" unique_id=1037386019]
+script = ExtResource("10_4dthu")
+metadata/_custom_type_script = "uid://cbog5gfcsytne"
+
+[node name="TurretHUD" type="Control" parent="HUDInertia" unique_id=1065717985 node_paths=PackedStringArray("_animPlayer", "_reticle", "_gridOverlay", "_pixelationOverlay", "_sensorPanel", "_statusLabel", "_tempSensor")]
 modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
@@ -274,81 +315,105 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("10_aputy")
 _animPlayer = NodePath("AnimationPlayer")
-_reticle = NodePath("Crosshair")
+_reticle = NodePath("Reticle")
 _gridOverlay = NodePath("../../ColorRectGrid")
-_distanceLabel = NodePath("DistanceLabel")
-_ammoLabel = NodePath("AmmoLabel")
-_statusLabel = NodePath("StatusLabel")
-_gridMaxIntensity = 2.0
+_pixelationOverlay = NodePath("ColorRectDigitalZoom")
+_sensorPanel = NodePath("SensorPanelContainer/SensorPanel")
+_statusLabel = NodePath("SensorPanelContainer/StatusLabel")
+_tempSensor = NodePath("TemperatureSensorEmitter")
+metadata/_edit_lock_ = true
+
+[node name="ColorRectDigitalZoom" type="ColorRect" parent="HUDInertia/TurretHUD" unique_id=907920909]
+z_index = -1
+material = SubResource("ShaderMaterial_s2m3y")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("12_s2m3y")
 metadata/_edit_lock_ = true
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="HUDInertia/TurretHUD" unique_id=1307551458]
 libraries/ = SubResource("AnimationLibrary_75u2n")
 
-[node name="Crosshair" type="Control" parent="HUDInertia/TurretHUD" unique_id=149216154 node_paths=PackedStringArray("_reticleRect")]
+[node name="Reticle" type="Control" parent="HUDInertia/TurretHUD" unique_id=149216154 node_paths=PackedStringArray("_reticleRect")]
 use_parent_material = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 8.0
+offset_right = 8.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 script = ExtResource("11_aputy")
-_reticleRect = NodePath("../../../ColorRectTurretReticle")
+_reticleRect = NodePath("ColorRectTurretReticle")
 
-[node name="StatusLabel" type="Label" parent="HUDInertia/TurretHUD" unique_id=1333562906]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5555556
-anchor_top = 0.5925926
-anchor_right = 0.7222222
-anchor_bottom = 0.69135803
-grow_horizontal = 2
-grow_vertical = 2
-text = "STATUS_LABEL"
-horizontal_alignment = 1
-vertical_alignment = 1
-metadata/_edit_use_anchors_ = true
-
-[node name="DistanceLabel" type="Label" parent="HUDInertia/TurretHUD" unique_id=583636093]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5555556
-anchor_top = 0.69135803
-anchor_right = 0.7222222
-anchor_bottom = 0.79012346
-grow_horizontal = 2
-grow_vertical = 2
-text = "DISTANCE_LABEL"
-horizontal_alignment = 1
-vertical_alignment = 1
-metadata/_edit_use_anchors_ = true
-
-[node name="AmmoLabel" type="Label" parent="HUDInertia/TurretHUD" unique_id=1454784606]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5555556
-anchor_top = 0.79012346
-anchor_right = 0.7222222
-anchor_bottom = 0.8888889
-grow_horizontal = 2
-grow_vertical = 2
-text = "DISTANCE_LABEL"
-horizontal_alignment = 1
-vertical_alignment = 1
-metadata/_edit_use_anchors_ = true
-
-[node name="ColorRectTurretReticle" type="ColorRect" parent="." unique_id=255343376]
+[node name="ColorRectTurretReticle" type="ColorRect" parent="HUDInertia/TurretHUD/Reticle" unique_id=255343376]
+visible = false
 z_index = 1
 material = SubResource("ShaderMaterial_ilk7v")
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 metadata/_edit_lock_ = true
+
+[node name="SensorPanelContainer" type="VBoxContainer" parent="HUDInertia/TurretHUD" unique_id=1764049250]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.29166666
+anchor_top = 0.65740746
+anchor_right = 0.38975695
+anchor_bottom = 0.8888889
+metadata/_edit_use_anchors_ = true
+
+[node name="StatusLabel" type="Label" parent="HUDInertia/TurretHUD/SensorPanelContainer" unique_id=1333562906]
+layout_mode = 2
+text = "STATUS_LABEL"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="SensorPanel" type="Control" parent="HUDInertia/TurretHUD/SensorPanelContainer" unique_id=64279808 node_paths=PackedStringArray("_borderRect", "_dataContainer")]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("16_hu0pd")
+_borderRect = NodePath("BorderRect")
+_dataContainer = NodePath("DataContainer")
+
+[node name="BorderRect" type="ColorRect" parent="HUDInertia/TurretHUD/SensorPanelContainer/SensorPanel" unique_id=1126486644]
+process_priority = 1
+process_physics_priority = 1
+z_index = 5
+material = SubResource("ShaderMaterial_o5ifv")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DataContainer" type="VBoxContainer" parent="HUDInertia/TurretHUD/SensorPanelContainer/SensorPanel" unique_id=388476156]
+z_index = 5
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TemperatureSensorEmitter" type="Node" parent="HUDInertia/TurretHUD" unique_id=6233567]
+script = ExtResource("10_4dthu")
+metadata/_custom_type_script = "uid://cbog5gfcsytne"
 
 [node name="ColorRectGrid" type="ColorRect" parent="." unique_id=686935584]
 visible = false

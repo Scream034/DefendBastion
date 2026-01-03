@@ -40,6 +40,7 @@ public partial class TurretCameraController : Node, ICameraController
     [Export] public AimingMode Mode { get; private set; } = AimingMode.ConvergedTarget;
 
     private float _sensitivityMultiplier = 1.0f;
+    private float _defaultFov;
 
     [Export(PropertyHint.Range, "0.1, 5.0, 0.1")]
     public float SensitivityMultiplier
@@ -114,6 +115,8 @@ public partial class TurretCameraController : Node, ICameraController
 
             // Связываем оператор с камерой (тряска и поворот применяются к ней)
             _cameraOperator.Initialize(_camera, _camera, _shaker);
+
+            _defaultFov = _camera.Fov;
         }
 
         _isInitialized = true;
@@ -274,6 +277,41 @@ public partial class TurretCameraController : Node, ICameraController
         {
             _cameraOperator.DynamicSensitivity = modifier;
         }
+    }
+
+    /// <summary>
+    /// Регулирует чувствительность мыши в зависимости от текущего угла обзора (FOV).
+    /// Используется при зумировании: чем меньше FOV (ближе зум), тем ниже чувствительность.
+    /// </summary>
+    /// <param name="currentFov">Текущий угол обзора камеры в градусах.</param>
+    public void AdjustSensitivityByFov(float currentFov)
+    {
+        if (_camera == null || Mathf.IsEqualApprox(_defaultFov, 0f)) return;
+
+        // Формула: Отношение текущего FOV к базовому.
+        // Если FOV упал с 75 до 25 (зум 3x), то ratio будет 0.33.
+        // Чувствительность снизится до 33% от базовой.
+        float ratio = currentFov / _defaultFov;
+
+        // Можно добавить Clamp, чтобы не уйти в 0 или бесконечность при ошибках
+        ratio = Mathf.Clamp(ratio, 0.01f, 1.0f);
+
+        // Используем уже существующий метод интерфейса ICameraController
+        SetSensitivityModifier(ratio);
+    }
+
+    /// <summary>
+    /// Альтернативный метод: Регулировка по уровню приближения (Zoom Factor).
+    /// </summary>
+    /// <param name="zoomLevel">Кратность зума (например, 1.0f - норма, 2.0f - x2, 4.0f - x4).</param>
+    public void AdjustSensitivityByZoomLevel(float zoomLevel)
+    {
+        if (zoomLevel <= 0.001f) return;
+
+        // Если зум x4, то чувствительность должна быть 1/4 (0.25)
+        float modifier = 1.0f / zoomLevel;
+
+        SetSensitivityModifier(modifier);
     }
 
     #endregion
