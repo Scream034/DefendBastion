@@ -17,8 +17,25 @@ public enum LogDirection
 }
 
 /// <summary>
+/// Внутренняя структура для отслеживания отображаемой строки с учётом повторений.
+/// </summary>
+internal sealed class DisplayedLogLine
+{
+    public LogChannel Channel { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public int RepeatCount { get; set; } = 1;
+    public RichTextLabel? Label { get; set; }
+
+    /// <summary>
+    /// Уникальный ключ для сравнения (канал + сообщение).
+    /// Адрес НЕ учитывается — только тип и текст.
+    /// </summary>
+    public string GetKey() => $"{Channel}::{Message}";
+}
+
+/// <summary>
 /// Продвинутый Sci-Fi логгер с кинематографичной анимацией скроллинга.
-/// Поддерживает динамическое изменение количества видимых строк с анимацией.
+/// Поддерживает группировку одинаковых сообщений: MESSAGE (×N)
 /// </summary>
 [GlobalClass]
 public partial class DataLogger : Control
@@ -31,6 +48,17 @@ public partial class DataLogger : Control
     [ExportGroup("Animation")]
     [Export(PropertyHint.Range, "0.05, 1.0")] public float ScrollDuration { get; set; } = 0.15f;
     [Export(PropertyHint.Range, "0.1, 0.5")] public float ResizeDuration { get; set; } = 0.25f;
+
+    [ExportGroup("Message Grouping")]
+    /// <summary>
+    /// Группировать ли повторяющиеся сообщения.
+    /// </summary>
+    [Export] public bool GroupRepeatedMessages { get; set; } = true;
+
+    /// <summary>
+    /// Анимировать ли обновление счётчика повторений.
+    /// </summary>
+    [Export] public bool AnimateRepeatCounter { get; set; } = true;
 
     [ExportGroup("Visual Aesthetics")]
     [Export] public Font? LogFont { get; set; }
@@ -52,7 +80,6 @@ public partial class DataLogger : Control
         { LogChannel.Warning, new Color("#ff4444") }
     };
 
-    // Количество видимых строк с поддержкой анимации
     private int _visibleLines = 12;
     public int VisibleLines
     {
@@ -69,13 +96,34 @@ public partial class DataLogger : Control
         }
     }
 
-    // Внутренний пул строк
-    private readonly List<RichTextLabel> _lines = [];
+    // ══════════════════════════════════════════════════════════════
+    // НОВАЯ АРХИТЕКТУРА: Разделение UI-лейблов и логических записей
+    // ══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Пул RichTextLabel для отображения (всегда MaxLines штук).
+    /// </summary>
+    private readonly List<RichTextLabel> _labelPool = [];
+
+    /// <summary>
+    /// Логические записи лога с отслеживанием повторений.
+    /// Индекс 0 = самая старая (вверху при Upwards) или самая новая (при Downwards).
+    /// </summary>
+    private readonly List<DisplayedLogLine> _logLines = [];
+
+    /// <summary>
+    /// Кэш для быстрого поиска последней строки по ключу.
+    /// </summary>
+    private DisplayedLogLine? _lastLogLine = null;
+
     private readonly Queue<LogEntry> _messageQueue = new();
 
     private bool _isAnimating = false;
     private bool _isResizing = false;
     private Tween? _resizeTween;
+
+    // Кэш адресов для каждого канала (чтобы адрес был стабильным в пределах одного сообщения)
+    private readonly Dictionary<LogChannel, string> _cachedAddresses = [];
 
     public override void _Ready()
     {
@@ -98,29 +146,25 @@ public partial class DataLogger : Control
     private void InitializePool()
     {
         foreach (var child in GetChildren()) child.QueueFree();
-        _lines.Clear();
+        _labelPool.Clear();
+        _logLines.Clear();
+        _lastLogLine = null;
 
         for (int i = 0; i < MaxLines; i++)
         {
             var label = CreateLabel();
             label.SetAnchorsPreset(LayoutPreset.FullRect);
             AddChild(label);
-            _lines.Add(label);
+            _labelPool.Add(label);
 
             float targetY = CalculateTargetY(i);
             label.Position = new Vector2(0, targetY);
-
-            // Строки за пределами VisibleLines - невидимы
-            UpdateSingleLineVisuals(label, i);
+            UpdateSingleLineVisuals(label, i, hasContent: false);
         }
     }
 
-    /// <summary>
-    /// Анимирует изменение количества видимых строк.
-    /// </summary>
     private void AnimateVisibleLinesChange(int oldCount, int newCount)
     {
-        // Отменяем предыдущую анимацию ресайза если есть
         _resizeTween?.Kill();
         _isResizing = true;
 
@@ -129,28 +173,23 @@ public partial class DataLogger : Control
         _resizeTween.SetTrans(Tween.TransitionType.Quart);
         _resizeTween.SetEase(Tween.EaseType.Out);
 
-        // Анимируем размер контейнера
         float targetHeight = newCount * LineHeight;
         _resizeTween.TweenProperty(this, "custom_minimum_size:y", targetHeight, ResizeDuration);
 
-        // Анимируем каждую строку
         for (int i = 0; i < MaxLines; i++)
         {
-            var label = _lines[i];
+            var label = _labelPool[i];
             float targetY = CalculateTargetY(i);
-            float targetAlpha = CalculateAlpha(i);
+            bool hasContent = i < _logLines.Count && !string.IsNullOrEmpty(_logLines[i].Message);
+            float targetAlpha = CalculateAlpha(i, hasContent);
 
-            // Позиция
             _resizeTween.TweenProperty(label, "position:y", targetY, ResizeDuration);
-
-            // Прозрачность - строки за пределами плавно исчезают
             _resizeTween.TweenProperty(label, "modulate:a", targetAlpha, ResizeDuration);
         }
 
         _resizeTween.Chain().TweenCallback(Callable.From(() =>
         {
             _isResizing = false;
-            // Обрабатываем очередь после завершения ресайза
             ProcessQueue();
         }));
     }
@@ -163,33 +202,132 @@ public partial class DataLogger : Control
 
     private void ProcessQueue()
     {
-        // Не обрабатываем очередь во время ресайза или анимации
         if (_isAnimating || _isResizing || _messageQueue.Count == 0) return;
 
         var entry = _messageQueue.Dequeue();
+
+        // ══════════════════════════════════════════════════════════
+        // КЛЮЧЕВАЯ ЛОГИКА: Проверяем на повторение
+        // ══════════════════════════════════════════════════════════
+
+        if (GroupRepeatedMessages && TryIncrementRepeat(entry))
+        {
+            // Сообщение было сгруппировано — обновляем отображение без скролла
+            ProcessQueue(); // Продолжаем обработку очереди
+            return;
+        }
+
+        // Новое уникальное сообщение — делаем скролл
         AnimateScroll(entry);
+    }
+
+    /// <summary>
+    /// Проверяет, совпадает ли новое сообщение с последним.
+    /// Если да — увеличивает счётчик и обновляет UI.
+    /// </summary>
+    /// <returns>true если сообщение было сгруппировано, false если это новое сообщение.</returns>
+    private bool TryIncrementRepeat(LogEntry entry)
+    {
+        if (_lastLogLine == null) return false;
+
+        // Сравниваем ТОЛЬКО канал и сообщение (адрес игнорируется!)
+        string newKey = $"{entry.Channel}::{entry.Message}";
+        string lastKey = _lastLogLine.GetKey();
+
+        if (newKey != lastKey) return false;
+
+        // ══════════════════════════════════════════════════════════
+        // СОВПАДЕНИЕ! Увеличиваем счётчик
+        // ══════════════════════════════════════════════════════════
+
+        _lastLogLine.RepeatCount++;
+
+        // Обновляем отображение
+        if (_lastLogLine.Label != null)
+        {
+            UpdateLabelContent(_lastLogLine.Label, _lastLogLine);
+
+            if (AnimateRepeatCounter)
+            {
+                AnimateCounterPulse(_lastLogLine.Label);
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Анимация "пульса" при обновлении счётчика.
+    /// </summary>
+    private void AnimateCounterPulse(RichTextLabel label)
+    {
+        var tween = CreateTween();
+        tween.SetTrans(Tween.TransitionType.Elastic);
+        tween.SetEase(Tween.EaseType.Out);
+
+        // Быстрое увеличение и возврат
+        var originalScale = label.Scale;
+        tween.TweenProperty(label, "scale", new Vector2(1.05f, 1.05f), 0.08f);
+        tween.TweenProperty(label, "scale", originalScale, 0.15f);
     }
 
     private void AnimateScroll(LogEntry entry)
     {
         _isAnimating = true;
 
+        // ══════════════════════════════════════════════════════════
+        // Создаём новую логическую запись
+        // ══════════════════════════════════════════════════════════
+
+        var newLine = new DisplayedLogLine
+        {
+            Channel = entry.Channel,
+            Message = entry.Message,
+            RepeatCount = 1
+        };
+
         RichTextLabel recycledLabel;
 
         if (Direction == LogDirection.Upwards)
         {
-            recycledLabel = _lines[0];
-            _lines.RemoveAt(0);
-            _lines.Add(recycledLabel);
+            // Новые строки снизу — recycled берём сверху
+            recycledLabel = _labelPool[0];
+            _labelPool.RemoveAt(0);
+            _labelPool.Add(recycledLabel);
+
+            // Логические записи: удаляем старейшую (сверху), добавляем новую (снизу)
+            if (_logLines.Count >= MaxLines)
+            {
+                _logLines.RemoveAt(0);
+            }
+            _logLines.Add(newLine);
         }
         else
         {
-            recycledLabel = _lines[^1];
-            _lines.RemoveAt(_lines.Count - 1);
-            _lines.Insert(0, recycledLabel);
+            // Новые строки сверху — recycled берём снизу
+            recycledLabel = _labelPool[^1];
+            _labelPool.RemoveAt(_labelPool.Count - 1);
+            _labelPool.Insert(0, recycledLabel);
+
+            // Логические записи: удаляем старейшую (снизу), добавляем новую (сверху)
+            if (_logLines.Count >= MaxLines)
+            {
+                _logLines.RemoveAt(_logLines.Count - 1);
+            }
+            _logLines.Insert(0, newLine);
         }
 
-        SetupLabelContent(recycledLabel, entry);
+        // Привязываем лейбл к логической записи
+        newLine.Label = recycledLabel;
+        _lastLogLine = newLine;
+
+        // Обновляем привязки для всех записей
+        UpdateLabelBindings();
+
+        // Генерируем новый адрес для этого сообщения
+        RegenerateAddressForChannel(entry.Channel);
+
+        UpdateLabelContent(recycledLabel, newLine);
 
         float startOffset = (Direction == LogDirection.Upwards) ? LineHeight : -LineHeight;
         int newLabelIndex = (Direction == LogDirection.Upwards) ? MaxLines - 1 : 0;
@@ -202,13 +340,13 @@ public partial class DataLogger : Control
 
         for (int i = 0; i < MaxLines; i++)
         {
-            var lbl = _lines[i];
+            var lbl = _labelPool[i];
             float targetY = CalculateTargetY(i);
-            float targetAlpha = CalculateAlpha(i);
+            bool hasContent = i < _logLines.Count && !string.IsNullOrEmpty(_logLines[i].Message);
+            float targetAlpha = CalculateAlpha(i, hasContent);
 
             tween.TweenProperty(lbl, "position:y", targetY, ScrollDuration);
 
-            // Новая строка всегда яркая (если в пределах видимости)
             if (lbl == recycledLabel && i < _visibleLines)
                 targetAlpha = MaxAlpha;
 
@@ -224,6 +362,25 @@ public partial class DataLogger : Control
         }));
     }
 
+    /// <summary>
+    /// Обновляет привязки лейблов к логическим записям после скролла.
+    /// </summary>
+    private void UpdateLabelBindings()
+    {
+        for (int i = 0; i < _logLines.Count && i < _labelPool.Count; i++)
+        {
+            _logLines[i].Label = _labelPool[i];
+        }
+    }
+
+    /// <summary>
+    /// Генерирует новый случайный адрес для канала.
+    /// </summary>
+    private void RegenerateAddressForChannel(LogChannel channel)
+    {
+        _cachedAddresses[channel] = $":{GD.Randi() % 0xFFF:X3}";
+    }
+
     private RichTextLabel CreateLabel()
     {
         var l = new RichTextLabel
@@ -233,7 +390,8 @@ public partial class DataLogger : Control
             BbcodeEnabled = true,
             MouseFilter = MouseFilterEnum.Ignore,
             Size = new Vector2(Size.X, LineHeight),
-            ClipContents = false
+            ClipContents = false,
+            PivotOffset = new Vector2(0, LineHeight / 2f) // Для анимации scale от центра
         };
 
         if (LogFont != null) l.AddThemeFontOverride("normal_font", LogFont);
@@ -242,20 +400,46 @@ public partial class DataLogger : Control
         return l;
     }
 
-    private void SetupLabelContent(RichTextLabel label, LogEntry entry)
+    /// <summary>
+    /// Обновляет содержимое лейбла с учётом счётчика повторений.
+    /// </summary>
+    private void UpdateLabelContent(RichTextLabel label, DisplayedLogLine line)
     {
-        string colorHex = ChannelColors.TryGetValue(entry.Channel, out Color c) ? c.ToHtml() : "ffffff";
+        string colorHex = ChannelColors.TryGetValue(line.Channel, out Color c) ? c.ToHtml() : "ffffff";
         string tick = ShowTicks ? $"[color=#55{colorHex}]{Engine.GetFramesDrawn():D7}[/color] " : "";
-        string prefix = GeneratePrefix(entry.Channel);
+        string prefix = GeneratePrefix(line.Channel);
 
-        string content = $"[color={colorHex}aa]{prefix}[/color] [color={colorHex}]{entry.Message.ToUpper()}[/color]";
+        // ══════════════════════════════════════════════════════════
+        // СЧЁТЧИК ПОВТОРЕНИЙ
+        // ══════════════════════════════════════════════════════════
+        string repeatSuffix = "";
+        if (line.RepeatCount > 1)
+        {
+            // Стиль: (×42) с другим оттенком
+            repeatSuffix = $" [color=#ff{colorHex}](×{line.RepeatCount})[/color]";
+        }
 
-        if (entry.Channel == LogChannel.Warning)
+        string messageText = line.Message.ToUpper();
+        string content = $"[color=#{colorHex}aa]{prefix}[/color] [color=#{colorHex}]{messageText}[/color]{repeatSuffix}";
+
+        if (line.Channel == LogChannel.Warning)
         {
             content = $"[shake rate=10 level=5]{content}[/shake]";
         }
 
         label.Text = $"{tick}{content}";
+    }
+
+    // Для обратной совместимости (если где-то используется старый метод)
+    private void SetupLabelContent(RichTextLabel label, LogEntry entry)
+    {
+        var tempLine = new DisplayedLogLine
+        {
+            Channel = entry.Channel,
+            Message = entry.Message,
+            RepeatCount = 1
+        };
+        UpdateLabelContent(label, tempLine);
     }
 
     private float CalculateTargetY(int index)
@@ -265,44 +449,47 @@ public partial class DataLogger : Control
 
     /// <summary>
     /// Вычисляет альфу с учётом VisibleLines.
-    /// Строки за пределами видимости получают альфу 0.
     /// </summary>
-    private float CalculateAlpha(int index)
+    private float CalculateAlpha(int index, bool hasContent)
     {
-        // Строки за пределами видимости - полностью прозрачные
         if (index >= _visibleLines)
             return 0f;
 
-        // Пустые строки тоже прозрачные
-        if (index < _lines.Count && string.IsNullOrEmpty(_lines[index].Text))
+        if (!hasContent)
             return 0f;
 
         float weight;
         if (Direction == LogDirection.Upwards)
         {
-            // Index 0 (верх) -> Старое -> MinAlpha
-            // Index VisibleLines-1 (низ видимой области) -> Новое -> MaxAlpha
             weight = (float)index / (_visibleLines - 1);
         }
         else
         {
-            // Index 0 (верх) -> Новое -> MaxAlpha
-            // Index VisibleLines-1 (низ видимой области) -> Старое -> MinAlpha
             weight = (float)(_visibleLines - 1 - index) / (_visibleLines - 1);
         }
 
         return Mathf.Lerp(MinAlpha, MaxAlpha, weight);
     }
 
-    private void UpdateSingleLineVisuals(RichTextLabel label, int index)
+    private void UpdateSingleLineVisuals(RichTextLabel label, int index, bool hasContent)
     {
-        float alpha = CalculateAlpha(index);
+        float alpha = CalculateAlpha(index, hasContent);
         label.Modulate = new Color(1, 1, 1, alpha);
     }
 
     private string GeneratePrefix(LogChannel channel)
     {
-        string addr = ShowMemoryAddresses ? $":{GD.Randi() % 0xFFF:X3}" : "";
+        string addr = "";
+        if (ShowMemoryAddresses)
+        {
+            // Используем кэшированный адрес если есть
+            if (!_cachedAddresses.TryGetValue(channel, out addr!))
+            {
+                addr = $":{GD.Randi() % 0xFFF:X3}";
+                _cachedAddresses[channel] = addr;
+            }
+        }
+
         return channel switch
         {
             LogChannel.Kernel => $"[SYS{addr}]",
@@ -316,18 +503,33 @@ public partial class DataLogger : Control
 
     /// <summary>
     /// Принудительно установить количество видимых строк без анимации.
-    /// Используется при инициализации.
     /// </summary>
     public void SetVisibleLinesImmediate(int count)
     {
         _visibleLines = Mathf.Clamp(count, 1, MaxLines);
         CustomMinimumSize = new Vector2(CustomMinimumSize.X, _visibleLines * LineHeight);
 
-        for (int i = 0; i < _lines.Count; i++)
+        for (int i = 0; i < _labelPool.Count; i++)
         {
-            var label = _lines[i];
+            var label = _labelPool[i];
             label.Position = new Vector2(0, CalculateTargetY(i));
-            UpdateSingleLineVisuals(label, i);
+            bool hasContent = i < _logLines.Count && !string.IsNullOrEmpty(_logLines[i].Message);
+            UpdateSingleLineVisuals(label, i, hasContent);
+        }
+    }
+
+    /// <summary>
+    /// Очистить лог полностью.
+    /// </summary>
+    public void Clear()
+    {
+        _logLines.Clear();
+        _lastLogLine = null;
+        _messageQueue.Clear();
+
+        foreach (var label in _labelPool)
+        {
+            label.Text = "";
         }
     }
 }
