@@ -161,31 +161,29 @@ public partial class TurretCameraController : Node, ICameraController
     {
         var camTransform = _camera!.GlobalTransform;
 
-        // 1. Пускаем луч из камеры вперед
+        // 1. Пускаем луч из камеры вперёд
         _rayQuery.From = camTransform.Origin;
-        // Basis.Z смотрит назад, поэтому для "вперед" вычитаем Z
         _rayQuery.To = _rayQuery.From - camTransform.Basis.Z * _aimTargetDistance;
 
         var result = World.DirectSpaceState.IntersectRay(_rayQuery);
         Vector3 targetPoint = result.Count > 0 ? (Vector3)result["position"] : _rayQuery.To;
 
-        // 2. Находим вектор от турели к найденной точке
-        Vector3 aimVectorGlobal = targetPoint - _ownerTurret!.GlobalPosition;
+        // Используем позицию TurretYaw (ось вращения башни),
+        // а не базу турели. Это минимизирует параллакс между камерой и стволом.
+        Vector3 aimOrigin = _ownerTurret!.TurretYaw.GlobalPosition;
+        Vector3 aimVectorGlobal = targetPoint - aimOrigin;
 
-        // 3. Переводим вектор в локальную систему координат турели.
+        // 3. Переводим вектор в локальную систему координат турели (корпуса).
         // Это критически важно: если танк стоит под наклоном, локальные оси тоже наклонены.
-        // Inverse() * Vector позволяет получить координаты вектора относительно базы.
         Vector3 localAimVector = _ownerTurret.GlobalTransform.Basis.Inverse() * aimVectorGlobal;
 
         // 4. Вычисляем углы Yaw и Pitch
-        // Atan2(x, z) дает угол на плоскости XZ. -X и -Z используются для коррекции Forward в Godot (-Z).
         float targetYawRad = Mathf.Atan2(-localAimVector.X, -localAimVector.Z);
 
-        // Расстояние в горизонтальной плоскости (для расчета подъема ствола)
         float horizontalDist = new Vector2(localAimVector.X, localAimVector.Z).Length();
         float targetPitchRad = Mathf.Atan2(localAimVector.Y, horizontalDist);
 
-        // 5. Ограничиваем углы (Clamp)
+        // 5. Ограничиваем углы
         if (_turretMaxYawRad >= 0)
         {
             targetYawRad = Mathf.Clamp(targetYawRad, -_turretMaxYawRad, _turretMaxYawRad);
