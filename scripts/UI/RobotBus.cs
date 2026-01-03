@@ -15,18 +15,11 @@ public enum LogChannel
     Warning     // Критические ошибки (Ярко-красный + Глитч)
 }
 
-public readonly struct LogEntry
+public readonly struct LogEntry(LogChannel channel, string message)
 {
-    public readonly LogChannel Channel;
-    public readonly string Message;
-    public readonly float Timestamp;
-
-    public LogEntry(LogChannel channel, string message)
-    {
-        Channel = channel;
-        Message = message;
-        Timestamp = Time.GetTicksMsec() / 1000f;
-    }
+    public readonly LogChannel Channel = channel;
+    public readonly string Message = message;
+    public readonly float Timestamp = Time.GetTicksMsec() / 1000f;
 }
 
 /// <summary>

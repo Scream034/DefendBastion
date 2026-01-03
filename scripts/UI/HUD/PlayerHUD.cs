@@ -4,7 +4,7 @@ using Game.Player;
 using Godot;
 using System;
 
-namespace Game.UI;
+namespace Game.UI.HUD;
 
 public partial class PlayerHUD : Control
 {
@@ -22,7 +22,6 @@ public partial class PlayerHUD : Control
     public override void _Ready()
     {
         _interactionLabel.Visible = false;
-        _animPlayer.Play("Boot");
     }
 
     public override void _PhysicsProcess(double delta)
@@ -31,6 +30,25 @@ public partial class PlayerHUD : Control
     }
 
     #region Public API
+
+    public void ShowHUD()
+    {
+        Visible = true;
+        _animPlayer.Play("Boot");
+        SharedHUD.SetLoggerPreset(LoggerPreset.Full);
+        SharedHUD.SetLoggerVisible(true);
+
+        SetProcess(true);
+        SetPhysicsProcess(true);
+    }
+
+    public void HideHUD()
+    {
+        // _animPlayer.Play("Shutdown");
+        Visible = false;
+        SetProcess(false);
+        SetPhysicsProcess(false);
+    }
 
     public void SetInteraction(string? text)
     {

@@ -3,7 +3,7 @@
 using Game.Player;
 using Godot;
 
-namespace Game.UI;
+namespace Game.UI.Components;
 
 public partial class SmartReticle : Control
 {

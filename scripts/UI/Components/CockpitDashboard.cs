@@ -2,7 +2,7 @@
 using Godot;
 using Game.Player;
 
-namespace Game.UI;
+namespace Game.UI.Components;
 
 public partial class CockpitDashboard : Control
 {

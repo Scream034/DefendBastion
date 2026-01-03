@@ -1,73 +1,27 @@
 [gd_scene format=3 uid="uid://cm0epusci4ngu"]
 
 [ext_resource type="Script" uid="uid://ba17xhti84upv" path="res://scripts/ManagerUI.cs" id="1_ro3t7"]
-[ext_resource type="Script" uid="uid://o58w4p0oyrk6" path="res://scripts/UI/PlayerHUD.cs" id="2_5en4g"]
-[ext_resource type="Shader" uid="uid://cfmc3utnjt5w4" path="res://shaders/UIPixelation.gdshader" id="2_ro3t7"]
+[ext_resource type="Script" uid="uid://o58w4p0oyrk6" path="res://scripts/UI/HUD/PlayerHUD.cs" id="2_5en4g"]
 [ext_resource type="Shader" uid="uid://dlx6vfd2jsjup" path="res://shaders/UIGridOverlay.gdshader" id="3_7paak"]
 [ext_resource type="Material" uid="uid://bxsatkj4r33r2" path="res://materials/BaseUI.tres" id="3_75u2n"]
-[ext_resource type="Script" uid="uid://bbke4cbewkobl" path="res://scripts/UI/InertialHUD.cs" id="3_xpksx"]
+[ext_resource type="Script" uid="uid://bbke4cbewkobl" path="res://scripts/UI/HUD/InertialHUD.cs" id="3_xpksx"]
 [ext_resource type="FontFile" uid="uid://dkmogj2xa3py6" path="res://fonts/VT323-Regular.ttf" id="4_3wlde"]
 [ext_resource type="Shader" uid="uid://cuxkvs16ctpqk" path="res://shaders/UITurretReticle.gdshader" id="4_5sqrc"]
-[ext_resource type="Script" uid="uid://0hh5y8ol8086" path="res://scripts/UI/DataLogger.cs" id="4_ua6yw"]
-[ext_resource type="Script" uid="uid://b7p4wl1iap37i" path="res://scripts/UI/SmartReticle.cs" id="7_24e4x"]
-[ext_resource type="Script" uid="uid://c0au4200qyxe2" path="res://scripts/UI/CockpitDashboard.cs" id="9_ukj8e"]
-[ext_resource type="Script" uid="uid://dtpy2gw6s60qf" path="res://scripts/UI/TurretHUD.cs" id="10_aputy"]
-[ext_resource type="Script" uid="uid://d1lwf4d8mm7ja" path="res://scripts/UI/TurretReticle.cs" id="11_aputy"]
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_5en4g"]
-shader = ExtResource("2_ro3t7")
-shader_parameter/tint_color = Color(0, 0.48, 0.81, 1)
-shader_parameter/saturation = 0.800000038
-shader_parameter/brightness = 1.0
-shader_parameter/contrast = 1.0000000475
-shader_parameter/noise_amount = 0.03
-shader_parameter/pixelation = 0.8
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_5sqrc"]
-shader = ExtResource("3_7paak")
-shader_parameter/grid_size_large = 40.0
-shader_parameter/grid_size_small = 10.0000002375
-shader_parameter/line_width = 1.0600000266
-shader_parameter/grid_color_large = Color(0.153, 0.6, 0.812, 0.251)
-shader_parameter/grid_color_small = Color(0.098, 0.4, 0.569, 0.15)
-shader_parameter/vignette_color = Color(0, 0, 0, 0.4)
-shader_parameter/vignette_strength = 0.3
-shader_parameter/scanline_intensity = 0.05
-shader_parameter/noise_intensity = 0.02
-shader_parameter/intensity = 1.0
-shader_parameter/time_scale = 3.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_ilk7v"]
-shader = ExtResource("4_5sqrc")
-shader_parameter/spread = 0.0
-shader_parameter/diamond_rotation = 0.0
-shader_parameter/yaw_degrees = 0.0
-shader_parameter/pitch_degrees = 0.0
-shader_parameter/turret_state = 0
-shader_parameter/state_time = 0.0
-shader_parameter/reticle_gap = 45.0
-shader_parameter/diamond_base_size = 12.0
-shader_parameter/edge_margin = 40.0
-shader_parameter/pixels_per_degree = 12.0
-shader_parameter/tick_small = 6.0
-shader_parameter/tick_medium = 12.0
-shader_parameter/tick_large = 20.0
-shader_parameter/line_width = 2.0
-shader_parameter/minor_interval = 5
-shader_parameter/medium_interval = 15
-shader_parameter/major_interval = 45
-shader_parameter/color_main = Color(0.2, 0.9, 0.8, 0.9)
-shader_parameter/color_warning = Color(1, 0.3, 0.2, 0.9)
-shader_parameter/color_cooldown = Color(1, 0.7, 0.2, 0.9)
-shader_parameter/color_minor = Color(0.2, 0.9, 0.8, 0.25)
-shader_parameter/color_medium = Color(0.2, 0.9, 0.8, 0.5)
+[ext_resource type="Script" uid="uid://0hh5y8ol8086" path="res://scripts/UI/Components/DataLogger.cs" id="4_ua6yw"]
+[ext_resource type="Script" uid="uid://d4mbb78awh1j5" path="res://scripts/UI/HUD/SharedHUD.cs" id="6_ilk7v"]
+[ext_resource type="Script" uid="uid://b7p4wl1iap37i" path="res://scripts/UI/Components/SmartReticle.cs" id="7_24e4x"]
+[ext_resource type="Script" uid="uid://c0au4200qyxe2" path="res://scripts/UI/Components/CockpitDashboard.cs" id="9_ukj8e"]
+[ext_resource type="Script" uid="uid://dtpy2gw6s60qf" path="res://scripts/UI/HUD/TurretHUD.cs" id="10_aputy"]
+[ext_resource type="Script" uid="uid://d1lwf4d8mm7ja" path="res://scripts/UI/Components/TurretReticle.cs" id="11_aputy"]
+[ext_resource type="Shader" uid="uid://cb4uqpofl1fcv" path="res://shaders/UIGlitch.gdshader" id="14_ilk7v"]
+[ext_resource type="Script" uid="uid://d3h5yfxc8ldsw" path="res://scripts/UI/Components/GlitchOverlay.cs" id="15_flkkw"]
 
 [sub_resource type="Theme" id="Theme_xpksx"]
 default_font = ExtResource("4_3wlde")
 
 [sub_resource type="Animation" id="Animation_ua6yw"]
 resource_name = "Boot"
-length = 3.0
+length = 0.5
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -75,7 +29,7 @@ tracks/0/path = NodePath(".:modulate")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(-0.1, 3),
+"times": PackedFloat32Array(-0.1, 0.5),
 "transitions": PackedFloat32Array(3, 1),
 "update": 0,
 "values": [Color(1, 1, 1, 0), Color(1, 1, 1, 1)]
@@ -102,41 +56,67 @@ _data = {
 &"RESET": SubResource("Animation_75u2n")
 }
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ilk7v"]
+shader = ExtResource("4_5sqrc")
+shader_parameter/spread = 0.0
+shader_parameter/diamond_rotation = 0.0
+shader_parameter/yaw_degrees = 0.0
+shader_parameter/pitch_degrees = 0.0
+shader_parameter/turret_state = 0
+shader_parameter/state_time = 0.0
+shader_parameter/convergence_intensity = 0.0
+shader_parameter/shot_flash = 5.0
+shader_parameter/impact_ring = 6.0
+shader_parameter/frost_level = 0.0
+shader_parameter/reticle_gap = 45.0
+shader_parameter/diamond_base_size = 12.0
+shader_parameter/edge_margin = 40.0
+shader_parameter/pixels_per_degree = 5.0
+shader_parameter/tick_small = 10.0
+shader_parameter/tick_medium = 25.0
+shader_parameter/tick_large = 40.0
+shader_parameter/line_width = 2.0
+shader_parameter/center_dot_radius = 1.0
+shader_parameter/minor_interval = 5
+shader_parameter/medium_interval = 15
+shader_parameter/major_interval = 45
+shader_parameter/color_main = Color(0.2, 0.9, 0.8, 0.9)
+shader_parameter/color_warning = Color(1, 0.3, 0.2, 0.9)
+shader_parameter/color_cooldown = Color(0.4, 0.75, 1, 0.9)
+shader_parameter/color_shooting = Color(0.4, 1, 0.9, 1)
+shader_parameter/color_flash = Color(0.6, 1, 0.95, 1)
+shader_parameter/color_frost = Color(0.7, 0.9, 1, 0.9)
+shader_parameter/color_minor = Color(0.2, 0.9, 0.8, 0.25)
+shader_parameter/color_medium = Color(0.2, 0.9, 0.8, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5sqrc"]
+shader = ExtResource("3_7paak")
+shader_parameter/grid_size_large = 40.0
+shader_parameter/grid_size_small = 10.0000002375
+shader_parameter/line_width = 1.0600000266
+shader_parameter/grid_color_large = Color(0.153, 0.6, 0.812, 0.251)
+shader_parameter/grid_color_small = Color(0.098, 0.4, 0.569, 0.15)
+shader_parameter/vignette_color = Color(0, 0, 0, 0.4)
+shader_parameter/vignette_strength = 0.3
+shader_parameter/scanline_intensity = 0.05
+shader_parameter/noise_intensity = 0.02
+shader_parameter/intensity = 1.0
+shader_parameter/time_scale = 3.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_flkkw"]
+shader = ExtResource("14_ilk7v")
+shader_parameter/glitch_intensity = 0.0
+shader_parameter/time = 0.0
+shader_parameter/color_tint = Color(1, 1, 1, 1)
+shader_parameter/chromatic_offset = 20.0
+shader_parameter/scan_line_density = 1.5
+shader_parameter/block_glitch_size = 24.0
+shader_parameter/wave_distortion = 0.02
+
 [node name="UI" type="CanvasLayer" unique_id=1895634924 node_paths=PackedStringArray("PlayerHUD", "TurretHUD")]
 script = ExtResource("1_ro3t7")
 PlayerHUD = NodePath("HUDInertia/PlayerHUD")
 TurretHUD = NodePath("HUDInertia/TurretHUD")
-
-[node name="ColorRectPixels" type="ColorRect" parent="." unique_id=1121565737]
-process_mode = 4
-visible = false
-z_index = -10
-material = SubResource("ShaderMaterial_5en4g")
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="ColorRectGrid" type="ColorRect" parent="." unique_id=686935584]
-visible = false
-z_index = 1
-material = SubResource("ShaderMaterial_5sqrc")
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="ColorRectGrid2" type="ColorRect" parent="." unique_id=255343376]
-visible = false
-z_index = 1
-material = SubResource("ShaderMaterial_ilk7v")
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="HUDInertia" type="Control" parent="." unique_id=1314166107]
 physics_interpolation_mode = 1
@@ -150,6 +130,26 @@ pivot_offset_ratio = Vector2(0.5, 0.5)
 script = ExtResource("3_xpksx")
 VelocityInfluence = 0.6
 ReturnSpeed = 50.0
+metadata/_edit_lock_ = true
+
+[node name="SharedHUD" type="Control" parent="HUDInertia" unique_id=1255591595 node_paths=PackedStringArray("Logger", "Glitch")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("6_ilk7v")
+Logger = NodePath("DataLogger")
+Glitch = NodePath("../../ColorRectGlitch")
+metadata/_edit_lock_ = true
+
+[node name="DataLogger" type="Control" parent="HUDInertia/SharedHUD" unique_id=220534254]
+use_parent_material = true
+anchors_preset = 0
+anchor_right = 0.33333334
+script = ExtResource("4_ua6yw")
+metadata/_edit_use_anchors_ = true
 
 [node name="PlayerHUD" type="Control" parent="HUDInertia" unique_id=1303633290 node_paths=PackedStringArray("_compassLabel", "_interactionLabel", "_animPlayer")]
 modulate = Color(1, 1, 1, 0)
@@ -168,6 +168,7 @@ script = ExtResource("2_5en4g")
 _compassLabel = NodePath("CompassLabel")
 _interactionLabel = NodePath("InteractionLabel")
 _animPlayer = NodePath("AnimationPlayer")
+metadata/_edit_lock_ = true
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="HUDInertia/PlayerHUD" unique_id=2132834724]
 libraries/ = SubResource("AnimationLibrary_75u2n")
@@ -228,29 +229,6 @@ horizontal_alignment = 1
 vertical_alignment = 1
 metadata/_edit_use_anchors_ = true
 
-[node name="TopLeft" type="VBoxContainer" parent="HUDInertia/PlayerHUD" unique_id=1744156421]
-use_parent_material = true
-clip_contents = true
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 0.33333334
-anchor_bottom = 1.0
-grow_vertical = 2
-metadata/_edit_use_anchors_ = true
-
-[node name="OSLabel" type="Label" parent="HUDInertia/PlayerHUD/TopLeft" unique_id=1917786512]
-modulate = Color(0.2592937, 0.2592937, 0.2592937, 1)
-use_parent_material = true
-layout_mode = 2
-text = "SYSTEM v4.0.2 - STABLE"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="DataLogger" type="Control" parent="HUDInertia/PlayerHUD/TopLeft" unique_id=220534254]
-use_parent_material = true
-layout_mode = 2
-script = ExtResource("4_ua6yw")
-
 [node name="CockpitDashboard" type="Control" parent="HUDInertia/PlayerHUD" unique_id=1060029491 node_paths=PackedStringArray("CoordsLabel", "TempLabel")]
 modulate = Color(0.8235294, 1, 1, 0.6)
 layout_mode = 1
@@ -286,7 +264,7 @@ size_flags_vertical = 1
 text = "LOC: 128.25 / -10.04
 WIND: 14 m/s [NW]"
 
-[node name="TurretHUD" type="Control" parent="HUDInertia" unique_id=1065717985 node_paths=PackedStringArray("_animPlayer", "_reticle", "_gridOverlay", "_statusLabel")]
+[node name="TurretHUD" type="Control" parent="HUDInertia" unique_id=1065717985 node_paths=PackedStringArray("_animPlayer", "_reticle", "_gridOverlay", "_distanceLabel", "_ammoLabel", "_statusLabel")]
 modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
@@ -298,8 +276,11 @@ script = ExtResource("10_aputy")
 _animPlayer = NodePath("AnimationPlayer")
 _reticle = NodePath("Crosshair")
 _gridOverlay = NodePath("../../ColorRectGrid")
+_distanceLabel = NodePath("DistanceLabel")
+_ammoLabel = NodePath("AmmoLabel")
 _statusLabel = NodePath("StatusLabel")
 _gridMaxIntensity = 2.0
+metadata/_edit_lock_ = true
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="HUDInertia/TurretHUD" unique_id=1307551458]
 libraries/ = SubResource("AnimationLibrary_75u2n")
@@ -315,7 +296,7 @@ grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 script = ExtResource("11_aputy")
-_reticleRect = NodePath("../../../ColorRectGrid2")
+_reticleRect = NodePath("../../../ColorRectTurretReticle")
 
 [node name="StatusLabel" type="Label" parent="HUDInertia/TurretHUD" unique_id=1333562906]
 layout_mode = 1
@@ -330,3 +311,63 @@ text = "STATUS_LABEL"
 horizontal_alignment = 1
 vertical_alignment = 1
 metadata/_edit_use_anchors_ = true
+
+[node name="DistanceLabel" type="Label" parent="HUDInertia/TurretHUD" unique_id=583636093]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5555556
+anchor_top = 0.69135803
+anchor_right = 0.7222222
+anchor_bottom = 0.79012346
+grow_horizontal = 2
+grow_vertical = 2
+text = "DISTANCE_LABEL"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="AmmoLabel" type="Label" parent="HUDInertia/TurretHUD" unique_id=1454784606]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5555556
+anchor_top = 0.79012346
+anchor_right = 0.7222222
+anchor_bottom = 0.8888889
+grow_horizontal = 2
+grow_vertical = 2
+text = "DISTANCE_LABEL"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="ColorRectTurretReticle" type="ColorRect" parent="." unique_id=255343376]
+z_index = 1
+material = SubResource("ShaderMaterial_ilk7v")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_lock_ = true
+
+[node name="ColorRectGrid" type="ColorRect" parent="." unique_id=686935584]
+visible = false
+z_index = 1
+material = SubResource("ShaderMaterial_5sqrc")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_lock_ = true
+
+[node name="ColorRectGlitch" type="ColorRect" parent="." unique_id=621000204]
+z_index = 1
+material = SubResource("ShaderMaterial_flkkw")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("15_flkkw")
+metadata/_edit_lock_ = true

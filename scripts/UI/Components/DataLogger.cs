@@ -3,7 +3,7 @@
 using Godot;
 using System.Collections.Generic;
 
-namespace Game.UI;
+namespace Game.UI.Components;
 
 /// <summary>
 /// Направление скроллинга лога.
@@ -18,18 +18,19 @@ public enum LogDirection
 
 /// <summary>
 /// Продвинутый Sci-Fi логгер с кинематографичной анимацией скроллинга.
-/// Использует систему очередей и Tween-анимации для плавного смещения строк.
+/// Поддерживает динамическое изменение количества видимых строк с анимацией.
 /// </summary>
 [GlobalClass]
 public partial class DataLogger : Control
 {
     [ExportGroup("Layout Settings")]
     [Export] public int MaxLines { get; set; } = 12;
-    [Export] public int LineHeight { get; set; } = 20; // Высота одной строки в пикселях
+    [Export] public int LineHeight { get; set; } = 20;
     [Export] public LogDirection Direction { get; set; } = LogDirection.Downwards;
 
     [ExportGroup("Animation")]
-    [Export(PropertyHint.Range, "0.05, 1.0")] public float ScrollDuration { get; set; } = 0.15f; // Скорость скролла
+    [Export(PropertyHint.Range, "0.05, 1.0")] public float ScrollDuration { get; set; } = 0.15f;
+    [Export(PropertyHint.Range, "0.1, 0.5")] public float ResizeDuration { get; set; } = 0.25f;
 
     [ExportGroup("Visual Aesthetics")]
     [Export] public Font? LogFont { get; set; }
@@ -51,19 +52,36 @@ public partial class DataLogger : Control
         { LogChannel.Warning, new Color("#ff4444") }
     };
 
+    // Количество видимых строк с поддержкой анимации
+    private int _visibleLines = 12;
+    public int VisibleLines
+    {
+        get => _visibleLines;
+        set
+        {
+            int clamped = Mathf.Clamp(value, 1, MaxLines);
+            if (clamped != _visibleLines)
+            {
+                int oldValue = _visibleLines;
+                _visibleLines = clamped;
+                AnimateVisibleLinesChange(oldValue, _visibleLines);
+            }
+        }
+    }
+
     // Внутренний пул строк
     private readonly List<RichTextLabel> _lines = [];
-    // Очередь сообщений для обработки "бурстов" (когда приходит много логов сразу)
     private readonly Queue<LogEntry> _messageQueue = new();
 
     private bool _isAnimating = false;
+    private bool _isResizing = false;
+    private Tween? _resizeTween;
 
     public override void _Ready()
     {
-        // Важно: обрезаем содержимое, выходящее за границы контрола
         ClipContents = true;
-        // Задаем минимальный размер контрола, чтобы он занимал место в верстке
-        CustomMinimumSize = new Vector2(200, MaxLines * LineHeight);
+        _visibleLines = Mathf.Clamp(_visibleLines, 1, MaxLines);
+        CustomMinimumSize = new Vector2(200, _visibleLines * LineHeight);
 
         InitializePool();
         RobotBus.OnLogMessage += EnqueueMessage;
@@ -75,7 +93,7 @@ public partial class DataLogger : Control
     }
 
     /// <summary>
-    /// Создает пул лейблов и расставляет их по начальным позициям.
+    /// Создает полный пул лейблов (MaxLines) и расставляет их.
     /// </summary>
     private void InitializePool()
     {
@@ -89,106 +107,119 @@ public partial class DataLogger : Control
             AddChild(label);
             _lines.Add(label);
 
-            // Начальная расстановка
             float targetY = CalculateTargetY(i);
             label.Position = new Vector2(0, targetY);
 
-            // Сразу применяем прозрачность (пустые строки невидимы)
+            // Строки за пределами VisibleLines - невидимы
             UpdateSingleLineVisuals(label, i);
         }
     }
 
     /// <summary>
-    /// Добавляет сообщение в очередь на обработку.
+    /// Анимирует изменение количества видимых строк.
     /// </summary>
+    private void AnimateVisibleLinesChange(int oldCount, int newCount)
+    {
+        // Отменяем предыдущую анимацию ресайза если есть
+        _resizeTween?.Kill();
+        _isResizing = true;
+
+        _resizeTween = CreateTween();
+        _resizeTween.SetParallel(true);
+        _resizeTween.SetTrans(Tween.TransitionType.Quart);
+        _resizeTween.SetEase(Tween.EaseType.Out);
+
+        // Анимируем размер контейнера
+        float targetHeight = newCount * LineHeight;
+        _resizeTween.TweenProperty(this, "custom_minimum_size:y", targetHeight, ResizeDuration);
+
+        // Анимируем каждую строку
+        for (int i = 0; i < MaxLines; i++)
+        {
+            var label = _lines[i];
+            float targetY = CalculateTargetY(i);
+            float targetAlpha = CalculateAlpha(i);
+
+            // Позиция
+            _resizeTween.TweenProperty(label, "position:y", targetY, ResizeDuration);
+
+            // Прозрачность - строки за пределами плавно исчезают
+            _resizeTween.TweenProperty(label, "modulate:a", targetAlpha, ResizeDuration);
+        }
+
+        _resizeTween.Chain().TweenCallback(Callable.From(() =>
+        {
+            _isResizing = false;
+            // Обрабатываем очередь после завершения ресайза
+            ProcessQueue();
+        }));
+    }
+
     private void EnqueueMessage(LogEntry entry)
     {
         _messageQueue.Enqueue(entry);
         ProcessQueue();
     }
 
-    /// <summary>
-    /// Запускает анимацию следующего сообщения, если система свободна.
-    /// </summary>
     private void ProcessQueue()
     {
-        if (_isAnimating || _messageQueue.Count == 0) return;
+        // Не обрабатываем очередь во время ресайза или анимации
+        if (_isAnimating || _isResizing || _messageQueue.Count == 0) return;
 
         var entry = _messageQueue.Dequeue();
         AnimateScroll(entry);
     }
 
-    /// <summary>
-    /// Основная магия. Сдвигает все строки и добавляет новую с анимацией.
-    /// </summary>
     private void AnimateScroll(LogEntry entry)
     {
         _isAnimating = true;
 
-        // 1. Логика ротации списка (Recycling)
-        // Берем строку, которая уйдет за границы, и переиспользуем её как "новую"
         RichTextLabel recycledLabel;
 
         if (Direction == LogDirection.Upwards)
         {
-            // Убираем самую верхнюю (индекс 0), она станет новой нижней
             recycledLabel = _lines[0];
             _lines.RemoveAt(0);
             _lines.Add(recycledLabel);
         }
-        else // Downwards
+        else
         {
-            // Убираем самую нижнюю, она станет новой верхней
             recycledLabel = _lines[^1];
             _lines.RemoveAt(_lines.Count - 1);
             _lines.Insert(0, recycledLabel);
         }
 
-        // 2. Подготовка "новой" строки (она пока невидима или за границей)
         SetupLabelContent(recycledLabel, entry);
 
-        // Ставим её в стартовую позицию (за пределами видимости перед въездом)
-        // Если Upwards: она должна появиться снизу (index = MaxLines-1)
-        // Если Downwards: она должна появиться сверху (index = 0)
-        // Но так как мы уже повернули список _lines, мы можем просто использовать её текущий индекс в списке,
-        // но добавить смещение offset для анимации въезда.
-
         float startOffset = (Direction == LogDirection.Upwards) ? LineHeight : -LineHeight;
-        // Текущая "виртуальная" позиция до анимации
         int newLabelIndex = (Direction == LogDirection.Upwards) ? MaxLines - 1 : 0;
         recycledLabel.Position = new Vector2(0, CalculateTargetY(newLabelIndex) + startOffset);
 
-        // Сброс анимации текста (Typewriter effect)
         recycledLabel.VisibleRatio = 0;
-        recycledLabel.Modulate = new Color(1, 1, 1, 1); // Полная альфа (мы её потом понизим в цикле update, но новая должна быть яркой)
+        recycledLabel.Modulate = new Color(1, 1, 1, 1);
 
-        // 3. Создаем Tween для массового сдвига
         var tween = CreateTween().SetParallel(true).SetTrans(Tween.TransitionType.Circ).SetEase(Tween.EaseType.Out);
 
         for (int i = 0; i < MaxLines; i++)
         {
             var lbl = _lines[i];
             float targetY = CalculateTargetY(i);
+            float targetAlpha = CalculateAlpha(i);
 
-            // Анимируем позицию
             tween.TweenProperty(lbl, "position:y", targetY, ScrollDuration);
 
-            // Анимируем прозрачность (Visual Aging)
-            float targetAlpha = CalculateAlpha(i);
-            // Если это новая строка, пусть она будет яркой, а не прозрачной сразу
-            if (lbl == recycledLabel) targetAlpha = 1.0f;
+            // Новая строка всегда яркая (если в пределах видимости)
+            if (lbl == recycledLabel && i < _visibleLines)
+                targetAlpha = MaxAlpha;
 
             tween.TweenProperty(lbl, "modulate:a", targetAlpha, ScrollDuration);
         }
 
-        // Дополнительный эффект для новой строки: появление текста (Typewriter)
         tween.TweenProperty(recycledLabel, "visible_ratio", 1.0f, ScrollDuration + 0.1f);
 
-        // 4. Завершение
         tween.Chain().TweenCallback(Callable.From(() =>
         {
             _isAnimating = false;
-            // Рекурсивно вызываем для следующего сообщения в очереди
             ProcessQueue();
         }));
     }
@@ -197,11 +228,11 @@ public partial class DataLogger : Control
     {
         var l = new RichTextLabel
         {
-            FitContent = false, // Отключаем авто-размер, мы контролируем высоту сами
+            FitContent = false,
             ScrollActive = false,
             BbcodeEnabled = true,
             MouseFilter = MouseFilterEnum.Ignore,
-            Size = new Vector2(Size.X, LineHeight), // Фиксируем размер
+            Size = new Vector2(Size.X, LineHeight),
             ClipContents = false
         };
 
@@ -221,38 +252,43 @@ public partial class DataLogger : Control
 
         if (entry.Channel == LogChannel.Warning)
         {
-            // Shake effect не очень дружит с layout tweening, но внутри RichTextLabel работает
             content = $"[shake rate=10 level=5]{content}[/shake]";
         }
 
         label.Text = $"{tick}{content}";
     }
 
-    /// <summary>
-    /// Вычисляет Y координату для строки с указанным индексом.
-    /// </summary>
     private float CalculateTargetY(int index)
     {
-        // 0 - это всегда верх контрола
         return index * LineHeight;
     }
 
+    /// <summary>
+    /// Вычисляет альфу с учётом VisibleLines.
+    /// Строки за пределами видимости получают альфу 0.
+    /// </summary>
     private float CalculateAlpha(int index)
     {
-        // 0 - верх (старое для Upwards, новое для Downwards)
-        float weight;
+        // Строки за пределами видимости - полностью прозрачные
+        if (index >= _visibleLines)
+            return 0f;
 
+        // Пустые строки тоже прозрачные
+        if (index < _lines.Count && string.IsNullOrEmpty(_lines[index].Text))
+            return 0f;
+
+        float weight;
         if (Direction == LogDirection.Upwards)
         {
             // Index 0 (верх) -> Старое -> MinAlpha
-            // Index Max (низ) -> Новое -> MaxAlpha
-            weight = (float)index / (MaxLines - 1);
+            // Index VisibleLines-1 (низ видимой области) -> Новое -> MaxAlpha
+            weight = (float)index / (_visibleLines - 1);
         }
         else
         {
             // Index 0 (верх) -> Новое -> MaxAlpha
-            // Index Max (низ) -> Старое -> MinAlpha
-            weight = (float)(MaxLines - 1 - index) / (MaxLines - 1);
+            // Index VisibleLines-1 (низ видимой области) -> Старое -> MinAlpha
+            weight = (float)(_visibleLines - 1 - index) / (_visibleLines - 1);
         }
 
         return Mathf.Lerp(MinAlpha, MaxAlpha, weight);
@@ -260,11 +296,6 @@ public partial class DataLogger : Control
 
     private void UpdateSingleLineVisuals(RichTextLabel label, int index)
     {
-        if (string.IsNullOrEmpty(label.Text))
-        {
-            label.Modulate = Colors.Transparent;
-            return;
-        }
         float alpha = CalculateAlpha(index);
         label.Modulate = new Color(1, 1, 1, alpha);
     }
@@ -281,5 +312,22 @@ public partial class DataLogger : Control
             LogChannel.Warning => $"[!ERR{addr}]",
             _ => $"[DAT{addr}]"
         };
+    }
+
+    /// <summary>
+    /// Принудительно установить количество видимых строк без анимации.
+    /// Используется при инициализации.
+    /// </summary>
+    public void SetVisibleLinesImmediate(int count)
+    {
+        _visibleLines = Mathf.Clamp(count, 1, MaxLines);
+        CustomMinimumSize = new Vector2(CustomMinimumSize.X, _visibleLines * LineHeight);
+
+        for (int i = 0; i < _lines.Count; i++)
+        {
+            var label = _lines[i];
+            label.Position = new Vector2(0, CalculateTargetY(i));
+            UpdateSingleLineVisuals(label, i);
+        }
     }
 }

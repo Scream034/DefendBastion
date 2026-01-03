@@ -5,7 +5,7 @@ using Game.Turrets;
 
 namespace Game;
 
-using UI;
+using Game.UI.HUD;
 
 public sealed partial class ManagerUI : CanvasLayer
 {
@@ -23,8 +23,8 @@ public sealed partial class ManagerUI : CanvasLayer
     public override void _Ready()
     {
         // При старте убеждаемся, что турельный HUD выключен
-        TurretHUD?.Hide();
-        PlayerHUD?.Show();
+        TurretHUD?.HideHUD();
+        PlayerHUD?.ShowHUD();
     }
 
     /// <summary>
@@ -32,9 +32,9 @@ public sealed partial class ManagerUI : CanvasLayer
     /// </summary>
     public void SwitchToTurretMode(PlayerControllableTurret turret, TurretCameraController cameraController)
     {
-        PlayerHUD?.Hide();
+        PlayerHUD?.HideHUD();
         // Запускаем процедуру подключения
-        TurretHUD?.BootUp(turret, cameraController);
+        TurretHUD?.ShowHUD(turret, cameraController);
     }
 
     /// <summary>
@@ -42,8 +42,8 @@ public sealed partial class ManagerUI : CanvasLayer
     /// </summary>
     public void SwitchToPlayerMode()
     {
-        TurretHUD?.Shutdown();
-        PlayerHUD?.Show();
+        TurretHUD?.HideHUD();
+        PlayerHUD?.ShowHUD();
     }
 
     /// <summary>

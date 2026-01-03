@@ -2,7 +2,7 @@
 using Godot;
 using Game.Player;
 
-namespace Game.UI;
+namespace Game.UI.HUD;
 
 /// <summary>
 /// Контроллер корневого узла UI.
