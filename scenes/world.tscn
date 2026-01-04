@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://bs0hlyp04kp0c"]
+[gd_scene format=3 uid="uid://byhgl0fxy3vqd"]
 
 [ext_resource type="Script" uid="uid://dscm0inttd3ba" path="res://scripts/World.cs" id="1_pdh0q"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_h1bdy"]
