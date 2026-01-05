@@ -12,6 +12,7 @@ namespace Game.Entity.AI.Components
         private AIEntity _context;
         private AIMovementProfile _movementProfile;
         private AILookProfile _lookProfile;
+        private Vector3? _forcedFaceDirection;
 
         /// <summary>
         /// Дистанция до цели, на которой агент считает путь завершенным (в квадрате для оптимизации).
@@ -80,10 +81,6 @@ namespace Game.Entity.AI.Components
                 navigationVelocity = _context.GlobalPosition.DirectionTo(nextPoint) * _context.Speed;
             }
 
-            // <--- ИЗМЕНЕНИЕ: Полностью убираем кастомную логику Separation ---
-            // Вся логика избегания агентов теперь лежит на NavigationAgent3D (avoidance_enabled = true)
-            // Vector3 separationForce = CalculateSeparationForce();
-
             // Навигационная скорость преобразуется в Steering Force:
             Vector3 steeringForce = navigationVelocity - _context.Velocity;
 
@@ -93,7 +90,19 @@ namespace Game.Entity.AI.Components
             TargetVelocity = (_context.Velocity + finalForce).LimitLength(_context.Speed);
             _context.Velocity = _context.Velocity.Lerp(TargetVelocity, _context.Acceleration * (float)delta);
 
-            RotateBody((float)delta);
+            // Вставляем проверку на принудительный поворот перед обычным поворотом
+            if (_forcedFaceDirection.HasValue)
+            {
+                RotateBodyTowards(_forcedFaceDirection.Value, (float)delta);
+                // Сбрасываем после кадра или держим таймером? 
+                // Для мгновенной реакции сбросим, LookController пришлет снова если надо.
+                _forcedFaceDirection = null;
+            }
+            else
+            {
+                RotateBody((float)delta);
+            }
+
             RotateHead((float)delta);
 
             _context.MoveAndSlide();
@@ -168,6 +177,24 @@ namespace Game.Entity.AI.Components
             NavigationAgent.TargetPosition = _context.GlobalPosition;
             TargetVelocity = Vector3.Zero;
             AITacticalCoordinator.ReleasePosition(_context);
+        }
+
+        /// <summary>
+        /// Запрашивает поворот корпуса в указанном направлении вне зависимости от движения.
+        /// Используется, когда шея не может довернуться.
+        /// </summary>
+        public void RequestImmediateFaceDirection(Vector3 direction)
+        {
+            if (!direction.IsZeroApprox())
+            {
+                _forcedFaceDirection = direction.Normalized();
+            }
+        }
+
+        private void RotateBodyTowards(Vector3 direction, float delta)
+        {
+            var targetRotation = Basis.LookingAt(direction, Vector3.Up).Orthonormalized();
+            _context.Basis = _context.Basis.Orthonormalized().Slerp(targetRotation, _movementProfile.BodyRotationSpeed * delta * 2f); // *2 для ускоренного разворота при опасности
         }
     }
 }

@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://d0rbe32jfbfpx" path="res://scripts/Entity/AI/Components/AILookController.cs" id="8_8f78k"]
 [ext_resource type="Script" uid="uid://j16ladt4481x" path="res://scripts/Entity/AI/Components/AIMovementController.cs" id="9_b51h5"]
 [ext_resource type="Script" uid="uid://l6hfht0rku4g" path="res://scripts/Entity/AI/Components/AITargetingSystem.cs" id="10_ngrf4"]
+[ext_resource type="Script" uid="uid://bo6l07a383wk1" path="res://scripts/Entity/AI/Components/AIThreatSensor.cs" id="10_y4eut"]
 [ext_resource type="Script" uid="uid://testxfxhq2j" path="res://scripts/Entity/AI/Behaviors/StationaryCombatBehavior.cs" id="11_edsyf"]
 [ext_resource type="Script" uid="uid://bn1sb2kjfn32a" path="res://scripts/Entity/AI/AttackStrategies/RangedAttackStrategy.cs" id="12_cwmnl"]
 [ext_resource type="PackedScene" uid="uid://8vtthvh5r3w0" path="res://scenes/Projectiles/ElectricProjectile.tscn" id="13_wtu6w"]
@@ -64,7 +65,7 @@ material = SubResource("ORMMaterial3D_cti50")
 size = Vector3(0.125, 0.115, 2.465)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_etufe"]
-size = Vector3(100.8, 48.72522, 309.2789)
+size = Vector3(100.8, 48.72522, 356.1197)
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_ypjiq"]
 albedo_color = Color(0.0745098, 0, 0.0235294, 1)
@@ -73,7 +74,10 @@ albedo_color = Color(0.0745098, 0, 0.0235294, 1)
 material = SubResource("ORMMaterial3D_ypjiq")
 size = Vector3(2, 3, 2)
 
-[node name="CubePawn" type="CharacterBody3D" unique_id=980892076 node_paths=PackedStringArray("_audio", "TargetingSystem", "MovementController", "LookController", "EyesPosition", "_combatBehaviorNode", "SightPoints")]
+[sub_resource type="BoxShape3D" id="BoxShape3D_sfg71"]
+size = Vector3(10, 8, 6)
+
+[node name="CubePawn" type="CharacterBody3D" unique_id=980892076 node_paths=PackedStringArray("_audio", "TargetingSystem", "MovementController", "LookController", "ThreatSensor", "EyesPosition", "_combatBehaviorNode", "SightPoints")]
 collision_layer = 3
 collision_mask = 3
 script = ExtResource("1_y4eut")
@@ -82,6 +86,7 @@ Profile = SubResource("Resource_p3j4k")
 TargetingSystem = NodePath("AITargetingSystem")
 MovementController = NodePath("AIMovementController")
 LookController = NodePath("AILookController")
+ThreatSensor = NodePath("AIThreatSensor")
 EyesPosition = NodePath("Head/EyesPoint")
 _combatBehaviorNode = NodePath("CombatBehavior")
 ID = 1
@@ -105,6 +110,8 @@ target_desired_distance = 3.8
 avoidance_enabled = true
 height = 3.6
 radius = 2.0
+debug_enabled = true
+debug_path_custom_point_size = 3.0
 
 [node name="AILookController" type="Node" parent="." unique_id=17739630]
 script = ExtResource("8_8f78k")
@@ -117,6 +124,10 @@ _headPivot = NodePath("../Head")
 [node name="AITargetingSystem" type="Node" parent="." unique_id=758476781 node_paths=PackedStringArray("_targetDetectionArea")]
 script = ExtResource("10_ngrf4")
 _targetDetectionArea = NodePath("../Head/DetectionArea3D")
+
+[node name="AIThreatSensor" type="Node" parent="." unique_id=42083689 node_paths=PackedStringArray("_sensorArea")]
+script = ExtResource("10_y4eut")
+_sensorArea = NodePath("../Body/NearMissArea3D")
 
 [node name="CombatBehavior" type="Node" parent="." unique_id=291497805 node_paths=PackedStringArray("_attackActionNode")]
 script = ExtResource("11_edsyf")
@@ -146,10 +157,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0571924, -1.16927)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.131993, 0)
 collision_layer = 0
 collision_mask = 2
+input_ray_pickable = false
 monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Head/DetectionArea3D" unique_id=1334446858]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.113285795, 11.04485, -154.63535)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.113, 11.045, -176.5796)
 shape = SubResource("BoxShape3D_etufe")
 
 [node name="Body" type="MeshInstance3D" parent="." unique_id=331172420]
@@ -159,3 +171,15 @@ skeleton = NodePath("../CollisionShape3D")
 
 [node name="MazzlePoint" type="Marker3D" parent="Body" unique_id=426264378]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.156378, 1.23804, -1.04519)
+
+[node name="NearMissArea3D" type="Area3D" parent="Body" unique_id=1993134509]
+process_priority = 1
+process_physics_priority = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+collision_layer = 0
+collision_mask = 8
+input_ray_pickable = false
+priority = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Body/NearMissArea3D" unique_id=1878323249]
+shape = SubResource("BoxShape3D_sfg71")

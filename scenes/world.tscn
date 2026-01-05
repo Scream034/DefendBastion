@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://byhgl0fxy3vqd"]
+[gd_scene format=3 uid="uid://cxp42hmu173cw"]
 
 [ext_resource type="Script" uid="uid://dscm0inttd3ba" path="res://scripts/World.cs" id="1_pdh0q"]
 [ext_resource type="AudioStream" uid="uid://qt4guehi0jh7" path="res://sounds/ambient1.wav" id="2_h1bdy"]
@@ -418,13 +418,13 @@ CombatFormation = SubResource("Resource_yncth")
 MissionPath = NodePath("../Path3D")
 
 [node name="CubePawn" parent="SquadTest1" unique_id=568996216 instance=ExtResource("20_30fn3")]
-transform = Transform3D(-1, 0, -8.9407e-08, 0, 1, 0, 8.9407e-08, 0, -1, 132.25, 3, -626.75)
+transform = Transform3D(-1, 0, -8.9407e-08, 0, 1, 0, 8.9407e-08, 0, -1, 132.25, 3, -806.25)
 
 [node name="CubePawn2" parent="SquadTest1" unique_id=10799207 instance=ExtResource("20_30fn3")]
-transform = Transform3D(-1, 0, -8.9407e-08, 0, 1, 0, 8.9407e-08, 0, -1, 117, 3, -626.75)
+transform = Transform3D(-1, 0, -8.9407e-08, 0, 1, 0, 8.9407e-08, 0, -1, 117, 3, -806.25)
 
 [node name="CubePawn3" parent="SquadTest1" unique_id=1355036336 instance=ExtResource("20_30fn3")]
-transform = Transform3D(-1, 0, -8.9407e-08, 0, 1, 0, 8.9407e-08, 0, -1, 141.75, 3, -626.75)
+transform = Transform3D(-1, 0, -8.9407e-08, 0, 1, 0, 8.9407e-08, 0, -1, 141.75, 3, -806.25)
 
 [node name="Path3D" type="Path3D" parent="." unique_id=1894870985]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 126.5, 0, -280)

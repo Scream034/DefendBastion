@@ -18,6 +18,7 @@ namespace Game.Entity.AI
         [Export] public AITargetingSystem TargetingSystem { get; private set; }
         [Export] public AIMovementController MovementController { get; private set; }
         [Export] public AILookController LookController { get; private set; }
+        [Export] public AIThreatSensor ThreatSensor { get; private set; }
         [Export] public Marker3D EyesPosition { get; private set; }
         [Export] private Node _combatBehaviorNode;
 
@@ -61,6 +62,7 @@ namespace Game.Entity.AI
             TargetingSystem.Initialize(this);
             MovementController.Initialize(this);
             LookController.Initialize(this);
+            ThreatSensor?.Initialize(this);
 
             if (World.Instance != null && World.Instance.IsNavigationReady) InitializeAI();
             else
@@ -160,6 +162,51 @@ namespace Game.Entity.AI
             }
         }
 
+        /// <summary>
+        /// Центральный метод обработки входящей угрозы (урон или пролетающий снаряд).
+        /// </summary>
+        public void ReportThreat(Vector3 threatPosition, bool isDirectHit)
+        {
+            GD.Print($"{Name} reports threat at {threatPosition}, DirectHit={isDirectHit}");
+
+            // 1. ПРОВЕРКА РЕЖИМА ШТУРМА (ASSAULT)
+            // Если мы выполняем AssaultPath, мы игнорируем угрозы, пока не дойдем до точки.
+            if (Squad != null && Squad.Task == SquadTask.AssaultPath)
+            {
+                // Исключение: если нас бьют в упор, можно добавить логику самозащиты,
+                // но по ТЗ "плевать на всё кроме главной цели".
+                return;
+            }
+
+            // 2. Если мы уже в бою и видим цель, не отвлекаемся на промахи
+            if (IsInCombat && TargetingSystem.CurrentTarget != null && !isDirectHit)
+            {
+                return;
+            }
+
+            // 3. Реакция
+            ReactToDanger(threatPosition);
+        }
+
+        private void ReactToDanger(Vector3 threatPosition)
+        {
+            // Заставляем контроллер взгляда посмотреть на угрозу
+            // Если шея не может повернуть - он запросит поворот тела.
+            LookController.SetPriorityLookTarget(threatPosition, 2.0f); // Смотреть 2 секунды
+
+            // Форсируем сканирование целей в TargetingSystem
+            TargetingSystem.ForceReevaluation();
+        }
+
+        // Пример переопределения метода получения урона (если он виртуальный в базовом классе)
+        public override async Task<bool> DamageAsync(float amount, LivingEntity source)
+        {
+            // Вызываем реакцию
+            ReportThreat(source.GlobalPosition, isDirectHit: true);
+
+            return await base.DamageAsync(amount, source);
+        }
+
         private void ProcessOutOfCombatLogic()
         {
             if (Squad != null && Squad.IsInCombat) return;
@@ -220,7 +267,7 @@ namespace Game.Entity.AI
             return await base.DestroyAsync();
         }
 
-        #region Orders API (Не изменилось)
+        #region Orders API
         public void AssignToSquad(AISquad squad) => Squad = squad;
 
         public void ReceiveOrderMoveTo(Vector3 position)

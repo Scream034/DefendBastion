@@ -16,7 +16,7 @@ namespace Game.Entity.AI.Components
         [Export] public Formation? MarchingFormation;
         [Export] public Formation? CombatFormation;
         [Export] public Path3D? MissionPath;
-        
+
         /// <summary>
         /// Если true, отряд будет автоматически отслеживать добавление и удаление
         /// дочерних узлов AIEntity в реальном времени.
@@ -64,7 +64,7 @@ namespace Game.Entity.AI.Components
             AISignals.Instance.TargetEliminated += OnTargetEliminated;
             AISignals.Instance.RepositionRequested += OnRepositionRequested;
             AISignals.Instance.MemberDestroyed += OnMemberDestroyed;
-            
+
             // Подписка на сигналы дерева для динамического управления ---
             if (IsMembershipDynamic)
             {
@@ -81,7 +81,7 @@ namespace Game.Entity.AI.Components
                 AISignals.Instance.RepositionRequested -= OnRepositionRequested;
                 AISignals.Instance.MemberDestroyed -= OnMemberDestroyed;
             }
-            
+
             // Отписка от сигналов дерева
             if (IsMembershipDynamic)
             {
@@ -110,7 +110,7 @@ namespace Game.Entity.AI.Components
         {
             // На всякий случай очищаем список, если этот метод будет вызван повторно.
             Members.Clear();
-            
+
             foreach (var node in GetChildren())
             {
                 if (node is AIEntity ai)
@@ -140,17 +140,32 @@ namespace Game.Entity.AI.Components
 
         public void AssignCombatTarget(LivingEntity target)
         {
-            if (!IsInstanceValid(target) || (CurrentTarget == target && IsInCombat))
+            if (!IsInstanceValid(target)) return;
+
+            // 1. ФИЛЬТР: Режим Штурма
+            if (Task == SquadTask.AssaultPath)
             {
+                // В режиме штурма мы игнорируем переключение в режим боя (CombatState).
+                // Исключение: если цель стоит прямо на пути (можно проверить дистанцию и угол),
+                // но в рамках задачи "плевать на всё" мы просто продолжаем бежать.
+                // Бойцы могут стрелять на ходу (Firing Envelope), если цель попадет в прицел,
+                // но сам Сквад не должен менять стейт на CombatState, так как это остановит движение.
+
+                // Если мы очень хотим, чтобы они стреляли на бегу, мы можем передать цель
+                // бойцам индивидуально, не меняя стейт отряда.
+                foreach (var member in Members)
+                {
+                    // Даем приказ атаковать, но НЕ меняем стейт отряда на Combat.
+                    // Бойцы будут пытаться стрелять в _PhysicsProcess, если цель в секторе,
+                    // но движение останется приоритетом из PatrolState.
+                    member.ReceiveOrderAttackTarget(target);
+                }
+
+                GD.Print($"Squad '{Name}' ignores engagement rule due to ASSAULT mode. Ordering fire-at-will while moving.");
                 return;
             }
 
-            if (Task == SquadTask.AssaultPath && _currentState is PatrolState)
-            {
-                GD.Print($"Squad '{Name}' is on assault task. Ignoring target {target.Name} to reach objective.");
-                return;
-            }
-
+            // Стандартная логика
             if (CurrentTarget != target)
             {
                 CurrentTarget = target;
@@ -159,7 +174,10 @@ namespace Game.Entity.AI.Components
                 TargetPreviousPosition = target.GlobalPosition;
             }
 
-            ChangeState(new CombatState(this, target));
+            if (!IsInCombat)
+            {
+                ChangeState(new CombatState(this, target));
+            }
         }
 
         public void ReportPositionReached(AIEntity member)
@@ -187,7 +205,7 @@ namespace Game.Entity.AI.Components
             // Делегируем логику удаления общему методу, чтобы избежать дублирования
             HandleMemberRemoval(member, "destroyed");
         }
-        
+
         private void OnMemberNodeAdded(Node node)
         {
             if (node is AIEntity newMember && !Members.Contains(newMember))
@@ -195,7 +213,7 @@ namespace Game.Entity.AI.Components
                 Members.Add(newMember);
                 newMember.AssignToSquad(this);
                 GD.Print($"Squad '{Name}' dynamically added member: {newMember.Name}.");
-                
+
                 // Если отряд уже в бою, новоприбывшему нужно отдать приказ
                 if (IsInCombat && CurrentTarget != null)
                 {
@@ -204,7 +222,7 @@ namespace Game.Entity.AI.Components
                 }
             }
         }
-        
+
         private void OnMemberNodeRemoved(Node node)
         {
             if (node is AIEntity member)
@@ -212,7 +230,7 @@ namespace Game.Entity.AI.Components
                 HandleMemberRemoval(member, "removed from tree");
             }
         }
-        
+
         private void HandleMemberRemoval(AIEntity member, string reason)
         {
             // Проверяем, действительно ли этот боец еще числится в отряде.
@@ -220,7 +238,7 @@ namespace Game.Entity.AI.Components
             if (!Members.Contains(member)) return;
 
             GD.Print($"Squad '{Name}' lost member {member.Name} (Reason: {reason}).");
-            
+
             Members.Remove(member);
             MembersAtDestination.Remove(member);
 
@@ -238,7 +256,7 @@ namespace Game.Entity.AI.Components
                 AssignCombatTarget(CurrentTarget);
             }
         }
-        
+
         #endregion
 
         public void Disengage()
@@ -271,7 +289,7 @@ namespace Game.Entity.AI.Components
         public void AssignMarchingFormationMove(Vector3 targetPosition, Vector3? lookAtPosition = null)
         {
             MembersAtDestination.Clear();
-            CurrentTarget = null; 
+            CurrentTarget = null;
 
             if (MarchingFormation == null || MarchingFormation.MemberPositions.Length == 0)
             {
@@ -280,7 +298,7 @@ namespace Game.Entity.AI.Components
                 return;
             }
 
-            var squadCenter = GetSquadCenter(); 
+            var squadCenter = GetSquadCenter();
             var effectiveLookAt = lookAtPosition ?? targetPosition;
             var direction = squadCenter.IsEqualApprox(effectiveLookAt)
                 ? (targetPosition - squadCenter).Normalized()
@@ -306,4 +324,3 @@ namespace Game.Entity.AI.Components
         }
     }
 }
-#nullable disable
