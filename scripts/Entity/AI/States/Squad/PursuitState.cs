@@ -56,6 +56,22 @@ namespace Game.Entity.AI.States.Squad
                 _reevaluateTimer = 1.0f;
             }
 
+            // Получаем максимальную дистанцию атаки (можно взять среднюю по отряду или для конкретного юнита)
+            // Для упрощения считаем, что если мы ближе 20 метров, можно пробовать встать в Combat
+            float engagementDistanceSq = 20.0f * 20.0f;
+            float distToTargetSq = Squad.GetSquadCenter().DistanceSquaredTo(Squad.CurrentTarget.GlobalPosition);
+
+            // Условие выхода: Цель медленная И мы достаточно близко
+            bool isTargetSlow = Squad.ObservedTargetVelocity.LengthSquared() < _exitPursuitSpeedSq;
+            bool isCloseEnough = distToTargetSq < engagementDistanceSq;
+
+            if (isTargetSlow && isCloseEnough)
+            {
+                GD.Print($"Target is stationary and within range. Switching to standard COMBAT mode.");
+                Squad.ChangeState(new CombatState(Squad, Squad.CurrentTarget));
+                return;
+            }
+
             // Проверяем выход из состояния, ТОЛЬКО если "период невозврата" истек
             if (_gracePeriodTimer <= 0 && Squad.ObservedTargetVelocity.LengthSquared() < _exitPursuitSpeedSq)
             {

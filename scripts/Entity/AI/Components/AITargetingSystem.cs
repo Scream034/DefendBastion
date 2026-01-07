@@ -63,7 +63,7 @@ namespace Game.Entity.AI.Components
         /// Позволяет внешнему коду (AISquad) принудительно установить текущую цель.
         /// Используется для выполнения приказов.
         /// </summary>
-        public void ForceSetCurrentTarget(LivingEntity newTarget) // <--- НОВЫЙ МЕТОД
+        public void ForceSetCurrentTarget(LivingEntity newTarget)
         {
             if (newTarget == CurrentTarget) return;
 
@@ -97,21 +97,13 @@ namespace Game.Entity.AI.Components
             }
         }
 
-        // Методы OnTargetEliminated, ClearTarget, SetAttackTarget больше не нужны,
-        // так как их логика перенесена в LegionBrain и AISquad.
-        /*
-        public void OnTargetEliminated(LivingEntity eliminatedTarget) { ... }
-        public void ClearTarget() { ... }
-        private void SetAttackTarget(LivingEntity newTarget) { ... }
-        */
-
         private void OnTargetDetected(Node3D body)
         {
             if (body is LivingEntity entity && body != _context)
             {
                 if (_context.IsHostile(entity) && body is ICharacter && !_potentialTargets.Contains(entity))
                 {
-                    // GD.Print($"{_context.Name} added {body.Name} to potential targets.");
+                    GD.Print($"{_context.Name} added {body.Name} to potential targets.");
                     _potentialTargets.Add(entity);
                 }
             }
@@ -122,14 +114,14 @@ namespace Game.Entity.AI.Components
             if (body is LivingEntity entity)
             {
                 _potentialTargets.Remove(entity);
-                // GD.Print($"{_context.Name} removed {body.Name} from potential targets.");
+                GD.Print($"{_context.Name} removed {body.Name} from potential targets.");
 
                 // Если именно текущая цель вышла из триггера, форсируем переоценку,
                 // но не меняем CurrentTarget, это делает LegionBrain.
-                if (entity == CurrentTarget)
-                {
-                    CurrentTarget = null; // Просто очищаем, LegionBrain назначит новую.
-                }
+                // if (entity == CurrentTarget)
+                // {
+                //     CurrentTarget = null; // Просто очищаем, LegionBrain назначит новую.
+                // }
             }
         }
     }

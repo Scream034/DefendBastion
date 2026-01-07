@@ -35,16 +35,11 @@ namespace Game.Entity.AI.Components
 
         private void ProcessProjectileThreat(BaseProjectile projectile)
         {
-            // 1. Игнорируем свои снаряды и снаряды союзников (если есть ссылка на Owner)
             if (projectile.Initiator == _context) return;
 
-            // 2. Вычисляем позицию угрозы. 
-            // В идеале мы хотим посмотреть не на пулю, а ОТКУДА она прилетела.
-            // Приближенно: берем позицию пули. Более умно: пуля + обратный вектор скорости.
-            Vector3 threatPos = projectile.GlobalPosition;
+            Vector3 estimatedOrigin = projectile.Initiator.GlobalPosition + ((float)GD.RandRange(-1.0, 1.0) * Vector3.One); // Пример оценки позиции угрозы
 
-            // 3. Сообщаем мозгу
-            _context.ReportThreat(threatPos, isDirectHit: false);
+            _context.ReportThreat(estimatedOrigin, isDirectHit: false);
         }
     }
 }

@@ -293,12 +293,12 @@ namespace Game.Entity.AI.Components
                 var idealPosition = anchorPoint + worldOffset;
                 var navMeshPosition = NavigationServer3D.MapGetClosestPoint(navMap, idealPosition);
 
-                if (navMeshPosition.DistanceSquaredTo(idealPosition) > 4.0f)
+                // FIX: Увеличиваем допуск с 4.0f (2 метра) до 9.0f (3 метра) или даже больше, 
+                // если ландшафт сложный. Это предотвратит "0 valid positions".
+                if (navMeshPosition.DistanceSquaredTo(idealPosition) > 9.0f)
                 {
                     continue;
                 }
-
-                // <--- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Та же самая логика, что и в FindCoverAndFirePositions ---
 
                 // 1. Определяем направление на цель из конкретной точки формации.
                 var directionToTarget = navMeshPosition.DirectionTo(target.GlobalPosition);

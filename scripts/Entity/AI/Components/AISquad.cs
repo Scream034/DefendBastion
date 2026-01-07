@@ -43,13 +43,13 @@ namespace Game.Entity.AI.Components
         public Vector3[] PathPoints { get; private set; } = [];
         public int CurrentPathIndex { get; set; } = 0;
         public int PathDirection { get; set; } = 1;
-        public bool IsInCombat => _currentState is CombatState || _currentState is PursuitState;
+        public bool IsInCombat => CurrentState is CombatState || CurrentState is PursuitState;
 
         public Vector3 ObservedTargetVelocity { get; set; } = Vector3.Zero;
         public Vector3 LastKnownTargetPosition { get; set; }
         public Vector3 TargetPreviousPosition { get; set; }
 
-        private SquadStateBase? _currentState;
+        public SquadStateBase? CurrentState { get; private set; }
 
         public override void _Ready()
         {
@@ -59,7 +59,7 @@ namespace Game.Entity.AI.Components
                 SetProcess(false);
                 return;
             }
-            Orchestrator.LegionBrain.Instance?.RegisterSquad(this);
+            LegionBrain.Instance?.RegisterSquad(this);
 
             AISignals.Instance.TargetEliminated += OnTargetEliminated;
             AISignals.Instance.RepositionRequested += OnRepositionRequested;
@@ -92,14 +92,14 @@ namespace Game.Entity.AI.Components
 
         public override void _PhysicsProcess(double delta)
         {
-            _currentState?.Process(delta);
+            CurrentState?.Process(delta);
         }
 
         public void ChangeState(SquadStateBase newState)
         {
-            _currentState?.Exit();
-            _currentState = newState;
-            _currentState.Enter();
+            CurrentState?.Exit();
+            CurrentState = newState;
+            CurrentState.Enter();
         }
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace Game.Entity.AI.Components
         private void OnRepositionRequested(AIEntity member)
         {
             if (!Members.Contains(member)) return;
-            (_currentState as IRepositionHandler)?.HandleRepositionRequest(member);
+            (CurrentState as IRepositionHandler)?.HandleRepositionRequest(member);
         }
 
         private void OnMemberDestroyed(AIEntity member)

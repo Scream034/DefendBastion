@@ -184,17 +184,8 @@ namespace Game.Entity.AI
                 return;
             }
 
-            // 3. Реакция
-            ReactToDanger(threatPosition);
-        }
-
-        private void ReactToDanger(Vector3 threatPosition)
-        {
-            // Заставляем контроллер взгляда посмотреть на угрозу
-            // Если шея не может повернуть - он запросит поворот тела.
-            LookController.SetPriorityLookTarget(threatPosition, 2.0f); // Смотреть 2 секунды
-
-            // Форсируем сканирование целей в TargetingSystem
+            // 3. Реакция на угрозу
+            LookController.ReportThreat(threatPosition);
             TargetingSystem.ForceReevaluation();
         }
 

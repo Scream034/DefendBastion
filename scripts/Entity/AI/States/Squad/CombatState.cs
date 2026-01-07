@@ -71,7 +71,7 @@ namespace Game.Entity.AI.States.Squad
 
             float targetDisplacementSq = Squad.CurrentTarget.GlobalPosition.DistanceSquaredTo(Squad.LastKnownTargetPosition);
             // Если цель сместилась более чем на 2 метра, а мы еще не замерили скорость - это повод для погони
-            bool hasMovedSignificantly = targetDisplacementSq > 4f;
+            bool hasMovedSignificantly = targetDisplacementSq > 9f;
 
             // Основное условие: высокая измеренная скорость ИЛИ значительное смещение
             if (Squad.ObservedTargetVelocity.LengthSquared() > Squad.TargetMovementThreshold * Squad.TargetMovementThreshold || hasMovedSignificantly)
@@ -182,7 +182,6 @@ namespace Game.Entity.AI.States.Squad
                 // Если была выбрана формация, запоминаем ее структуру для вращения
                 GD.Print("Activating formation tactic. Storing offsets for dynamic orientation.");
                 _isUsingFormationTactic = true;
-                // ВАЖНО: _squadAnchorPoint теперь вычисляется один раз и остается статичным на время передислокации
                 Vector3 anchorPointSum = Vector3.Zero;
                 foreach (var pos in assignments.Values)
                 {
@@ -292,6 +291,6 @@ namespace Game.Entity.AI.States.Squad
                 member.ReceiveOrderAttackTarget(Squad.CurrentTarget);
             }
         }
-        #endregion
+        #endregion  
     }
 }

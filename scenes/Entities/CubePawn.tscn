@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://na4nrs3prgm4" path="res://scripts/Entity/AI/Profilies/AILookProfile.cs" id="3_p3j4k"]
 [ext_resource type="Script" uid="uid://c7hnkuof7yfqy" path="res://scripts/Entity/AI/Profilies/AIMovementProfile.cs" id="4_ijh48"]
 [ext_resource type="Script" uid="uid://ccueoke03fjsg" path="res://scripts/Entity/AI/Profilies/AIProfile.cs" id="6_sohst"]
+[ext_resource type="Script" uid="uid://b8kd4waayey2d" path="res://scripts/Entity/AI/Components/AIDebugger.cs" id="7_p06bi"]
 [ext_resource type="AudioStream" uid="uid://d1i4b4dxh5s0g" path="res://sounds/electric_impact.wav" id="7_yoe7r"]
 [ext_resource type="Script" uid="uid://d0rbe32jfbfpx" path="res://scripts/Entity/AI/Components/AILookController.cs" id="8_8f78k"]
 [ext_resource type="Script" uid="uid://j16ladt4481x" path="res://scripts/Entity/AI/Components/AIMovementController.cs" id="9_b51h5"]
@@ -79,7 +80,6 @@ size = Vector3(10, 8, 6)
 
 [node name="CubePawn" type="CharacterBody3D" unique_id=980892076 node_paths=PackedStringArray("_audio", "TargetingSystem", "MovementController", "LookController", "ThreatSensor", "EyesPosition", "_combatBehaviorNode", "SightPoints")]
 collision_layer = 3
-collision_mask = 3
 script = ExtResource("1_y4eut")
 _audio = NodePath("AudioStreamPlayer3D")
 Profile = SubResource("Resource_p3j4k")
@@ -110,8 +110,11 @@ target_desired_distance = 3.8
 avoidance_enabled = true
 height = 3.6
 radius = 2.0
-debug_enabled = true
 debug_path_custom_point_size = 3.0
+
+[node name="AIDebugger" type="Node" parent="." unique_id=429865200 node_paths=PackedStringArray("Context")]
+script = ExtResource("7_p06bi")
+Context = NodePath("..")
 
 [node name="AILookController" type="Node" parent="." unique_id=17739630]
 script = ExtResource("8_8f78k")

@@ -2,7 +2,6 @@ using Godot;
 
 namespace Game.Entity.AI.States.Squad
 {
-    // Используем Primary Constructor для лаконичности
     public class MoveToPointState(Components.AISquad squad, Vector3 targetPosition, Vector3? lookAtPosition)
         : SquadStateBase(squad)
     {
