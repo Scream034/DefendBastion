@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://cfb65dshbc3l4"]
+[gd_scene format=3 uid="uid://cfb65dshbc3l4"]
 
 [ext_resource type="Material" uid="uid://dgx370rssxhh5" path="res://materials/Accent.tres" id="1_e3idd"]
 [ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/Base.tres" id="2_klls3"]
@@ -18,19 +18,19 @@ material = ExtResource("3_3sqha")
 resource_name = "Ground"
 material = ExtResource("4_e3idd")
 
-[node name="SourceMaterials" type="Node3D"]
+[node name="SourceMaterials" type="Node3D" unique_id=1578067565]
 
-[node name="AccentMesh" type="MeshInstance3D" parent="."]
+[node name="AccentMesh" type="MeshInstance3D" parent="." unique_id=1965286798]
 mesh = SubResource("BoxMesh_k60ew")
 
-[node name="BaseMesh" type="MeshInstance3D" parent="."]
+[node name="BaseMesh" type="MeshInstance3D" parent="." unique_id=1301204798]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
 mesh = SubResource("BoxMesh_5ktn5")
 
-[node name="BaseDarkMesh" type="MeshInstance3D" parent="."]
+[node name="BaseDarkMesh" type="MeshInstance3D" parent="." unique_id=517970292]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
 mesh = SubResource("BoxMesh_eok8k")
 
-[node name="GroundMesh" type="MeshInstance3D" parent="."]
+[node name="GroundMesh" type="MeshInstance3D" parent="." unique_id=256112980]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
 mesh = SubResource("BoxMesh_klls3")

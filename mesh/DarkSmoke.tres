@@ -1,4 +1,4 @@
-[gd_resource type="SphereMesh" load_steps=2 format=3 uid="uid://baho3aaq0v6vh"]
+[gd_resource type="SphereMesh" format=3 uid="uid://baho3aaq0v6vh"]
 
 [ext_resource type="Material" uid="uid://dwtxephbdjen0" path="res://materials/LightSmoke.tres" id="1_1wofk"]
 

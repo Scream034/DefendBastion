@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=4 uid="uid://dr7p7k4s6c5a4"]
+[gd_scene format=4 uid="uid://dr7p7k4s6c5a4"]
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_k0juu"]
 albedo_color = Color(0.49747363, 0.49747363, 0.49747363, 1)
@@ -30,10 +30,10 @@ _surfaces = [{
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_u1xxq"]
 points = PackedVector3Array(-3.25, -0.1807251, -5, 3.2499995, -0.1807251, -5, -3.25, -0.1807251, 5, -3.25, 4.819115, -5, 3.2499995, 4.819115, -5, 3.2499995, -0.1807251, 5, -3.25, 4.819115, 5, -2.3841858e-07, 7.801517, -5, 3.2499995, 4.819115, 5, -2.3841858e-07, 7.801517, 5)
 
-[node name="House" type="StaticBody3D"]
+[node name="House" type="StaticBody3D" unique_id=484313182]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1426928242]
 mesh = SubResource("ArrayMesh_u1xxq")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=363595126]
 shape = SubResource("ConvexPolygonShape3D_u1xxq")

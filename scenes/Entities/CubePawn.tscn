@@ -23,7 +23,6 @@ metadata/_custom_type_script = "uid://bh6xlp0n5roe6"
 
 [sub_resource type="Resource" id="Resource_y4eut"]
 script = ExtResource("3_p3j4k")
-MinLookForwardDuration = 0.8
 metadata/_custom_type_script = "uid://na4nrs3prgm4"
 
 [sub_resource type="Resource" id="Resource_p06bi"]
@@ -110,6 +109,7 @@ target_desired_distance = 3.8
 avoidance_enabled = true
 height = 3.6
 radius = 2.0
+debug_enabled = true
 debug_path_custom_point_size = 3.0
 
 [node name="AIDebugger" type="Node" parent="." unique_id=429865200 node_paths=PackedStringArray("Context")]
@@ -141,7 +141,7 @@ _attackActionNode = NodePath("../AttackStrategy")
 [node name="AttackStrategy" type="Node" parent="." unique_id=954658756 node_paths=PackedStringArray("MuzzlePoint")]
 script = ExtResource("12_cwmnl")
 _projectileScene = ExtResource("13_wtu6w")
-AttackCooldown = 3.0
+AttackCooldown = 5.0
 MuzzlePoint = NodePath("../Body/MazzlePoint")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=369183778]

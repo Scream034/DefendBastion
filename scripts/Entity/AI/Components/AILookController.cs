@@ -72,7 +72,7 @@ namespace Game.Entity.AI.Components
             FinalLookPosition = _context.GlobalPosition + _context.GlobalBasis.Z * 5f;
         }
 
-        public override void _Process(double delta)
+        public override void _PhysicsProcess(double delta)
         {
             if (_profile == null) return;
 

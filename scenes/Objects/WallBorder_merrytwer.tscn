@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=4 uid="uid://cm3tbwblhcjdq"]
+[gd_scene format=4 uid="uid://cm3tbwblhcjdq"]
 
 [ext_resource type="Material" uid="uid://bkwkmckvwhnnn" path="res://materials/Base.tres" id="1_3lwb8"]
 [ext_resource type="Material" uid="uid://vtogbnsqcfxk" path="res://materials/BaseGray.tres" id="2_ol453"]
@@ -82,34 +82,29 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_adsws")
 
-[node name="WallBorder" type="StaticBody3D"]
+[node name="WallBorder" type="StaticBody3D" unique_id=1292051837]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1222042213]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.5073, 3, 3.79503)
 shape = SubResource("BoxShape3D_tcxma")
 debug_color = Color(0.957318, 0, 0.533218, 0.42)
 
-[node name="Wall1" type="MeshInstance3D" parent="."]
+[node name="Wall1" type="MeshInstance3D" parent="." unique_id=1125619412]
 transform = Transform3D(5, 0, -5.68434e-14, 0, 2.5, 0, 5.68434e-14, 0, 5, 35, 0, 0)
 mesh = SubResource("ArrayMesh_m3kv2")
-skeleton = NodePath("")
 
-[node name="Wall2" type="MeshInstance3D" parent="."]
+[node name="Wall2" type="MeshInstance3D" parent="." unique_id=598096510]
 transform = Transform3D(5, 0, -5.68434e-14, 0, 2.5, 0, 5.68434e-14, 0, 5, 0, 0, 0)
 mesh = SubResource("ArrayMesh_m3kv2")
-skeleton = NodePath("")
 
-[node name="Wall3" type="MeshInstance3D" parent="."]
+[node name="Wall3" type="MeshInstance3D" parent="." unique_id=99283910]
 transform = Transform3D(-5, 0, 4.37114e-07, 0, 2.5, 0, -4.37114e-07, 0, -5, 35, 0, 7.57427)
 mesh = SubResource("ArrayMesh_m3kv2")
-skeleton = NodePath("")
 
-[node name="Wall4" type="MeshInstance3D" parent="."]
+[node name="Wall4" type="MeshInstance3D" parent="." unique_id=1240685118]
 transform = Transform3D(-5, 0, 4.37114e-07, 0, 2.5, 0, -4.37114e-07, 0, -5, 0, 0, 7.57427)
 mesh = SubResource("ArrayMesh_m3kv2")
-skeleton = NodePath("")
 
-[node name="Wall5" type="MeshInstance3D" parent="."]
+[node name="Wall5" type="MeshInstance3D" parent="." unique_id=1305170946]
 transform = Transform3D(5, 0, -5.68434e-14, 0, 2.5, 0, 5.68434e-14, 0, 5, 0, 0, 0)
 mesh = SubResource("ArrayMesh_m3kv2")
-skeleton = NodePath("")

@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://v5su20ub4oq"]
+[gd_scene format=3 uid="uid://v5su20ub4oq"]
 
 [ext_resource type="Script" uid="uid://bxos0yyw3lojj" path="res://scripts/Editor/PromptGeneratorTool.cs" id="1_ah41n"]
 
-[node name="PromptGeneratorTool" type="VBoxContainer" node_paths=PackedStringArray("_selectSourceButton", "_removeSourceButton", "_clearSourcesButton", "_sourcePathsList", "_extensionsLineEdit", "_generateButton", "_logLabel", "_sourceFileDialog", "_saveFileDialog")]
+[node name="PromptGeneratorTool" type="VBoxContainer" unique_id=2106171649 node_paths=PackedStringArray("_selectSourceButton", "_removeSourceButton", "_clearSourcesButton", "_sourcePathsList", "_extensionsLineEdit", "_generateButton", "_logLabel", "_sourceFileDialog", "_saveFileDialog")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -19,51 +19,52 @@ _logLabel = NodePath("LogLabel")
 _sourceFileDialog = NodePath("SourceFileDialog")
 _saveFileDialog = NodePath("SaveFileDialog")
 
-[node name="ActionButtonsContainer" type="HBoxContainer" parent="."]
+[node name="ActionButtonsContainer" type="HBoxContainer" parent="." unique_id=1313231525]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="SelectSourceButton" type="Button" parent="ActionButtonsContainer"]
+[node name="SelectSourceButton" type="Button" parent="ActionButtonsContainer" unique_id=1176960033]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Добавить папку"
 
-[node name="RemoveSourceButton" type="Button" parent="ActionButtonsContainer"]
+[node name="RemoveSourceButton" type="Button" parent="ActionButtonsContainer" unique_id=1905791186]
 layout_mode = 2
 size_flags_horizontal = 3
+disabled = true
 text = "Удалить выбранное"
 
-[node name="ClearSourcesButton" type="Button" parent="ActionButtonsContainer"]
+[node name="ClearSourcesButton" type="Button" parent="ActionButtonsContainer" unique_id=48802277]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.45
 text = "Очистить все"
 
-[node name="SourcePathsList" type="ItemList" parent="."]
+[node name="SourcePathsList" type="ItemList" parent="." unique_id=751910298]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ExtensionsLineEdit" type="LineEdit" parent="."]
+[node name="ExtensionsLineEdit" type="LineEdit" parent="." unique_id=347712378]
 layout_mode = 2
-text = "cs, gd, glsl, tscn"
+text = "cs, gd, gdshader, tscn, tres, res, json, md"
 placeholder_text = "cs, gd, glsl, tscn"
 
-[node name="HSeparator" type="HSeparator" parent="."]
+[node name="HSeparator" type="HSeparator" parent="." unique_id=831793563]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="GenerateButton" type="Button" parent="."]
+[node name="GenerateButton" type="Button" parent="." unique_id=2047939725]
 layout_mode = 2
 size_flags_vertical = 3
 text = "Сгенерировать prompt.md"
 
-[node name="LogLabel" type="RichTextLabel" parent="."]
+[node name="LogLabel" type="RichTextLabel" parent="." unique_id=362393632]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="SourceFileDialog" type="FileDialog" parent="."]
+[node name="SourceFileDialog" type="FileDialog" parent="." unique_id=1822205822]
 title = "Open a Directory"
 file_mode = 2
 
-[node name="SaveFileDialog" type="FileDialog" parent="."]
+[node name="SaveFileDialog" type="FileDialog" parent="." unique_id=1113665421]
 filters = PackedStringArray("*.md")

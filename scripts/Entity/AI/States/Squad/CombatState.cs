@@ -29,7 +29,7 @@ namespace Game.Entity.AI.States.Squad
         /// </summary>
         public bool IsActive { get; private set; }
 
-        public CombatState(Components.AISquad squad, LivingEntity target) : base(squad)
+        public CombatState(AISquad squad, LivingEntity target) : base(squad)
         {
             Squad.CurrentTarget = target;
         }
@@ -53,6 +53,16 @@ namespace Game.Entity.AI.States.Squad
         public override void Process(double delta)
         {
             if (!IsActive || !GodotObject.IsInstanceValid(Squad.CurrentTarget)) return;
+
+            // ПРОВЕРКА СЕНСОРОВ (Area3D)
+            // Если никто из отряда больше не держит цель в зоне обнаружения - считаем, что цель ушла.
+            // Переключаемся в Pursuit, который обработает это как потерю видимости и отправит к LastKnownPosition.
+            if (!Squad.IsTargetInSensorRange())
+            {
+                GD.Print($"CombatState: Target left detection area. Switching to PURSUIT (Check Last Known).");
+                Squad.ChangeState(new PursuitState(Squad, Squad.CurrentTarget));
+                return;
+            }
 
             _repositionCheckTimer -= delta;
             _targetVelocityTimer -= delta;

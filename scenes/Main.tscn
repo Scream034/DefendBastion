@@ -1,10 +1,10 @@
-[gd_scene load_steps=3 format=3 uid="uid://csly2gql2kjru"]
+[gd_scene format=3 uid="uid://csly2gql2kjru"]
 
 [ext_resource type="PackedScene" uid="uid://cm0epusci4ngu" path="res://scenes/UI.tscn" id="1_rvslj"]
-[ext_resource type="PackedScene" uid="uid://bs0hlyp04kp0c" path="res://scenes/World.tscn" id="2_0bbpv"]
+[ext_resource type="PackedScene" uid="uid://cxp42hmu173cw" path="res://scenes/World.tscn" id="2_0bbpv"]
 
-[node name="Main" type="Node"]
+[node name="Main" type="Node" unique_id=921669934]
 
-[node name="UI" parent="." instance=ExtResource("1_rvslj")]
+[node name="UI" parent="." unique_id=2036916792 instance=ExtResource("1_rvslj")]
 
-[node name="World" parent="." instance=ExtResource("2_0bbpv")]
+[node name="World" parent="." unique_id=1567569979 instance=ExtResource("2_0bbpv")]

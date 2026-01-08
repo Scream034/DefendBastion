@@ -1,4 +1,4 @@
-[gd_resource type="ParticleProcessMaterial" load_steps=3 format=3 uid="uid://drrpmxr1vqlht"]
+[gd_resource type="ParticleProcessMaterial" format=3 uid="uid://drrpmxr1vqlht"]
 
 [ext_resource type="Texture2D" uid="uid://bnspki1na2llk" path="res://curves/LinearPump_ScaleCurve.tres" id="1_e6lep"]
 [ext_resource type="Texture2D" uid="uid://dqhxmo5dedcir" path="res://curves/Linear_ScaleCurve.tres" id="2_25r52"]

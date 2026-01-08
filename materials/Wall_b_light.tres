@@ -1,4 +1,4 @@
-[gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://xl40qekogp7f"]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://xl40qekogp7f"]
 
 [ext_resource type="Shader" uid="uid://bd5nh4ku6ruaq" path="res://shaders/Windows.gdshader" id="1_50yug"]
 [ext_resource type="Texture2D" uid="uid://cwv0w6ue4n5ym" path="res://noise/CityFakeLight_a.tres" id="2_8y31q"]

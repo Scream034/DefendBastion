@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://ddhjbo51prxe2"]
+[gd_scene format=3 uid="uid://ddhjbo51prxe2"]
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_fdwwr"]
 albedo_color = Color(0.406168, 0.433214, 0.480864, 1)
@@ -12,33 +12,33 @@ albedo_color = Color(0.422008, 0.438785, 0.483405, 1)
 ao_on_uv2 = true
 refraction_enabled = true
 
-[node name="TurretBase" type="CSGCombiner3D"]
+[node name="TurretBase" type="CSGCombiner3D" unique_id=1438312039]
 
-[node name="Platform" type="CSGBox3D" parent="."]
+[node name="Platform" type="CSGBox3D" parent="." unique_id=1259539005]
 size = Vector3(5, 0.25, 5)
 material = SubResource("ORMMaterial3D_fdwwr")
 
-[node name="Base" type="CSGBox3D" parent="."]
+[node name="Base" type="CSGBox3D" parent="." unique_id=1238139234]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.56189, 0)
 size = Vector3(1.5, 0.876221, 1.5)
 material = SubResource("ORMMaterial3D_fdwwr")
 
-[node name="BaseX" type="CSGBox3D" parent="."]
+[node name="BaseX" type="CSGBox3D" parent="." unique_id=902007016]
 transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 0, 1.0208, 0)
 size = Vector3(0.2, 0.0416016, 1.1377)
 material = SubResource("ORMMaterial3D_c5gfu")
 
-[node name="BaseX2" type="CSGBox3D" parent="."]
+[node name="BaseX2" type="CSGBox3D" parent="." unique_id=1181793312]
 transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, 0, 1.0208, 0)
 size = Vector3(0.2, 0.0416016, 1.1377)
 material = SubResource("ORMMaterial3D_c5gfu")
 
-[node name="BaseXM" type="CSGBox3D" parent="."]
+[node name="BaseXM" type="CSGBox3D" parent="." unique_id=1795501163]
 transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, 0, 1.02782, 0)
 size = Vector3(0.2, 0.0560322, 0.2)
 material = SubResource("ORMMaterial3D_c5gfu")
 
-[node name="BaseXMC" type="CSGCylinder3D" parent="."]
+[node name="BaseXMC" type="CSGCylinder3D" parent="." unique_id=795589199]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.10485, 0)
 radius = 0.0898438
 height = 0.101807

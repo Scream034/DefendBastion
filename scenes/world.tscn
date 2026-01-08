@@ -416,6 +416,7 @@ Task = 1
 MarchingFormation = SubResource("Resource_rm3lh")
 CombatFormation = SubResource("Resource_yncth")
 MissionPath = NodePath("../Path3D")
+MaxPursuitDistance = 500.0
 
 [node name="CubePawn" parent="SquadTest1" unique_id=568996216 instance=ExtResource("20_30fn3")]
 transform = Transform3D(-1, 0, -8.9407e-08, 0, 1, 0, 8.9407e-08, 0, -1, 132.25, 3, -806.25)

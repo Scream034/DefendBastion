@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://bnu4ts7f2ph5r"]
+[gd_scene format=3 uid="uid://bnu4ts7f2ph5r"]
 
 [ext_resource type="Material" uid="uid://cc0akktbvt8f5" path="res://materials/Wall_a_light.tres" id="1_qruh6"]
 [ext_resource type="Material" uid="uid://xl40qekogp7f" path="res://materials/Wall_b_light.tres" id="2_euo3q"]
@@ -27,65 +27,65 @@ size = Vector2(22.625, 23)
 material = ExtResource("2_euo3q")
 size = Vector2(19.215, 23)
 
-[node name="FakeLight" type="Node3D"]
+[node name="FakeLight" type="Node3D" unique_id=107674599]
 
-[node name="FakeLight" type="MeshInstance3D" parent="."]
+[node name="FakeLight" type="MeshInstance3D" parent="." unique_id=1668513439]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -17.515015, 35.31, 4)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("QuadMesh_i4b1j")
 skeleton = NodePath("../..")
 
-[node name="FakeLight2" type="MeshInstance3D" parent="."]
+[node name="FakeLight2" type="MeshInstance3D" parent="." unique_id=306395032]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.015, 35.31, 19.53)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("QuadMesh_c0d7e")
 skeleton = NodePath("../..")
 
-[node name="FakeLight3" type="MeshInstance3D" parent="."]
+[node name="FakeLight3" type="MeshInstance3D" parent="." unique_id=1684365610]
 transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -5.015, 35.31, -11.78)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("QuadMesh_c0d7e")
 skeleton = NodePath("../..")
 
-[node name="FakeLightX" type="MeshInstance3D" parent="."]
+[node name="FakeLightX" type="MeshInstance3D" parent="." unique_id=363613243]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -17.375, 80.125, 4)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("QuadMesh_o1tcx")
 skeleton = NodePath("../..")
 
-[node name="FakeLightX2" type="MeshInstance3D" parent="."]
+[node name="FakeLightX2" type="MeshInstance3D" parent="." unique_id=1724008725]
 transform = Transform3D(-1, 0, 8.742277e-08, 0, 1, 0, -8.742277e-08, 0, -1, -5.625, 80.125, -9.061668)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("QuadMesh_rpuxp")
 skeleton = NodePath("../..")
 
-[node name="FakeLightX3" type="MeshInstance3D" parent="."]
+[node name="FakeLightX3" type="MeshInstance3D" parent="." unique_id=1581173819]
 transform = Transform3D(1, 0, -1.7484552e-07, 0, 1, 0, 1.7484552e-07, 0, 1, -5.625, 80.125, 17.188332)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("QuadMesh_rpuxp")
 skeleton = NodePath("../..")
 
-[node name="FakeLightX4" type="MeshInstance3D" parent="."]
+[node name="FakeLightX4" type="MeshInstance3D" parent="." unique_id=2140899024]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -13.875, 122.625, 4.25)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("QuadMesh_nthub")
 skeleton = NodePath("../..")
 
-[node name="FakeLightX5" type="MeshInstance3D" parent="."]
+[node name="FakeLightX5" type="MeshInstance3D" parent="." unique_id=294489940]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.875, 122.625, 16)
 cast_shadow = 0
 gi_mode = 0
 mesh = SubResource("QuadMesh_44lqw")
 skeleton = NodePath("../..")
 
-[node name="FakeLightX6" type="MeshInstance3D" parent="."]
+[node name="FakeLightX6" type="MeshInstance3D" parent="." unique_id=604784610]
 transform = Transform3D(-1, 0, 8.742277e-08, 0, 1, 0, -8.742277e-08, 0, -1, -3.875, 122.625, -7.325001)
 cast_shadow = 0
 gi_mode = 0

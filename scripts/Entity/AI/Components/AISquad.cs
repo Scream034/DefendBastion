@@ -8,7 +8,9 @@ using Game.Entity.AI.States.Squad;
 namespace Game.Entity.AI.Components
 {
     public enum SquadTask { Standby, PatrolPath, AssaultPath }
-
+    /// <summary>
+    /// Координатор группы AI. Управляет состояниями, формациями и общими целями.
+    /// </summary>
     public partial class AISquad : Node
     {
         [ExportGroup("Configuration")]
@@ -18,9 +20,7 @@ namespace Game.Entity.AI.Components
         [Export] public Path3D? MissionPath;
 
         /// <summary>
-        /// Если true, отряд будет автоматически отслеживать добавление и удаление
-        /// дочерних узлов AIEntity в реальном времени.
-        /// По умолчанию false, что означает, что состав определяется один раз при запуске.
+        /// Если true, отряд автоматически подхватывает AIEntity, добавленные в дерево как дети.
         /// </summary>
         [Export] public bool IsMembershipDynamic { get; private set; } = false;
 
@@ -36,7 +36,27 @@ namespace Game.Entity.AI.Components
         [Export] public float OrientationUpdateInterval { get; private set; } = 0.3f;
         [Export] public float PursuitExitThresholdFactor { get; private set; } = 0.8f;
 
-        // Public properties
+        [ExportGroup("Pursuit & Search")]
+        [Export] public bool CanPursueTarget { get; private set; } = true;
+
+        /// <summary>
+        /// Время (сек), которое отряд ищет врага в последней известной точке перед уходом.
+        /// </summary>
+        [Export] public float SearchDuration { get; private set; } = 6.0f;
+
+        /// <summary>
+        /// Максимальная дистанция от центра отряда до цели. Если враг дальше - абсолютный сброс.
+        /// Служит предохранителем от багов.
+        /// </summary>
+        [Export] public float MaxPursuitDistance { get; private set; } = 150.0f;
+
+        /// <summary>
+        /// Максимальное время преследования без результата.
+        /// </summary>
+        [Export] public float PursuitGiveUpTime { get; private set; } = 15.0f;
+
+
+        // Public Runtime Data
         public readonly List<AIEntity> Members = [];
         public readonly HashSet<AIEntity> MembersAtDestination = [];
         public LivingEntity? CurrentTarget { get; set; }
@@ -65,7 +85,6 @@ namespace Game.Entity.AI.Components
             AISignals.Instance.RepositionRequested += OnRepositionRequested;
             AISignals.Instance.MemberDestroyed += OnMemberDestroyed;
 
-            // Подписка на сигналы дерева для динамического управления ---
             if (IsMembershipDynamic)
             {
                 ChildEnteredTree += OnMemberNodeAdded;
@@ -82,7 +101,6 @@ namespace Game.Entity.AI.Components
                 AISignals.Instance.MemberDestroyed -= OnMemberDestroyed;
             }
 
-            // Отписка от сигналов дерева
             if (IsMembershipDynamic)
             {
                 ChildEnteredTree -= OnMemberNodeAdded;
@@ -103,14 +121,22 @@ namespace Game.Entity.AI.Components
         }
 
         /// <summary>
-        /// Инициализирует состав отряда, находя всех дочерних AIEntity.
-        /// Этот метод вызывается из LegionBrain после того, как все ноды будут в сцене.
+        /// Проверяет, находится ли цель в сенсорной зоне ХОТЯ БЫ У ОДНОГО члена отряда.
         /// </summary>
+        public bool IsTargetInSensorRange()
+        {
+            if (!IsInstanceValid(CurrentTarget)) return false;
+            foreach (var member in Members)
+            {
+                if (member.TargetingSystem.IsTargetInSensorRange(CurrentTarget))
+                    return true;
+            }
+            return false;
+        }
+
         public void InitializeMembers()
         {
-            // На всякий случай очищаем список, если этот метод будет вызван повторно.
             Members.Clear();
-
             foreach (var node in GetChildren())
             {
                 if (node is AIEntity ai)
@@ -119,7 +145,7 @@ namespace Game.Entity.AI.Components
                     ai.AssignToSquad(this);
                 }
             }
-            GD.Print($"Squad '{Name}' initialized with {Members.Count} members from its children.");
+            GD.Print($"Squad '{Name}' initialized with {Members.Count} members.");
 
             if ((Task is SquadTask.PatrolPath or SquadTask.AssaultPath) && MissionPath?.Curve.PointCount > 1)
             {
@@ -132,7 +158,6 @@ namespace Game.Entity.AI.Components
             }
         }
 
-        // Командные методы, которые инициируют смену состояний
         public void AssignMoveTarget(Vector3 targetPosition, Vector3? lookAtPosition = null)
         {
             ChangeState(new MoveToPointState(this, targetPosition, lookAtPosition));
@@ -142,30 +167,13 @@ namespace Game.Entity.AI.Components
         {
             if (!IsInstanceValid(target)) return;
 
-            // 1. ФИЛЬТР: Режим Штурма
             if (Task == SquadTask.AssaultPath)
             {
-                // В режиме штурма мы игнорируем переключение в режим боя (CombatState).
-                // Исключение: если цель стоит прямо на пути (можно проверить дистанцию и угол),
-                // но в рамках задачи "плевать на всё" мы просто продолжаем бежать.
-                // Бойцы могут стрелять на ходу (Firing Envelope), если цель попадет в прицел,
-                // но сам Сквад не должен менять стейт на CombatState, так как это остановит движение.
-
-                // Если мы очень хотим, чтобы они стреляли на бегу, мы можем передать цель
-                // бойцам индивидуально, не меняя стейт отряда.
-                foreach (var member in Members)
-                {
-                    // Даем приказ атаковать, но НЕ меняем стейт отряда на Combat.
-                    // Бойцы будут пытаться стрелять в _PhysicsProcess, если цель в секторе,
-                    // но движение останется приоритетом из PatrolState.
-                    member.ReceiveOrderAttackTarget(target);
-                }
-
-                GD.Print($"Squad '{Name}' ignores engagement rule due to ASSAULT mode. Ordering fire-at-will while moving.");
+                // В режиме штурма не меняем стейт, просто приказываем стрелять
+                foreach (var member in Members) member.ReceiveOrderAttackTarget(target);
                 return;
             }
 
-            // Стандартная логика
             if (CurrentTarget != target)
             {
                 CurrentTarget = target;
@@ -180,109 +188,24 @@ namespace Game.Entity.AI.Components
             }
         }
 
-        public void ReportPositionReached(AIEntity member)
-        {
-            MembersAtDestination.Add(member);
-        }
-
-        #region Event Handlers
-        private void OnTargetEliminated(AIEntity reporter, LivingEntity eliminatedTarget)
-        {
-            if (!Members.Contains(reporter) || eliminatedTarget != CurrentTarget) return;
-
-            GD.Print($"Squad '{Name}' confirms target {eliminatedTarget.Name} is eliminated. Disengaging...");
-            Disengage();
-        }
-
-        private void OnRepositionRequested(AIEntity member)
-        {
-            if (!Members.Contains(member)) return;
-            (CurrentState as IRepositionHandler)?.HandleRepositionRequest(member);
-        }
-
-        private void OnMemberDestroyed(AIEntity member)
-        {
-            // Делегируем логику удаления общему методу, чтобы избежать дублирования
-            HandleMemberRemoval(member, "destroyed");
-        }
-
-        private void OnMemberNodeAdded(Node node)
-        {
-            if (node is AIEntity newMember && !Members.Contains(newMember))
-            {
-                Members.Add(newMember);
-                newMember.AssignToSquad(this);
-                GD.Print($"Squad '{Name}' dynamically added member: {newMember.Name}.");
-
-                // Если отряд уже в бою, новоприбывшему нужно отдать приказ
-                if (IsInCombat && CurrentTarget != null)
-                {
-                    newMember.ReceiveOrderAttackTarget(CurrentTarget);
-                    // Можно также отдать приказ на движение, но для простоты пока ограничимся целью
-                }
-            }
-        }
-
-        private void OnMemberNodeRemoved(Node node)
-        {
-            if (node is AIEntity member)
-            {
-                HandleMemberRemoval(member, "removed from tree");
-            }
-        }
-
-        private void HandleMemberRemoval(AIEntity member, string reason)
-        {
-            // Проверяем, действительно ли этот боец еще числится в отряде.
-            // Это защищает от двойного вызова (например, OnMemberDestroyed и OnMemberNodeRemoved)
-            if (!Members.Contains(member)) return;
-
-            GD.Print($"Squad '{Name}' lost member {member.Name} (Reason: {reason}).");
-
-            Members.Remove(member);
-            MembersAtDestination.Remove(member);
-
-            if (Members.Count == 0)
-            {
-                GD.Print($"Squad '{Name}' has been eliminated.");
-                QueueFree(); // Отряд уничтожен
-                return;
-            }
-
-            // Если были в бою, нужно переоценить тактику с учетом потерь
-            if (IsInCombat && IsInstanceValid(CurrentTarget))
-            {
-                GD.Print($"Squad '{Name}' is re-evaluating combat tactics due to member loss.");
-                AssignCombatTarget(CurrentTarget);
-            }
-        }
-
-        #endregion
-
         public void Disengage()
         {
             CurrentTarget = null;
             foreach (var member in Members) member.ClearOrders();
 
             if (Task is SquadTask.PatrolPath or SquadTask.AssaultPath)
-            {
                 ChangeState(new PatrolState(this));
-            }
             else
-            {
                 ChangeState(new IdleState(this));
-            }
         }
+
+        public void ReportPositionReached(AIEntity member) => MembersAtDestination.Add(member);
 
         public Vector3 GetSquadCenter()
         {
             if (Members.Count == 0) return Vector3.Zero;
-
             Vector3 center = Vector3.Zero;
-            foreach (var member in Members)
-            {
-                center += member.GlobalPosition;
-            }
+            foreach (var member in Members) center += member.GlobalPosition;
             return center / Members.Count;
         }
 
@@ -293,7 +216,6 @@ namespace Game.Entity.AI.Components
 
             if (MarchingFormation == null || MarchingFormation.MemberPositions.Length == 0)
             {
-                GD.PushWarning($"Squad '{Name}' has no MarchingFormation. Moving without formation.");
                 foreach (var member in Members) member.ReceiveOrderMoveTo(targetPosition);
                 return;
             }
@@ -307,13 +229,11 @@ namespace Game.Entity.AI.Components
             if (direction.IsZeroApprox()) direction = Vector3.Forward;
 
             var rotation = Basis.LookingAt(direction, Vector3.Up);
-
             var worldPositions = new List<Vector3>();
             for (int i = 0; i < MarchingFormation.MemberPositions.Length; i++)
             {
                 if (i >= Members.Count) break;
-                var localOffset = MarchingFormation.MemberPositions[i];
-                worldPositions.Add(targetPosition + (rotation * localOffset));
+                worldPositions.Add(targetPosition + (rotation * MarchingFormation.MemberPositions[i]));
             }
 
             var assignments = AITacticalAnalysis.GetOptimalAssignments(Members, worldPositions, targetPosition);
@@ -322,5 +242,45 @@ namespace Game.Entity.AI.Components
                 member.ReceiveOrderMoveTo(position);
             }
         }
+
+        #region Event Handlers
+        private void OnTargetEliminated(AIEntity reporter, LivingEntity eliminatedTarget)
+        {
+            if (!Members.Contains(reporter) || eliminatedTarget != CurrentTarget) return;
+            Disengage();
+        }
+
+        private void OnRepositionRequested(AIEntity member)
+        {
+            if (!Members.Contains(member)) return;
+            (CurrentState as IRepositionHandler)?.HandleRepositionRequest(member);
+        }
+
+        private void OnMemberDestroyed(AIEntity member) => HandleMemberRemoval(member, "destroyed");
+
+        private void OnMemberNodeAdded(Node node)
+        {
+            if (node is AIEntity newMember && !Members.Contains(newMember))
+            {
+                Members.Add(newMember);
+                newMember.AssignToSquad(this);
+                if (IsInCombat && CurrentTarget != null) newMember.ReceiveOrderAttackTarget(CurrentTarget);
+            }
+        }
+
+        private void OnMemberNodeRemoved(Node node)
+        {
+            if (node is AIEntity member) HandleMemberRemoval(member, "removed from tree");
+        }
+
+        private void HandleMemberRemoval(AIEntity member, string reason)
+        {
+            if (!Members.Contains(member)) return;
+            Members.Remove(member);
+            MembersAtDestination.Remove(member);
+            if (Members.Count == 0) QueueFree();
+            else if (IsInCombat && IsInstanceValid(CurrentTarget)) AssignCombatTarget(CurrentTarget);
+        }
+        #endregion
     }
 }

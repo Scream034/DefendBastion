@@ -137,7 +137,7 @@ namespace Game.Entity.AI.Components
             if (_headPivot == null) return;
 
             // Получаем цель для взгляда от LookController
-            Vector3 lookTargetPosition = _context.LookController.RawTargetPosition;
+            Vector3 lookTargetPosition = _context.LookController.FinalLookPosition;
 
             if (lookTargetPosition.IsEqualApprox(_context.GlobalPosition)) return;
 

@@ -1,19 +1,29 @@
 using Godot;
 using System.Collections.Generic;
 using Game.Interfaces;
-
 namespace Game.Entity.AI.Components
 {
+    /// <summary>
+    /// Система обнаружения целей на основе Area3D.
+    /// Отвечает за список потенциальных целей в радиусе слышимости/видимости сенсора.
+    /// </summary>
     public partial class AITargetingSystem : Node
     {
         [ExportGroup("Dependencies")]
         [Export] private Area3D _targetDetectionArea;
-
         private AIEntity _context;
         private float _targetEvaluationTimer;
         private readonly List<LivingEntity> _potentialTargets = [];
 
-        public LivingEntity CurrentTarget { get; private set; } // Оставляем private set
+        /// <summary>
+        /// Текущая приоритетная цель, назначенная логикой (Squad/Brain).
+        /// Сама система не выбирает цель автоматически, только предоставляет список.
+        /// </summary>
+        public LivingEntity CurrentTarget { get; private set; }
+
+        /// <summary>
+        /// Список всех живых целей, находящихся внутри зоны обнаружения.
+        /// </summary>
         public IReadOnlyList<LivingEntity> PotentialTargets => _potentialTargets;
 
         public void Initialize(AIEntity context)
@@ -35,6 +45,7 @@ namespace Game.Entity.AI.Components
                 return;
             }
 
+            // Подписываемся на физические события входа/выхода из зоны
             _targetDetectionArea.BodyEntered += OnTargetDetected;
             _targetDetectionArea.BodyExited += OnTargetLost;
         }
@@ -50,47 +61,48 @@ namespace Game.Entity.AI.Components
         }
 
         /// <summary>
-        /// Принудительно запускает немедленную переоценку всех потенциальных целей.
+        /// Проверяет, находится ли указанная цель физически внутри коллайдера зоны обнаружения.
+        /// </summary>
+        /// <param name="target">Цель для проверки.</param>
+        /// <returns>True, если цель внутри Area3D.</returns>
+        public bool IsTargetInSensorRange(LivingEntity target)
+        {
+            if (!IsInstanceValid(target)) return false;
+            // Используем Contains, так как список поддерживается в актуальном состоянии через сигналы Area3D
+            return _potentialTargets.Contains(target);
+        }
+
+        /// <summary>
+        /// Принудительно запускает очистку списка от мертвых целей.
         /// </summary>
         public void ForceReevaluation()
         {
-            GD.Print($"{_context.Name} is forcing target re-evaluation.");
             EvaluateTargets();
             _targetEvaluationTimer = _context.Profile.CombatProfile.TargetEvaluationInterval;
         }
 
         /// <summary>
-        /// Позволяет внешнему коду (AISquad) принудительно установить текущую цель.
-        /// Используется для выполнения приказов.
+        /// Принудительно устанавливает текущую цель (например, по приказу Сквада).
         /// </summary>
         public void ForceSetCurrentTarget(LivingEntity newTarget)
         {
             if (newTarget == CurrentTarget) return;
-
             CurrentTarget = newTarget;
-            if (newTarget != null)
-            {
-                GD.Print($"{_context.Name} received forced target: {newTarget.Name}");
-            }
-            else
-            {
-                GD.Print($"{_context.Name} target cleared by force.");
-            }
         }
 
         private void EvaluateTargets()
         {
-            _potentialTargets.RemoveAll(target => !IsInstanceValid(target) || !target.IsAlive);
+            // Удаляем уничтоженные объекты из списка (оптимизация: for reversed loop)
+            for (int i = _potentialTargets.Count - 1; i >= 0; i--)
+            {
+                var target = _potentialTargets[i];
+                if (!IsInstanceValid(target) || !target.IsAlive)
+                {
+                    _potentialTargets.RemoveAt(i);
+                }
+            }
 
-            // В новой архитектуре AITargetingSystem не выбирает "лучшую" цель для атаки,
-            // а лишь поддерживает список потенциальных целей для LegionBrain/AISquad.
-            // CurrentTarget устанавливается только через ForceSetCurrentTarget.
-            // Однако, мы можем использовать этот метод для обновления CurrentTarget
-            // если текущая цель стала невалидной и есть новая, более подходящая.
-            // Но в контексте LegionBrain, сам LegionBrain будет решать, кого атаковать.
-            // Поэтому логика здесь упрощается.
-            
-            // Если CurrentTarget невалиден, очищаем его.
+            // Если текущая цель стала невалидной, сбрасываем ссылку
             if (!IsInstanceValid(CurrentTarget) || !CurrentTarget.IsAlive)
             {
                 CurrentTarget = null;
@@ -101,9 +113,9 @@ namespace Game.Entity.AI.Components
         {
             if (body is LivingEntity entity && body != _context)
             {
+                // Добавляем только враждебные цели, которые являются персонажами
                 if (_context.IsHostile(entity) && body is ICharacter && !_potentialTargets.Contains(entity))
                 {
-                    GD.Print($"{_context.Name} added {body.Name} to potential targets.");
                     _potentialTargets.Add(entity);
                 }
             }
@@ -114,14 +126,8 @@ namespace Game.Entity.AI.Components
             if (body is LivingEntity entity)
             {
                 _potentialTargets.Remove(entity);
-                GD.Print($"{_context.Name} removed {body.Name} from potential targets.");
-
-                // Если именно текущая цель вышла из триггера, форсируем переоценку,
-                // но не меняем CurrentTarget, это делает LegionBrain.
-                // if (entity == CurrentTarget)
-                // {
-                //     CurrentTarget = null; // Просто очищаем, LegionBrain назначит новую.
-                // }
+                // Примечание: Мы НЕ сбрасываем CurrentTarget здесь.
+                // Это задача CombatState/PursuitState решать, что делать при потере цели.
             }
         }
     }

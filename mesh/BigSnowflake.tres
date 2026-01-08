@@ -1,4 +1,4 @@
-[gd_resource type="QuadMesh" load_steps=2 format=3 uid="uid://1h4jxde1jsa5"]
+[gd_resource type="QuadMesh" format=3 uid="uid://1h4jxde1jsa5"]
 
 [ext_resource type="Material" uid="uid://ddrxfyltunn40" path="res://materials/LightSnowFlake.tres" id="1_npbcs"]
 
